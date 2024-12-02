@@ -1,0 +1,4 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/IndieBuff/Editor/USS/IndieBuff_AIModelSelection.uss?fileID=7433441132597879392&amp;guid=2c04028d8f8c74c64804b0f808ead84a&amp;type=3#IndieBuff_AIModelSelection" />
+    <ui:VisualElement name="AIModelSelectionContainer" class="ai-model-selection-container" style="flex-grow: 0;" />
+</ui:UXML>

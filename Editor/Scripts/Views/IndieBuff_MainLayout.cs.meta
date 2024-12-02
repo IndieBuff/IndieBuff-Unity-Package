@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 07487c38da8824629afa93d680e8959b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - m_ViewDataDictionary: {instanceID: 0}
+  - chatComponentAsset: {fileID: 9197481963319205126, guid: efea0bb8ee287468ab8ffc4f2e8ce61d, type: 3}
+  - loginComponentAsset: {fileID: 9197481963319205126, guid: b97349adddad749f4a855340ecf0af78, type: 3}
+  - aiResponseBoxAsset: {fileID: 9197481963319205126, guid: 3006b9af00e8f4812aad2a24f0b4ff83, type: 3}
+  - chatHistoryComponentAsset: {fileID: 9197481963319205126, guid: 32fafe32a13ba4d8d930dde53ff3be1a, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
