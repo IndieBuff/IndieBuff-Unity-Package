@@ -15,7 +15,7 @@
         "Newtonsoft.Json.dll",
         "System.Reflection.Metadata.dll"
     ],
-    "autoReferenced": false,
+    "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false
