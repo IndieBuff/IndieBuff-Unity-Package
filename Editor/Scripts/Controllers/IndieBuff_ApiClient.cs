@@ -147,7 +147,7 @@ namespace IndieBuff.Editor
             var requestData = new ChatRequest { gameEngine = "unity" };
             var jsonPayload = JsonUtility.ToJson(requestData);
 
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, "plugin-chat/get-chats")
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/get-chats")
             {
                 Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
             };
@@ -160,7 +160,7 @@ namespace IndieBuff.Editor
             var requestData = new ChatRequest { gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId };
             var jsonPayload = JsonUtility.ToJson(requestData);
 
-            var requestMessage = new HttpRequestMessage(HttpMethod.Get, "plugin-chat/chat-history")
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/chat-history")
             {
                 Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
             };

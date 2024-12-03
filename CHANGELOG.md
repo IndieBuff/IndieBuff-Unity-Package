@@ -1,3 +1,9 @@
+## [1.0.2] - 2024-12-02
+
+### Fixed
+
+- API calling issue on Windows OS
+
 ## [1.0.1] - 2024-12-02
 
 ### Fixed
