@@ -1,5 +1,4 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/IndieBuff/Editor/USS/IndieBuff_LoginComponent.uss?fileID=7433441132597879392&amp;guid=238f80c85a9784058aea58ba1d315d12&amp;type=3#IndieBuff_LoginComponent" />
     <ui:VisualElement name="LoginPage" style="flex-grow: 1; align-items: center; justify-content: flex-start;">
         <ui:VisualElement name="IndieBuffLogoContainer" style="flex-direction: row; align-items: center; margin-top: 15px; margin-bottom: 3px;">
             <ui:VisualElement name="IBLogo" style="width: 48px; height: 68px; background-image: resource(&apos;Images/IndieBuff_LogoIcon&apos;); margin-top: 0; margin-right: 9px;" />

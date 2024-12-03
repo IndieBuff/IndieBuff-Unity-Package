@@ -25,9 +25,9 @@ namespace IndieBuff.Editor
 
         public void CreateGUI()
         {
-            chatComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IndieBuff/Editor/UXML/IndieBuff_ChatComponent.uxml");
-            loginComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IndieBuff/Editor/UXML/IndieBuff_LoginPage.uxml");
-            aiResponseBoxAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IndieBuff/Editor/UXML/IndieBuff_AIResponse.uxml");
+            chatComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_ChatComponent.uxml");
+            loginComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_LoginPage.uxml");
+            aiResponseBoxAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_AIResponse.uxml");
 
 
             ShowLoginComponent();
@@ -39,10 +39,17 @@ namespace IndieBuff.Editor
 
             rootVisualElement.Clear();
             VisualElement loginUI = loginComponentAsset.Instantiate();
+            string loginStylePath = $"{IndieBuffConstants.baseAssetPath}/Editor/USS/IndieBuff_LoginComponent.uss";
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(loginStylePath);
+
+            loginUI.styleSheets.Add(styleSheet);
+
             rootVisualElement.Add(loginUI);
             loginUI.style.flexGrow = 1;
 
             loginComponent = new IndieBuff_LoginComponent(loginUI);
+
+
             loginComponent.OnLoginSuccess += ShowChatComponent;
         }
 
@@ -52,6 +59,12 @@ namespace IndieBuff.Editor
             await IndieBuff_UserInfo.Instance.InitializeUserInfo();
             rootVisualElement.Clear();
             VisualElement chatUI = chatComponentAsset.Instantiate();
+
+            string chatStylePath = $"{IndieBuffConstants.baseAssetPath}/Editor/USS/IndieBuff_ChatComponent.uss";
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(chatStylePath);
+
+            chatUI.styleSheets.Add(styleSheet);
+
             chatUI.style.minWidth = 400;
             rootVisualElement.Add(chatUI);
             chatUI.style.flexGrow = 1;

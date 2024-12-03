@@ -25,7 +25,7 @@ namespace IndieBuff.Editor
         {
             if (root != null) return;
 
-            addContextAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IndieBuff/Editor/UXML/IndieBuff_AddContextComponent.uxml");
+            addContextAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_AddContextComponent.uxml");
             if (addContextAsset == null)
             {
                 Debug.LogError("Failed to load profile settings asset");
@@ -33,6 +33,12 @@ namespace IndieBuff.Editor
             }
 
             root = addContextAsset.Instantiate();
+
+            string addContextStylePath = $"{IndieBuffConstants.baseAssetPath}/Editor/USS/IndieBuff_AddContextComponent.uss";
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(addContextStylePath);
+
+            root.styleSheets.Add(styleSheet);
+
             root.pickingMode = PickingMode.Position;
             root.style.position = Position.Absolute;
             root.style.marginLeft = 10;

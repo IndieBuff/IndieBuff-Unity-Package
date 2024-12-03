@@ -28,7 +28,7 @@ namespace IndieBuff.Editor
         {
             if (root != null) return;
 
-            profileSettingsAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IndieBuff/Editor/UXML/IndieBuff_ProfileSettingsComponent.uxml");
+            profileSettingsAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_ProfileSettingsComponent.uxml");
             if (profileSettingsAsset == null)
             {
                 Debug.LogError("Failed to load profile settings asset");
@@ -36,6 +36,13 @@ namespace IndieBuff.Editor
             }
 
             root = profileSettingsAsset.Instantiate();
+
+            string profileSettingsStylePath = $"{IndieBuffConstants.baseAssetPath}/Editor/USS/IndieBuff_ProfileSettingsComponent.uss";
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(profileSettingsStylePath);
+
+            root.styleSheets.Add(styleSheet);
+
+
             root.pickingMode = PickingMode.Position;
             root.style.position = Position.Absolute;
             root.style.right = 15;

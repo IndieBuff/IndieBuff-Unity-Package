@@ -1,5 +1,4 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/IndieBuff/Editor/USS/IndieBuff_ChatComponent.uss?fileID=7433441132597879392&amp;guid=beed55a171a4b405183bb0b036b7d91f&amp;type=3#IndieBuff_ChatComponent" />
     <ui:VisualElement name="TopBar" style="flex-grow: 1; height: auto; width: auto; min-height: 33px; align-items: center; justify-content: space-around; flex-direction: row; max-height: 33px;">
         <ui:VisualElement name="ChatControlButtons" style="flex-grow: 1; flex-direction: row; position: absolute; left: 0;">
             <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="NewChatButton" tooltip="Start new chat" style="padding-top: 4px; padding-right: 4px; padding-bottom: 4px; padding-left: 4px;">

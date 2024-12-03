@@ -1,5 +1,4 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/IndieBuff/Editor/USS/IndieBuff_AIResponse.uss?fileID=7433441132597879392&amp;guid=e748fe6ea9be04896957f2719ef4de3f&amp;type=3#IndieBuff_AIResponse" />
     <ui:VisualElement name="ResponseContainer" style="margin-top: 15px; margin-bottom: 5px; margin-left: 12px; margin-right: 12px;">
         <ui:VisualElement name="HeaderHolder" style="flex-grow: 1; flex-direction: row; justify-content: space-between;">
             <ui:VisualElement name="AIChatIconHolder" style="flex-grow: 0; width: 24px; height: 24px; align-self: flex-start; margin-left: 0; margin-bottom: 10px; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom-right-radius: 12px; border-bottom-left-radius: 12px; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px;">

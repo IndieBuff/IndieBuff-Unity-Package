@@ -489,6 +489,11 @@ namespace IndieBuff.Editor
         {
             var aiMessageContainer = AIResponseBoxAsset.CloneTree();
 
+            string responseBoxStylePath = $"{IndieBuffConstants.baseAssetPath}/Editor/USS/IndieBuff_AIResponse.uss";
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(responseBoxStylePath);
+
+            aiMessageContainer.styleSheets.Add(styleSheet);
+
             var copyResponseButton = aiMessageContainer.Q<Button>("CopyResponseButton");
             var thumbsUpButton = aiMessageContainer.Q<Button>("ThumbsUpButton");
             var thumbsDownButton = aiMessageContainer.Q<Button>("ThumbsDownButton");

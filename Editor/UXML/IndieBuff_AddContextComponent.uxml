@@ -1,5 +1,4 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/IndieBuff/Editor/USS/IndieBuff_AddContextComponent.uss?fileID=7433441132597879392&amp;guid=3346852c425f744c69daf718179cac6a&amp;type=3#IndieBuff_AddContextComponent" />
     <ui:VisualElement name="AddContextRoot" class="root-container" style="justify-content: center; align-items: center;">
         <ui:VisualElement name="DropZone" class="drop-zone-styling" />
         <ui:VisualElement name="InfoLabelsRoot" picking-mode="Ignore" style="font-size: 14px;">

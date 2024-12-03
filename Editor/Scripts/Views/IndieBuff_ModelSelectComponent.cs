@@ -26,7 +26,7 @@ namespace IndieBuff.Editor
         {
             if (root != null) return;
 
-            modelSelectAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IndieBuff/Editor/UXML/IndieBuff_AIModelSelection.uxml");
+            modelSelectAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_AIModelSelection.uxml");
             if (modelSelectAsset == null)
             {
                 Debug.LogError("Failed to load model select asset");
@@ -34,6 +34,12 @@ namespace IndieBuff.Editor
             }
 
             root = modelSelectAsset.Instantiate();
+
+            string modelSelectStylePath = $"{IndieBuffConstants.baseAssetPath}/Editor/USS/IndieBuff_AIModelSelection.uss";
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(modelSelectStylePath);
+
+            root.styleSheets.Add(styleSheet);
+
             root.AddToClassList("ai-model-select-container");
             root.style.position = Position.Absolute;
             root.pickingMode = PickingMode.Position;
