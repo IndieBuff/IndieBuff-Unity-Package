@@ -42,6 +42,7 @@ namespace IndieBuff.Editor
                 var chatHistoryItemButton = new Button();
                 chatHistoryItemButton.AddToClassList("chat-history-item-button");
                 chatHistoryItemButton.text = convo.title;
+                chatHistoryItemButton.enableRichText = false;
 
                 var chatHistoryItemDeleteButton = new Button();
                 chatHistoryItemDeleteButton.AddToClassList("chat-history-item-delete-button");

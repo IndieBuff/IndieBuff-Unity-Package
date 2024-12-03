@@ -1,3 +1,15 @@
+## [1.0.2] - 2024-12-03
+
+### Fixed
+
+- Stop stream button freezing rest of plugin
+- Login during auth process would overwrite existing token
+- UI Issue with chat history items overflow
+
+### Added
+
+- Save most recently used model between re-compiles
+
 ## [1.0.2] - 2024-12-02
 
 ### Fixed

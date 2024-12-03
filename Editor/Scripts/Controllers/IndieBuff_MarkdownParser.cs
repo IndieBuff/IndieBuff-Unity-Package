@@ -12,6 +12,7 @@ namespace IndieBuff.Editor
     public class IndieBuff_MarkdownParser
     {
         private bool inCodeBlock;
+        private bool inInlineCodeBlock;
         private bool isLoading;
         private StringBuilder lineBuffer;
         private VisualElement messageContainer;
@@ -30,6 +31,7 @@ namespace IndieBuff.Editor
         public IndieBuff_MarkdownParser(VisualElement container, TextField currentLabel)
         {
             inCodeBlock = false;
+            inInlineCodeBlock = false;
             isLoading = true;
             lineBuffer = new StringBuilder();
             syntaxHighlighter = new IndieBuff_SyntaxHighlighter();
@@ -82,25 +84,6 @@ namespace IndieBuff.Editor
                 currentMessageLabel.value += TransformCodeBlock(line);
             }
         }
-        private string FormatCodeToString(string code)
-        {
-            try
-            {
-
-                code = code.Trim('"');
-                code = code.Replace("\\n", "\n");
-                code = code.Replace("\\r", "\r");
-                code = code.Replace("\\\"", "\"");
-
-                return code;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Error writing file: {ex.Message}");
-                return "";
-            }
-        }
-
 
         public void ParseChunk(string chunk)
         {
@@ -145,7 +128,7 @@ namespace IndieBuff.Editor
             await semaphore.WaitAsync();
             try
             {
-                if (line.StartsWith("```"))
+                if (!inInlineCodeBlock && line.StartsWith("```"))
                 {
                     if (inCodeBlock)
                     {
@@ -176,14 +159,45 @@ namespace IndieBuff.Editor
                     inCodeBlock = !inCodeBlock;
                     return;
                 }
+                else if (!inCodeBlock && (line.Equals("`csharp") || line.Equals("`")))
+                {
+                    if (inInlineCodeBlock)
+                    {
+                        string codeToCopy = rawCode;
+                        Button copyButton = new Button();
+                        copyButton.AddToClassList("copy-button");
+                        copyButton.tooltip = "Copy code";
+
+                        VisualElement copyButtonIcon = new VisualElement();
+                        copyButtonIcon.AddToClassList("copy-button-icon");
+                        copyButton.Add(copyButtonIcon);
+
+
+                        copyButton.clickable.clicked += () =>
+                        {
+                            EditorGUIUtility.systemCopyBuffer = codeToCopy;
+                        };
+
+                        currentMessageLabel.Add(copyButton);
+
+                        currentMessageLabel = null;
+                        rawCode = "";
+                    }
+                    else
+                    {
+                        currentMessageLabel = CreateNewAIResponseLabel("", "code-block");
+                    }
+                    inInlineCodeBlock = !inInlineCodeBlock;
+                    return;
+                }
 
                 currentMessageLabel ??= CreateNewAIResponseLabel("",
-                        inCodeBlock ? "code-block" : "message-text");
+                        inCodeBlock || inInlineCodeBlock ? "code-block" : "message-text");
 
-                string processedLine = inCodeBlock ? TransformCodeBlock(line) : TransformMarkdown(line);
+                string processedLine = inCodeBlock || inInlineCodeBlock ? TransformCodeBlock(line) : TransformMarkdown(line);
 
 
-                if (inCodeBlock)
+                if (inCodeBlock || inInlineCodeBlock)
                 {
                     rawCode += line + "\n";
                 }
@@ -191,7 +205,7 @@ namespace IndieBuff.Editor
                 TextField targetLabel = currentMessageLabel;
                 string originalContent = targetLabel.value;
 
-                if (inCodeBlock)
+                if (inCodeBlock || inInlineCodeBlock)
                 {
                     targetLabel.value = originalContent + processedLine;
                 }
