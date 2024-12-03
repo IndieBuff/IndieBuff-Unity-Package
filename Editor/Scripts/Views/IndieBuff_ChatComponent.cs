@@ -127,6 +127,8 @@ namespace IndieBuff.Editor
 
             InitializeConversation();
 
+            aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
+
 
 
             IndieBuff_UserInfo.Instance.onConvoChanged += OnConvoChanged;
@@ -638,7 +640,7 @@ namespace IndieBuff.Editor
             string[] metadataParts = metadata.Split('|');
             IndieBuff_UserInfo.Instance.currentConvoId = metadataParts[0];
 
-            if (metadataParts[1] != "None")
+            if (metadataParts[1] != "None" && metadataParts[1] != "")
             {
                 IndieBuff_UserInfo.Instance.currentConvoTitle = metadataParts[1];
             }

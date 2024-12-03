@@ -85,7 +85,7 @@ namespace IndieBuff.Editor
 
                 modelSelectContainer.Add(aiModelSelectionButton);
 
-                if (currentSelectedModel == null && model == "Base Model")
+                if (currentSelectedModel == null && model == IndieBuff_UserInfo.Instance.selectedModel)
                 {
                     UpdateSelection(model, aiModelSelectedIcon);
                 }

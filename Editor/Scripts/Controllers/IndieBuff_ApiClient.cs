@@ -84,7 +84,7 @@ namespace IndieBuff.Editor
         public async Task StreamChatMessageAsync(string prompt, Action<string> onChunkReceived, CancellationToken cancellationToken = default)
         {
 
-            await Task.Delay(50, cancellationToken);
+            await TokenManager.Instance.RefreshTokensAsync();
             string contextString = IndieBuff_ContextBuilder.Instance.ContextObjectString;
             var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId != null ? IndieBuff_UserInfo.Instance.currentConvoId : null };
             var jsonPayload = JsonUtility.ToJson(requestData);

@@ -23,6 +23,8 @@ namespace IndieBuff.Editor
 
         const string CurrentConvoIdKey = "IndieBuffUserSession_CurrentConvoId";
         const string CurrentConvoTitleKey = "IndieBuffUserSession_CurrentConvoTitle";
+        const string CurrentModelKey = "IndieBuffUserSession_CurrentModel";
+
         public Action onConvoChanged;
         public Action onConvoHistoryListUpdated;
 
@@ -64,16 +66,19 @@ namespace IndieBuff.Editor
 
         public string selectedModel
         {
-            get => _selectedModel;
+            get => SessionState.GetString(CurrentModelKey, "Base Model");
             set
             {
                 if (_selectedModel != value)
                 {
                     _selectedModel = value;
+                    SessionState.SetString(CurrentModelKey, value);
                     onSelectedModelChanged?.Invoke();
                 }
             }
         }
+
+
 
         public async Task InitializeUserInfo()
         {
