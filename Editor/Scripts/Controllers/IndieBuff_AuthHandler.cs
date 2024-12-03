@@ -15,6 +15,7 @@ namespace IndieBuff.Editor
         private HttpListener listener;
         private bool isListening;
         private int currentPort;
+        public bool isCheckingLoginStatus = true;
         private readonly CancellationTokenSource cancellationTokenSource;
 
         private const int LOGIN_TIMEOUT_SECONDS = 300;
@@ -39,6 +40,10 @@ namespace IndieBuff.Editor
             catch (Exception e)
             {
                 Debug.LogError($"Login status check failed: {e}");
+            }
+            finally
+            {
+                isCheckingLoginStatus = false;
             }
         }
 

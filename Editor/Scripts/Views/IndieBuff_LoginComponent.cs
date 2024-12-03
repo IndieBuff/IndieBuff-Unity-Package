@@ -45,6 +45,7 @@ namespace IndieBuff.Editor
 
         private void OnLoginButtonClicked()
         {
+            if (authManager.isCheckingLoginStatus) return;
             try
             {
                 statusLabel.text = "Trying to Log In...";

@@ -11,6 +11,19 @@ using System.Collections.Generic;
 using Microsoft.CodeAnalysis.Emit;
 using System.Reflection;
 
+
+
+public static class DynamicScriptBridge
+{
+    public static Action<string, string, GameObject> RegisterScriptAction;
+
+    public static void Initialize()
+    {
+        RegisterScriptAction = IndieBuff.Editor.IndieBuff_DynamicScriptUtility.RegisterMonoBehaviourScript;
+    }
+}
+
+
 public static class ScriptConstants
 {
     public const string PENDING_SCRIPTS_COUNT = "PendingScriptsCount";
@@ -25,8 +38,55 @@ public class ScriptInfo
     public GameObject TargetObject { get; set; }
 }
 
+
 namespace IndieBuff.Editor
 {
+
+    public class ScriptRegistrationManager
+    {
+        private static ScriptRegistrationManager instance;
+        private List<ScriptInfo> pendingScripts;
+
+        public static ScriptRegistrationManager Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new ScriptRegistrationManager();
+                }
+                return instance;
+            }
+        }
+
+        private ScriptRegistrationManager()
+        {
+            pendingScripts = new List<ScriptInfo>();
+        }
+
+        public void RegisterScript(string content, string filePath, GameObject target)
+        {
+            pendingScripts.Add(new ScriptInfo
+            {
+                Content = content,
+                FilePath = filePath,
+                TargetObject = target
+            });
+        }
+
+        public List<ScriptInfo> GetPendingScripts()
+        {
+            return pendingScripts;
+        }
+
+        public void ClearScripts()
+        {
+            pendingScripts.Clear();
+        }
+    }
+
+
+
     public static class IndieBuff_DynamicScriptUtility
     {
         private static readonly string[] curatedAssemblyPrefixes = { "Assembly-CSharp", "UnityEngine", "UnityEditor", "Unity.", "netstandard" };
@@ -53,7 +113,6 @@ namespace IndieBuff.Editor
             }
             catch (Exception ex)
             {
-                Debug.Log(ex.Message);
                 error = ex.Message;
                 return false;
             }
@@ -63,7 +122,6 @@ namespace IndieBuff.Editor
         {
             error = string.Empty;
 
-            // First verify all scripts compile
 
             foreach (var (scriptContent, pathName, _) in scriptDataList)
             {
@@ -80,7 +138,6 @@ namespace IndieBuff.Editor
             {
 
                 EditorPrefs.SetInt(ScriptConstants.PENDING_SCRIPTS_COUNT, scriptDataList.Count);
-
 
                 for (int i = 0; i < scriptDataList.Count; i++)
                 {
@@ -167,10 +224,14 @@ namespace IndieBuff.Editor
             )
             .WithSpecificDiagnosticOptions(suppressedDiagnostics);
 
+            var currentAssembly = typeof(DynamicScriptBridge).Assembly;
+            var references = GetRequiredReferences();
+            references.Add(MetadataReference.CreateFromFile(currentAssembly.Location));
+
             var compilation = CSharpCompilation.Create(
                 "DynamicScriptAssembly",
                 new[] { syntaxTree },
-                GetRequiredReferences(),
+                references,
                 compilationOptions
             );
 
@@ -181,6 +242,7 @@ namespace IndieBuff.Editor
                 if (!result.Success)
                 {
                     compilationLog = GetCompilationLogs(result);
+                    Debug.LogError(compilationLog);
                     return null;
                 }
 
@@ -216,59 +278,54 @@ namespace IndieBuff.Editor
 
 
 
-        private static List<ScriptInfo> pendingMonoBehaviours = new();
-
         public static void RegisterMonoBehaviourScript(string content, string filePath, GameObject target = null)
         {
-            pendingMonoBehaviours.Add(new ScriptInfo
-            {
-                Content = content,
-                FilePath = filePath,
-                TargetObject = target
-            });
+
+            ScriptRegistrationManager.Instance.RegisterScript(content, filePath, target);
+
         }
+
 
         public static void ExecuteRuntimeScript(string runtimeCode)
         {
-            pendingMonoBehaviours.Clear();
+            DynamicScriptBridge.Initialize();
 
             if (!ExecuteDynamicScript(runtimeCode, out string error))
             {
                 Debug.LogError($"Failed to execute code: {error}");
                 return;
             }
-
-            // Process the collected scripts
             ProcessPendingScripts();
         }
 
         private static void ProcessPendingScripts()
         {
+
             var scriptsToAttach = new List<(string scriptContent, string pathName, GameObject targetObject)>();
+
+            var pendingMonoBehaviours = ScriptRegistrationManager.Instance.GetPendingScripts();
 
             foreach (var script in pendingMonoBehaviours)
             {
                 if (script.TargetObject != null)
                 {
-                    // This script needs to be attached, use your existing system
                     scriptsToAttach.Add((script.Content, script.FilePath, script.TargetObject));
                 }
                 else
                 {
-                    // Just write to file
                     File.WriteAllText(script.FilePath, script.Content);
                 }
             }
 
             if (scriptsToAttach.Count > 0)
             {
-                Debug.Log(scriptsToAttach.Count);
                 if (!GenerateAndAttachMultipleScripts(
                     scriptsToAttach, out string error))
                 {
                     Debug.LogError($"Failed to generate and attach scripts: {error}");
                 }
             }
+            ScriptRegistrationManager.Instance.ClearScripts();
         }
     }
 }
