@@ -5,6 +5,6 @@ namespace IndieBuff.Editor
 
         private static bool isLocal = false;
 
-        public static string baseAssetPath = isLocal ? "Assets/IndieBuff" : "Packages/com.indiebuff.aiasssistant";
+        public static string baseAssetPath = isLocal ? "Assets/IndieBuff" : "Packages/com.indiebuff.aiassistant";
     }
 }
