@@ -1,7 +1,7 @@
 {
   "name": "com.indiebuff.aiassistant",
   "displayName": "IndieBuff AI Assistant",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "unity": "2022.3",
   "description": "IndieBuff is your personal AI game dev assistant. Speedrun your game development with context aware suggestions, code, and more!",
   "dependencies": {

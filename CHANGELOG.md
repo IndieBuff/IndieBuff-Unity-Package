@@ -1,3 +1,9 @@
+## [1.0.4] - 2024-12-04
+
+### Fixed
+
+- Refresh occasionally caused chat to stop working on Windows OS
+
 ## [1.0.3] - 2024-12-03
 
 ### Fixed
