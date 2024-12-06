@@ -175,7 +175,7 @@ namespace IndieBuff.Editor
             var requestData = new ChatRequest { gameEngine = "unity", conversationId = convoId };
             var jsonPayload = JsonUtility.ToJson(requestData);
 
-            var requestMessage = new HttpRequestMessage(HttpMethod.Patch, "plugin-chat/delete-chat")
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/delete-chat")
             {
                 Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
             };
