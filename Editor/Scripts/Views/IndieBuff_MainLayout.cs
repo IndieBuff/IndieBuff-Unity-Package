@@ -31,7 +31,7 @@ namespace IndieBuff.Editor
 
 
             ShowLoginComponent();
-            IndieBuff_AssetContext.Instance.InitializeAssetCache();
+            IndieBuff_AssetContextUpdater.ScanAssets();
         }
 
         private void ShowLoginComponent()
