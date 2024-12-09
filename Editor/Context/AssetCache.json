@@ -1,0 +1,541 @@
+[
+  {
+    "Name": "IndieBuff_AIResponse.uxml",
+    "Path": "Assets/IndieBuff/Editor/UXML/IndieBuff_AIResponse.uxml",
+    "Type": "VisualTreeAsset",
+    "LastModified": "2024-12-02T21:26:22.0040291-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_DynamicClass.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_DynamicClass.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-02T19:02:14.1843411-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_SelectedContextViewer.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_SelectedContextViewer.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-02T19:03:18.6131228-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_CheckIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_CheckIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-15T20:53:29.77498-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ThumbsUpIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_ThumbsUpIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-04T16:13:37.224433-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "New Material.mat",
+    "Path": "Assets/New Material.mat",
+    "Type": "Material",
+    "LastModified": "2024-12-06T01:30:49.558173-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_User.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Models/IndieBuff_User.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-11-25T19:34:44.3935466-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "GameManager.cs",
+    "Path": "Assets/GameManager.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-05T23:27:30.4000275-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "System.Collections.Immutable.dll",
+    "Path": "Assets/IndieBuff/Plugins/CodeAnalysis/System.Collections.Immutable.dll",
+    "Type": "DefaultAsset",
+    "LastModified": "2024-11-01T21:13:05.634999-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ApiClient.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_ApiClient.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-05T21:53:51.8616967-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_CourierPrimeFont.ttf",
+    "Path": "Assets/IndieBuff/Editor/Resources/Fonts/IndieBuff_CourierPrimeFont.ttf",
+    "Type": "Font",
+    "LastModified": "2024-09-04T20:11:20-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_LoginComponent.uss",
+    "Path": "Assets/IndieBuff/Editor/USS/IndieBuff_LoginComponent.uss",
+    "Type": "StyleSheet",
+    "LastModified": "2024-11-21T01:02:20.7277203-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AddContextComponent.uss",
+    "Path": "Assets/IndieBuff/Editor/USS/IndieBuff_AddContextComponent.uss",
+    "Type": "StyleSheet",
+    "LastModified": "2024-11-18T14:30:51.0872217-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "package.json",
+    "Path": "Assets/IndieBuff/package.json",
+    "Type": "TextAsset",
+    "LastModified": "2024-12-04T00:27:50.6774557-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_TokenManager.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_TokenManager.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-02T19:02:29.6389491-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_TokenData.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Models/IndieBuff_TokenData.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-11-25T19:34:42.8351805-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_DiscordIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_DiscordIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-20T23:45:49.4276497-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_UserInfo.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_UserInfo.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T18:21:19.9695228-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ProfileSettingsComponent.uss",
+    "Path": "Assets/IndieBuff/Editor/USS/IndieBuff_ProfileSettingsComponent.uss",
+    "Type": "StyleSheet",
+    "LastModified": "2024-11-16T15:01:07.7152644-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ChatHistoryIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_ChatHistoryIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-10-30T17:12:34.6828392-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AddContextIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_AddContextIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-16T18:54:51.1598016-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuffConstants.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/IndieBuffConstants.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-08T21:27:13.5010091-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "CHANGELOG.md",
+    "Path": "Assets/IndieBuff/CHANGELOG.md",
+    "Type": "TextAsset",
+    "LastModified": "2024-12-04T00:27:50.6766887-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "Microsoft.CodeAnalysis.CSharp.dll",
+    "Path": "Assets/IndieBuff/Plugins/CodeAnalysis/Microsoft.CodeAnalysis.CSharp.dll",
+    "Type": "DefaultAsset",
+    "LastModified": "2024-12-01T16:48:16.4944644-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ChatModes.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Models/IndieBuff_ChatModes.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-11-25T19:34:37.6663649-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_StopIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_StopIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-25T17:40:36.7129419-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ModelSelectIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_ModelSelectIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-15T20:18:41.4939477-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AIModelSelection.uxml",
+    "Path": "Assets/IndieBuff/Editor/UXML/IndieBuff_AIModelSelection.uxml",
+    "Type": "VisualTreeAsset",
+    "LastModified": "2024-12-02T21:24:40.2293801-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_LinkedInIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_LinkedInIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-20T23:48:15.2464501-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_LogoText.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Images/IndieBuff_LogoText.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-10-22T17:14:08.7459752-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_JockeyOne.ttf",
+    "Path": "Assets/IndieBuff/Editor/Resources/Fonts/IndieBuff_JockeyOne.ttf",
+    "Type": "Font",
+    "LastModified": "2024-09-04T20:11:20-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_NewChatIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_NewChatIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-01T00:25:59.8816786-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_MainLayout.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_MainLayout.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-08T23:34:45.8977153-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_DynamicScriptReloader.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_DynamicScriptReloader.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-01T20:28:18.3235629-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ChatModeIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_ChatModeIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-15T17:25:45.3149583-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_TikTokIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_TikTokIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-20T23:48:26.3970215-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_LogoIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Images/IndieBuff_LogoIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-16T23:03:51.0277351-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AIResponse.uss",
+    "Path": "Assets/IndieBuff/Editor/USS/IndieBuff_AIResponse.uss",
+    "Type": "StyleSheet",
+    "LastModified": "2024-12-01T23:15:33.8102353-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_CopyIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_CopyIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-04T16:11:50.3767729-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_SyntaxHighlighter.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_SyntaxHighlighter.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-11-25T19:34:31.473388-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AuthHandler.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_AuthHandler.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T18:21:19.969054-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AddContextComponent.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_AddContextComponent.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-02T21:23:16.5041146-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ThumbsDownIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_ThumbsDownIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-04T16:15:24.2184486-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ConversationData.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Models/IndieBuff_ConversationData.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-01T19:40:18.5163194-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_XTwitterIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_XTwitterIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-20T23:47:46.1329499-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_LoginPage.uxml",
+    "Path": "Assets/IndieBuff/Editor/UXML/IndieBuff_LoginPage.uxml",
+    "Type": "VisualTreeAsset",
+    "LastModified": "2024-12-02T21:19:02.9994014-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "LICENSE.md",
+    "Path": "Assets/IndieBuff/LICENSE.md",
+    "Type": "TextAsset",
+    "LastModified": "2024-12-02T19:40:52.1914625-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_SendButtonIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_SendButtonIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-01T00:47:56.9773694-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_Loader.uxml",
+    "Path": "Assets/IndieBuff/Editor/UXML/IndieBuff_Loader.uxml",
+    "Type": "VisualTreeAsset",
+    "LastModified": "2024-11-19T00:08:42.8236571-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_EndpointData.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Models/IndieBuff_EndpointData.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T20:46:53.3123905-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ModelSelectComponent.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_ModelSelectComponent.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T18:21:19.9706394-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_LoginComponent.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_LoginComponent.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T18:21:19.9700404-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_LoadingBar.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_LoadingBar.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-11-25T19:34:54.0078667-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AssetContext.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_AssetContext.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-08T23:34:01.4315059-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_CommandModeIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_CommandModeIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-15T17:20:07.7932427-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AIModelSelection.uss",
+    "Path": "Assets/IndieBuff/Editor/USS/IndieBuff_AIModelSelection.uss",
+    "Type": "StyleSheet",
+    "LastModified": "2024-11-16T00:05:06.3354926-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ChatHistoryComponent.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_ChatHistoryComponent.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T18:21:19.9698986-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "System.Reflection.Metadata.dll",
+    "Path": "Assets/IndieBuff/Plugins/CodeAnalysis/System.Reflection.Metadata.dll",
+    "Type": "DefaultAsset",
+    "LastModified": "2024-11-01T21:13:05.634999-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff.Editor.asmdef",
+    "Path": "Assets/IndieBuff/Editor/IndieBuff.Editor.asmdef",
+    "Type": "AssemblyDefinitionAsset",
+    "LastModified": "2024-12-02T20:25:45.3413169-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_MarkdownParser.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_MarkdownParser.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T18:21:19.9693501-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_DynamicScriptUtility.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_DynamicScriptUtility.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T18:21:19.9691986-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AddContextComponent.uxml",
+    "Path": "Assets/IndieBuff/Editor/UXML/IndieBuff_AddContextComponent.uxml",
+    "Type": "VisualTreeAsset",
+    "LastModified": "2024-12-02T21:22:58.8221162-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ProfileSettingsComponent.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_ProfileSettingsComponent.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-02T21:27:46.6582446-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ProfileButtonIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_ProfileButtonIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-01T00:36:08.1756073-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ChatSettingsComponent.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_ChatSettingsComponent.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-11-27T17:30:05.1189322-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ProfileSettingsComponent.uxml",
+    "Path": "Assets/IndieBuff/Editor/UXML/IndieBuff_ProfileSettingsComponent.uxml",
+    "Type": "VisualTreeAsset",
+    "LastModified": "2024-12-02T21:27:33.7604288-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_LockIcon.png",
+    "Path": "Assets/IndieBuff/Editor/Resources/Icons/IndieBuff_LockIcon.png",
+    "Type": "Texture2D",
+    "LastModified": "2024-11-15T20:48:33.6253488-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_MainLayout.uxml",
+    "Path": "Assets/IndieBuff/Editor/UXML/IndieBuff_MainLayout.uxml",
+    "Type": "VisualTreeAsset",
+    "LastModified": "2024-10-22T16:46:25.8394002-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ChatComponent.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Views/IndieBuff_ChatComponent.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-03T18:21:19.9697016-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ChatComponent.uss",
+    "Path": "Assets/IndieBuff/Editor/USS/IndieBuff_ChatComponent.uss",
+    "Type": "StyleSheet",
+    "LastModified": "2024-12-03T18:21:19.9708733-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ContextBuilder.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Controllers/IndieBuff_ContextBuilder.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-02T19:02:10.9433776-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "System.Runtime.CompilerServices.Unsafe.dll",
+    "Path": "Assets/IndieBuff/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll",
+    "Type": "DefaultAsset",
+    "LastModified": "2024-11-01T21:13:05.634999-03:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_AssetNode.cs",
+    "Path": "Assets/IndieBuff/Editor/Scripts/Models/IndieBuff_AssetNode.cs",
+    "Type": "MonoScript",
+    "LastModified": "2024-12-08T23:21:42.4969488-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "README.md",
+    "Path": "Assets/IndieBuff/README.md",
+    "Type": "TextAsset",
+    "LastModified": "2024-12-02T19:44:45.854447-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "Microsoft.CodeAnalysis.dll",
+    "Path": "Assets/IndieBuff/Plugins/CodeAnalysis/Microsoft.CodeAnalysis.dll",
+    "Type": "DefaultAsset",
+    "LastModified": "2024-12-01T16:48:10.9967361-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "SampleScene.unity",
+    "Path": "Assets/Scenes/SampleScene.unity",
+    "Type": "SceneAsset",
+    "LastModified": "2024-12-02T20:32:17.7284578-04:00",
+    "RelevancyScore": 1.0
+  },
+  {
+    "Name": "IndieBuff_ChatComponent.uxml",
+    "Path": "Assets/IndieBuff/Editor/UXML/IndieBuff_ChatComponent.uxml",
+    "Type": "VisualTreeAsset",
+    "LastModified": "2024-12-03T17:31:15.1024921-04:00",
+    "RelevancyScore": 1.0
+  }
+]
