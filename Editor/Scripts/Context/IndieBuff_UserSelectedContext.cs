@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
@@ -21,7 +22,6 @@ namespace IndieBuff.Editor
         {
             _contextObjects = new List<UnityEngine.Object>();
         }
-
 
         private static IndieBuff_UserSelectedContext _instance;
 
@@ -67,10 +67,13 @@ namespace IndieBuff.Editor
             return true;
         }
 
-        internal Dictionary<string, object> BuildUserContext()
+        internal async Task<Dictionary<string, object>> BuildUserContext()
         {
             IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects, 1000);
             builder.StartContextBuild();
+
+            await Task.Delay(100);
+
 
             return builder.GetContextData();
         }

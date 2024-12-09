@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Newtonsoft.Json;
 
 namespace IndieBuff.Editor
@@ -21,17 +22,20 @@ namespace IndieBuff.Editor
             }
         }
 
-        public void BuildAllContext(string prompt)
+        public async void BuildAllContext(string prompt)
         {
             // build user selected context
-            Dictionary<string, object> selectionMap = IndieBuff_UserSelectedContext.Instance.BuildUserContext();
+            Dictionary<string, object> selectionMap = await IndieBuff_UserSelectedContext.Instance.BuildUserContext();
+            Debug.Log(selectionMap.Count);
 
 
-            // build code context
+            // Build code context (Placeholder for now)
+            Dictionary<string, object> codeMap = new Dictionary<string, object>();
 
-            // build scene context
+            // Build scene context (Placeholder for now)
+            Dictionary<string, object> sceneMap = new Dictionary<string, object>();
 
-            // build asset context
+            // Build asset context
             Dictionary<string, object> assetMap = new Dictionary<string, object>();
 
             var settings = new JsonSerializerSettings
@@ -49,11 +53,8 @@ namespace IndieBuff.Editor
             };
 
             ContextObjectString = JsonConvert.SerializeObject(new { context = contextData }, settings);
-
-        }
-
-        private void WriteContextToString()
-        {
+            string filePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/ContextOutput.json";
+            System.IO.File.WriteAllText(filePath, ContextObjectString);
 
         }
     }

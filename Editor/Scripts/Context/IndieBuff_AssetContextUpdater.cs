@@ -44,7 +44,6 @@ namespace IndieBuff.Editor
             }
 
             SaveCache();
-            Debug.Log("Asset tree indexed and saved.");
         }
 
         private static void LoadCache()
