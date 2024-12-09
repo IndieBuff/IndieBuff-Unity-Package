@@ -79,7 +79,7 @@ namespace IndieBuff.Editor
             {
                 if (obj is not DefaultAsset && !processedObjects.Contains(obj))
                 {
-                    IndieBuff_ContextBuilder.Instance.AddContextObject(obj);
+                    IndieBuff_UserSelectedContext.Instance.AddContextObject(obj);
                     processedObjects.Add(obj);
                 }
             }
@@ -120,7 +120,7 @@ namespace IndieBuff.Editor
             {
                 if (!processedObjects.Contains(objectReference))
                 {
-                    IndieBuff_ContextBuilder.Instance.AddContextObject(objectReference);
+                    IndieBuff_UserSelectedContext.Instance.AddContextObject(objectReference);
                     processedObjects.Add(objectReference);
                 }
 
@@ -134,7 +134,7 @@ namespace IndieBuff.Editor
 
         public void ClearContextItems()
         {
-            IndieBuff_ContextBuilder.Instance.ClearContextObjects();
+            IndieBuff_UserSelectedContext.Instance.ClearContextObjects();
             processedObjects.Clear();
         }
 

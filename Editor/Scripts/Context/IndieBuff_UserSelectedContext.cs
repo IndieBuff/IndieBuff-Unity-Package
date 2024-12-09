@@ -12,6 +12,17 @@ namespace IndieBuff.Editor
     {
         internal Action onUserSelectedContextUpdated;
         private List<UnityEngine.Object> _contextObjects;
+        internal List<UnityEngine.Object> UserContextObjects
+        {
+            get { return _contextObjects; }
+        }
+
+        private IndieBuff_UserSelectedContext()
+        {
+            _contextObjects = new List<UnityEngine.Object>();
+        }
+
+
         private static IndieBuff_UserSelectedContext _instance;
 
         internal static IndieBuff_UserSelectedContext Instance

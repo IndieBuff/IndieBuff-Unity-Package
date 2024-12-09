@@ -90,7 +90,7 @@ namespace IndieBuff.Editor
                 loginComponent = null;
             }
 
-            IndieBuff_ContextBuilder.Instance.ClearContextObjects();
+            IndieBuff_UserSelectedContext.Instance.ClearContextObjects();
         }
 
         private void OnDestroy()

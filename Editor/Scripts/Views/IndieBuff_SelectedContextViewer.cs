@@ -16,7 +16,7 @@ namespace IndieBuff.Editor
 
             DisplaySelectedContextItems();
 
-            IndieBuff_ContextBuilder.Instance.onContextUpdated += OnContextUpdated;
+            IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += OnContextUpdated;
         }
 
         private void OnContextUpdated()
@@ -28,9 +28,9 @@ namespace IndieBuff.Editor
 
         private void DisplaySelectedContextItems()
         {
-            for (int i = 0; i < IndieBuff_ContextBuilder.Instance.ContextObjects.Count; i++)
+            for (int i = 0; i < IndieBuff_UserSelectedContext.Instance.UserContextObjects.Count; i++)
             {
-                var contextItem = IndieBuff_ContextBuilder.Instance.ContextObjects[i];
+                var contextItem = IndieBuff_UserSelectedContext.Instance.UserContextObjects[i];
 
                 VisualElement contextListItemContainer = new VisualElement();
                 contextListItemContainer.AddToClassList("context-list-item-container");
@@ -64,9 +64,9 @@ namespace IndieBuff.Editor
 
         private void RemoveContextItem(int index)
         {
-            if (index >= 0 && index < IndieBuff_ContextBuilder.Instance.ContextObjects.Count)
+            if (index >= 0 && index < IndieBuff_UserSelectedContext.Instance.UserContextObjects.Count)
             {
-                IndieBuff_ContextBuilder.Instance.RemoveContextObject(index);
+                IndieBuff_UserSelectedContext.Instance.RemoveContextObject(index);
             }
         }
     }

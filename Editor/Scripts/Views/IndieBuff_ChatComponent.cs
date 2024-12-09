@@ -189,9 +189,9 @@ namespace IndieBuff.Editor
             clearContextButton = root.Q<Button>("ClearContextButton");
             clearContextButton.style.visibility = Visibility.Hidden;
 
-            IndieBuff_ContextBuilder.Instance.onContextUpdated += () =>
+            IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += () =>
             {
-                if (IndieBuff_ContextBuilder.Instance.ContextObjects.Count > 0)
+                if (IndieBuff_UserSelectedContext.Instance.UserContextObjects.Count > 0)
                 {
                     clearContextButton.style.visibility = Visibility.Visible;
                 }
@@ -649,7 +649,7 @@ namespace IndieBuff.Editor
 
         private void ParseGameObjectContext(string prompt)
         {
-            IndieBuff_ContextBuilder.Instance.StartContextBuild(prompt);
+            IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
         }
         private async void OnLogoutClicked()
         {
