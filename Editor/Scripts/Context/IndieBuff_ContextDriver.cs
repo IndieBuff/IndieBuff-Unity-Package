@@ -26,8 +26,6 @@ namespace IndieBuff.Editor
         {
             // build user selected context
             Dictionary<string, object> selectionMap = await IndieBuff_UserSelectedContext.Instance.BuildUserContext();
-            Debug.Log(selectionMap.Count);
-
 
             // Build code context (Placeholder for now)
             Dictionary<string, object> codeMap = new Dictionary<string, object>();
@@ -36,7 +34,8 @@ namespace IndieBuff.Editor
             Dictionary<string, object> sceneMap = new Dictionary<string, object>();
 
             // Build asset context
-            Dictionary<string, object> assetMap = new Dictionary<string, object>();
+
+            Dictionary<string, object> assetMap = await IndieBuff_AssetContextRanker.Instance.BuildRankedAssetContext(prompt);
 
             var settings = new JsonSerializerSettings
             {

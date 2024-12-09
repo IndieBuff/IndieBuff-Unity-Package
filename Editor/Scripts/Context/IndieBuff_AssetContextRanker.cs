@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using UnityEditor;
+using System.Threading.Tasks;
 
 namespace IndieBuff.Editor
 {
@@ -78,7 +80,20 @@ namespace IndieBuff.Editor
         "a", "an", "the", "and", "or", "but", "of", "on", "in", "to", "with", "for", "at", "by", "from", "as", "is", "it", "this", "that", "these", "those", "be", "are", "was", "were", "am", "has", "have", "had", "will", "would", "can", "could", "shall", "should", "do", "does", "did"
     };
 
-        public void BuildRankedAssets(string prompt)
+
+        private static IndieBuff_AssetContextRanker _instance;
+        internal static IndieBuff_AssetContextRanker Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new IndieBuff_AssetContextRanker();
+                }
+                return _instance;
+            }
+        }
+        internal async Task<Dictionary<string, object>> BuildRankedAssetContext(string prompt)
         {
 
             var queryWords = PrepQueryWords(prompt);
@@ -95,12 +110,17 @@ namespace IndieBuff.Editor
             List<AssetNode> rankedAssets = assetItems
                 .OrderByDescending(asset => asset.RelevancyScore).ToList();
 
-            for (int i = 0; i < 5; i++)
-            {
-                var asset = rankedAssets[i];
-                Debug.Log(asset.Name + " - " + asset.Type + " - " + asset.RelevancyScore);
-            }
+            List<UnityEngine.Object> _contextObjects = rankedAssets
+                .Select(asset => AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(asset.Path))
+                .Where(obj => obj != null)
+                .ToList();
 
+            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects, 1000);
+            builder.StartContextBuild();
+
+            await Task.Delay(100);
+
+            return builder.GetContextData();
         }
 
         private float CalculateTypeKeywordScore(string type, string[] queryWords)
