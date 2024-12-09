@@ -99,8 +99,8 @@ namespace IndieBuff.Editor
             processedObjects.Clear();
             prefabContentsMap.Clear();
             loadedPrefabContents.Clear();
-            IndieBuff_AssetContextRanker assetRanking = new IndieBuff_AssetContextRanker();
-            assetRanking.BuildRankedAssets(prompt);
+            // IndieBuff_AssetContextRanker assetRanking = new IndieBuff_AssetContextRanker();
+            // assetRanking.BuildRankedAssets(prompt);
 
             foreach (var obj in _contextObjects)
             {
