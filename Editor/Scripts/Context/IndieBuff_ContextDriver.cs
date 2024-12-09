@@ -21,6 +21,14 @@ namespace IndieBuff.Editor
 
         public void BuildAllContext(string prompt)
         {
+            // build user selected context
+
+
+            // build code context
+
+            // build scene context
+
+            // build asset context
 
         }
 

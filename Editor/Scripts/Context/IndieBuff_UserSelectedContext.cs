@@ -38,7 +38,6 @@ namespace IndieBuff.Editor
             return false;
         }
 
-
         internal bool RemoveContextObject(int index)
         {
             if (index >= 0 && index < _contextObjects.Count)
@@ -55,6 +54,14 @@ namespace IndieBuff.Editor
             _contextObjects.Clear();
             onUserSelectedContextUpdated?.Invoke();
             return true;
+        }
+
+        internal Dictionary<string, object> BuildUserContext()
+        {
+            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects, 1000);
+            builder.StartContextBuild();
+
+            return builder.GetContextData();
         }
 
     }

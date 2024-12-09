@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
@@ -35,7 +36,7 @@ namespace IndieBuff.Editor
             _maxTokenCount = maxTokenCount;
         }
 
-        internal void StartContextBuild(string prompt)
+        internal void StartContextBuild()
         {
             isProcessing = true;
             contextData = new Dictionary<string, object>();
@@ -163,7 +164,7 @@ namespace IndieBuff.Editor
         {
             if (!isProcessing || objectsToProcess == null)
             {
-                //CompleteProcessing();
+                CompleteProcessing();
                 return;
             }
 
@@ -182,15 +183,63 @@ namespace IndieBuff.Editor
 
                 if (objectsToProcess.Count == 0)
                 {
-                    //CompleteProcessing();
+                    CompleteProcessing();
                 }
             }
             catch (Exception e)
             {
                 Debug.LogError($"Error in ProcessObjectsQueue: {e.Message}\n{e.StackTrace}");
-                //CompleteProcessing(); 
+                CompleteProcessing();
             }
         }
+
+
+        private void CompleteProcessing()
+        {
+            isProcessing = false;
+            EditorApplication.update -= ProcessObjectsQueue;
+
+            try
+            {
+                // Unload all prefab contents
+                foreach (var prefabContent in loadedPrefabContents)
+                {
+                    if (prefabContent != null)
+                    {
+                        string prefabPath = AssetDatabase.GetAssetPath(prefabContent);
+                        if (prefabPath.EndsWith(".PREFAB", System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            PrefabUtility.UnloadPrefabContents(prefabContent);
+                        }
+
+                    }
+                }
+
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error completing context processing: {e.Message}\n{e.StackTrace}");
+            }
+            finally
+            {
+                processedObjects.Clear();
+                prefabContentsMap.Clear();
+                loadedPrefabContents.Clear();
+            }
+        }
+
+        private void OnDestroy()
+        {
+
+            foreach (var prefabContent in loadedPrefabContents)
+            {
+                if (prefabContent != null)
+                {
+                    PrefabUtility.UnloadPrefabContents(prefabContent);
+                }
+            }
+        }
+
 
         private void ProcessGameObject(GameObject gameObject)
         {
@@ -381,7 +430,6 @@ namespace IndieBuff.Editor
 
             return scriptData;
         }
-
 
         private Dictionary<string, object> GetAnimatorProperties(Animator animator)
         {
@@ -947,5 +995,10 @@ namespace IndieBuff.Editor
                    (type.IsArray && IsSerializableValue(type.GetElementType()));
         }
 
+
+        public Dictionary<string, object> GetContextData()
+        {
+            return contextData;
+        }
     }
 }
