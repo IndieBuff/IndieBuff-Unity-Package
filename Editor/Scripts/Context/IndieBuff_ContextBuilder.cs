@@ -48,7 +48,6 @@ namespace IndieBuff.Editor
             if (contextObject is not DefaultAsset && !_contextObjects.Contains(contextObject))
             {
                 _contextObjects.Add(contextObject);
-                SaveToSessionState();
                 onContextUpdated?.Invoke();
                 return true;
             }
@@ -61,46 +60,10 @@ namespace IndieBuff.Editor
             if (index >= 0 && index < _contextObjects.Count)
             {
                 _contextObjects.RemoveAt(index);
-                SaveToSessionState();
                 onContextUpdated?.Invoke();
                 return true;
             }
             return false;
-        }
-
-        private void SaveToSessionState()
-        {
-            // Convert objects to asset GUIDs
-            string[] guids = _contextObjects
-                .Select(obj => AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(obj)))
-                .ToArray();
-
-            string jsonData = JsonUtility.ToJson(new SerializableContextData { objectGuids = guids });
-            SessionState.SetString(CurrentContextItemsKey, jsonData);
-        }
-
-        private void LoadFromSessionState()
-        {
-            string jsonData = SessionState.GetString(CurrentContextItemsKey, "");
-            if (!string.IsNullOrEmpty(jsonData))
-            {
-                SerializableContextData data = JsonUtility.FromJson<SerializableContextData>(jsonData);
-                _contextObjects.Clear();
-
-                foreach (string guid in data.objectGuids)
-                {
-                    string path = AssetDatabase.GUIDToAssetPath(guid);
-                    if (!string.IsNullOrEmpty(path))
-                    {
-                        UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
-                        if (obj != null)
-                        {
-                            _contextObjects.Add(obj);
-                        }
-                    }
-                }
-                onContextUpdated?.Invoke();
-            }
         }
 
         internal bool ClearContextObjects()
@@ -123,7 +86,6 @@ namespace IndieBuff.Editor
                 if (_instance == null)
                 {
                     _instance = new IndieBuff_ContextBuilder();
-                    //_instance.LoadFromSessionState();
                 }
                 return _instance;
             }
@@ -215,14 +177,6 @@ namespace IndieBuff.Editor
                     ["properties"] = GetSerializedProperties(obj)
                 };
 
-                /*SceneExtractor test = new SceneExtractor();
-                test.StartContextBuild();*/
-
-                // if (obj is SceneAsset sceneObj)
-                // {
-                //     IndieBuff_SceneExtractor test = new IndieBuff_SceneExtractor();
-                //     test.StartContextBuild();
-                // }
                 if (obj is ScriptableObject scriptableObj)
                 {
                     // Get the script content if it's a MonoScript
@@ -232,12 +186,6 @@ namespace IndieBuff.Editor
 
                         if (!string.IsNullOrEmpty(scriptPath))
                         {
-
-                            /*var Files = new List<string>();
-                            foreach (string line in File.ReadLines(scriptPath))
-                            {
-                                Files.Add(line);
-                            }*/
 
                             objectData["type"] = "MonoScript";
                             objectData["scriptPath"] = scriptPath;
@@ -641,9 +589,6 @@ namespace IndieBuff.Editor
             return properties;
         }
 
-
-
-
         private Dictionary<string, object> GetAnimatorControllerProperties(UnityEditor.Animations.AnimatorController animatorController)
         {
             var properties = new Dictionary<string, object>();
@@ -768,8 +713,6 @@ namespace IndieBuff.Editor
 
             return properties;
         }
-
-        //((List<Dictionary<string, object>>)exitNodeData["transitions"]).Add(exitTransitionData);
 
         private Dictionary<string, object> GetSerializedProperties(object obj)
         {
