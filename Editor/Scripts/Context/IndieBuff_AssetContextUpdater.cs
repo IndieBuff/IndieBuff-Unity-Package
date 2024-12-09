@@ -26,7 +26,7 @@ namespace IndieBuff.Editor
 
             foreach (var path in allAssetPaths)
             {
-                if (Directory.Exists(path) || path.EndsWith(".meta"))
+                if (Directory.Exists(path) || path.EndsWith(".meta") || path.StartsWith("Assets/IndieBuff/"))
                     continue;
 
                 if (path.StartsWith("Assets/"))
@@ -36,7 +36,8 @@ namespace IndieBuff.Editor
                         Name = Path.GetFileName(path),
                         Path = path,
                         Type = AssetDatabase.GetMainAssetTypeAtPath(path)?.Name ?? "Unknown",
-                        LastModified = File.GetLastWriteTime(path)
+                        LastModified = File.GetLastWriteTime(path),
+                        Added = DateTime.Now,
                     };
                     assetItems.Add(child);
                 }
@@ -76,7 +77,8 @@ namespace IndieBuff.Editor
                     Name = Path.GetFileName(path),
                     Path = path,
                     Type = AssetDatabase.GetMainAssetTypeAtPath(path)?.Name ?? "Unknown",
-                    LastModified = File.GetLastWriteTime(path)
+                    LastModified = File.GetLastWriteTime(path),
+                    Added = DateTime.Now,
                 };
                 assetItems.Add(newNode);
             }

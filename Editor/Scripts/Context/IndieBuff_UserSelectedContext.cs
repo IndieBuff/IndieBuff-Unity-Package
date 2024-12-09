@@ -69,7 +69,7 @@ namespace IndieBuff.Editor
 
         internal async Task<Dictionary<string, object>> BuildUserContext()
         {
-            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects, 1000);
+            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects, 2000);
             builder.StartContextBuild();
 
             await Task.Delay(100);

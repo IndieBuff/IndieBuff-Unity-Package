@@ -47,6 +47,7 @@ namespace IndieBuff.Editor
 
             foreach (var obj in _contextObjects)
             {
+                if (currentTokenCount >= _maxTokenCount) break;
                 if (obj is GameObject gameObject)
                 {
                     if (PrefabUtility.IsPartOfPrefabAsset(gameObject))
@@ -100,6 +101,34 @@ namespace IndieBuff.Editor
             EditorApplication.update += ProcessObjectsQueue;
         }
 
+        private int EstimateTokenCount(object obj)
+        {
+            try
+            {
+                string jsonString = JsonConvert.SerializeObject(obj);
+                return (int)Math.Ceiling(jsonString.Length / 4.0);
+            }
+            catch (Exception)
+            {
+                Debug.LogError("something wrong in estimation");
+                return 2;
+            }
+        }
+
+        private void AddToContext(string key, object value)
+        {
+            int newItemTokenCount = EstimateTokenCount(value);
+
+            if (currentTokenCount + newItemTokenCount > _maxTokenCount)
+            {
+                currentTokenCount = _maxTokenCount;
+                return;
+            }
+
+            contextData[key] = value;
+            currentTokenCount += newItemTokenCount;
+        }
+
 
         private void ProcessGenericUnityObject(UnityEngine.Object obj)
         {
@@ -137,11 +166,6 @@ namespace IndieBuff.Editor
                     var scriptPath = AssetDatabase.GetAssetPath(monoScript);
                     if (!string.IsNullOrEmpty(scriptPath))
                     {
-                        /*var Files = new List<string>();
-                        foreach (string line in File.ReadLines(scriptPath))
-                        {
-                            Files.Add(line);
-                        }*/
 
                         objectData["type"] = "MonoScript";
                         objectData["scriptPath"] = scriptPath;
@@ -153,7 +177,7 @@ namespace IndieBuff.Editor
                     objectData["properties"] = GetAnimatorControllerProperties(animator);
                 }
 
-                contextData[obj.name] = objectData;
+                AddToContext(obj.name, objectData);
             }
             catch (Exception e)
             {
@@ -289,7 +313,8 @@ namespace IndieBuff.Editor
                 }
 
                 string key = GetUniqueGameObjectKey(objectToProcess);
-                contextData[key] = gameObjectData;
+                AddToContext(key, gameObjectData);
+
 
                 // Process children
                 Transform transform = objectToProcess.transform;

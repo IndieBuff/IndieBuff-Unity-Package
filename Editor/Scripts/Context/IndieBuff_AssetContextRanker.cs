@@ -102,7 +102,7 @@ namespace IndieBuff.Editor
             foreach (var asset in assetItems)
             {
                 float typeScore = CalculateTypeKeywordScore(asset.Type, queryWords);
-                float timeScore = CalculateRecencyScore(asset.LastModified);
+                float timeScore = CalculateRecencyScore(asset.LastModified, asset.Added);
                 float nameScore = CalculateNameScore(asset.Name, queryWords);
                 asset.RelevancyScore = 1.0f + typeScore + timeScore + nameScore;
             }
@@ -145,15 +145,36 @@ namespace IndieBuff.Editor
         }
 
 
-        private float CalculateRecencyScore(DateTime lastModified)
+        private float CalculateRecencyScore(DateTime lastModified, DateTime added)
         {
 
             TimeSpan timeSinceModified = DateTime.UtcNow - lastModified;
+            TimeSpan timeSinceAdded = DateTime.UtcNow - added;
 
+            float modifiedScore;
             if (timeSinceModified.TotalDays > 7)
-                return 0f;
-            float normalizedTime = (float)(timeSinceModified.TotalDays / 7);
-            return (float)Math.Cos(normalizedTime * Math.PI) * 0.5f + 0.5f;
+            {
+                modifiedScore = 0f;
+            }
+            else
+            {
+                modifiedScore = (float)(timeSinceModified.TotalDays / 7);
+            }
+
+            float addedScore;
+            if (timeSinceAdded.TotalDays > 7)
+            {
+                addedScore = 0f;
+            }
+            else
+            {
+                addedScore = (float)(timeSinceAdded.TotalDays / 7);
+            }
+
+            float cosModifyScore = (float)Math.Cos(modifiedScore * Math.PI) * 0.5f + 0.5f;
+            float cosAddedScore = (float)Math.Cos(addedScore * Math.PI) * 0.5f + 0.5f;
+
+            return cosModifyScore + cosAddedScore;
         }
         private string[] PrepQueryWords(string prompt)
         {
