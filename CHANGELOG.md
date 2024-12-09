@@ -1,3 +1,15 @@
+## [1.1.0] - 2024-12-09
+
+### Feature
+
+- Asset database context awareness
+- Scene context awareness
+- Tree sitter to get general codebase context awareness
+
+### Fixed
+
+- Couldn't delete chats on Windows OS
+
 ## [1.0.4] - 2024-12-04
 
 ### Fixed
