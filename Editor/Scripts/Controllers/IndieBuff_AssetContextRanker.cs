@@ -142,7 +142,6 @@ namespace IndieBuff.Editor
                 .Where(word => !fillerWords.Contains(word))
                 .ToArray();
 
-
         }
     }
 }

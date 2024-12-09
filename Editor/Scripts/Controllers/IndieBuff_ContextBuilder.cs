@@ -129,7 +129,7 @@ namespace IndieBuff.Editor
             }
         }
 
-        internal void StartContextBuild()
+        internal void StartContextBuild(string prompt)
         {
             isProcessing = true;
             contextData = new Dictionary<string, object>();
@@ -137,6 +137,8 @@ namespace IndieBuff.Editor
             processedObjects.Clear();
             prefabContentsMap.Clear();
             loadedPrefabContents.Clear();
+            IndieBuff_AssetContextRanker assetRanking = new IndieBuff_AssetContextRanker();
+            assetRanking.BuildRankedAssets(prompt);
 
             foreach (var obj in _contextObjects)
             {

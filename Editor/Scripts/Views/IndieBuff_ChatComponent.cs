@@ -553,7 +553,7 @@ namespace IndieBuff.Editor
 
             var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
             parser.UseLoader(loadingBar);
-            ParseGameObjectContext();
+            ParseGameObjectContext(userMessage);
 
             cts = new CancellationTokenSource();
 
@@ -585,7 +585,7 @@ namespace IndieBuff.Editor
 
             var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
             parser.UseLoader(loadingBar);
-            ParseGameObjectContext();
+            ParseGameObjectContext(userMessage);
 
             cts = new CancellationTokenSource();
             try
@@ -647,9 +647,9 @@ namespace IndieBuff.Editor
 
         }
 
-        private void ParseGameObjectContext()
+        private void ParseGameObjectContext(string prompt)
         {
-            IndieBuff_ContextBuilder.Instance.StartContextBuild();
+            IndieBuff_ContextBuilder.Instance.StartContextBuild(prompt);
         }
         private async void OnLogoutClicked()
         {
