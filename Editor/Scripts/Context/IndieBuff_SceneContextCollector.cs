@@ -27,7 +27,7 @@ namespace IndieBuff.Editor
                 if (cachedMetadata != null) return cachedMetadata;
             }
 
-            var metadata = await ProcessSceneMetadata(scenePath);
+            var metadata = ProcessSceneMetadata(scenePath);
             if (metadata != null)
             {
                 await CacheMetadata(scenePath, sceneGuid, metadata);
@@ -81,7 +81,7 @@ namespace IndieBuff.Editor
             return metadata.LastModified >= sceneTimestamp;
         }
 
-        private static async Task<IndieBuff_SceneMetadata> ProcessSceneMetadata(string scenePath)
+        private static IndieBuff_SceneMetadata ProcessSceneMetadata(string scenePath)
         {
             var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (!activeScene.IsValid() || !activeScene.isLoaded || activeScene.path != scenePath)

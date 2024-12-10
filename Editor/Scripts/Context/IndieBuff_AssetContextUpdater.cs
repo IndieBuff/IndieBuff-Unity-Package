@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,6 +15,9 @@ namespace IndieBuff.Editor
         private static readonly string CacheFilePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/AssetCache.json";
         public static List<IndieBuff_AssetNode> assetItems = new List<IndieBuff_AssetNode>();
         public static Action onAssetContextUpdated;
+
+        private static ProjectScanData currentScanData;
+        private static readonly string scanOutputPath = IndieBuffConstants.baseAssetPath + "/Editor/Context/ProjectScan.json";
 
         static IndieBuff_AssetContextUpdater()
         {
@@ -104,12 +109,111 @@ namespace IndieBuff.Editor
             onAssetContextUpdated?.Invoke();
         }
 
+        private static async void ProcessChangedFiles(string[] changedFiles, string[] deletedFiles)
+        {
+            try
+            {
+                // Load existing scan data
+                LoadCurrentScanData();
+
+                if (currentScanData == null)
+                {
+                    return;
+                }
+
+                var projectPath = Application.dataPath;
+                var projectScanner = new ProjectScanner();
+
+                // Process changed/new files
+                var updatedData = await projectScanner.ScanFiles(changedFiles.ToList(), projectPath);
+
+                // Update the current scan data with new information
+                foreach (var kvp in updatedData.FileSymbols)
+                {
+                    currentScanData.FileSymbols[kvp.Key] = kvp.Value;
+                }
+
+                // Update reference counts
+                foreach (var kvp in updatedData.ReferenceCount)
+                {
+                    if (currentScanData.ReferenceCount.ContainsKey(kvp.Key))
+                    {
+                        currentScanData.ReferenceCount[kvp.Key] += kvp.Value;
+                    }
+                    else
+                    {
+                        currentScanData.ReferenceCount[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                // Remove deleted files
+                foreach (var deletedFile in deletedFiles)
+                {
+                    var relativePath = Path.GetRelativePath(projectPath, deletedFile);
+                    currentScanData.FileSymbols.Remove(relativePath);
+                    // don't remove reference counts as they might still be valid from other files
+                }
+
+                SaveCurrentScanData();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error processing changed files: {ex}");
+            }
+        }
+
+        private static void LoadCurrentScanData()
+        {
+            try
+            {
+                if (File.Exists(scanOutputPath))
+                {
+                    var json = File.ReadAllText(scanOutputPath);
+                    currentScanData = JsonConvert.DeserializeObject<ProjectScanData>(json);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error loading scan data: {ex}");
+                currentScanData = null;
+            }
+        }
+
+        private static void SaveCurrentScanData()
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(currentScanData);
+                File.WriteAllText(scanOutputPath, json);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error saving scan data: {ex}");
+            }
+        }
+
         static void OnPostprocessAllAssets(
         string[] importedAssets,
         string[] deletedAssets,
         string[] movedAssets,
         string[] movedFromAssetPaths)
         {
+
+            var csFiles = importedAssets
+                .Concat(movedAssets)
+                .Where(path => path.EndsWith(".cs"))
+                .ToArray();
+
+            var deletedFiles = deletedAssets
+                .Concat(movedFromAssetPaths)
+                .Where(path => path.EndsWith(".cs"))
+                .ToArray();
+
+            if (csFiles.Length > 0 || deletedFiles.Length > 0)
+            {
+                ProcessChangedFiles(csFiles, deletedFiles);
+            }
+
             foreach (var asset in importedAssets)
             {
                 if (asset == CacheFilePath) continue; // Ignore cache file
