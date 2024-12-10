@@ -256,6 +256,7 @@ namespace IndieBuff.Editor
 
         public async Task<Dictionary<string, object>> QueryContext(string query, int maxResults = 10)
         {
+            await Task.Delay(10);
             var results = new List<IndieBuff_SearchResult>();
             var finalResults = new Dictionary<string, object>();
             if (string.IsNullOrEmpty(query)) return finalResults;
