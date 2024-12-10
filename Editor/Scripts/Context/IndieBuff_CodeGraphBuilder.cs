@@ -33,7 +33,7 @@ namespace IndieBuff.Editor
                 referenceCount[kvp.Key] = kvp.Value;
             }
 
-            var rankGraph = new FileRankGraph();
+            var rankGraph = new IndieBuff_CodeFileRankGraph();
             var seenDefinitions = new Dictionary<string, (string File, double Weight)>();
 
             foreach (var (relativePath, symbolList) in fileSymbols)
