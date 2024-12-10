@@ -164,7 +164,7 @@ namespace IndieBuff.Editor
                 var componentName = component.GetType().Name;
                 metadata.ComponentTypes.Add(componentName);
 
-                var objectId = SerializedObjectIdentifier.FromObject(component);
+                var objectId = IndieBuff_SerializedObjectIdentifier.FromObject(component);
                 objectId.componentName = componentName;
                 metadata.Objects.Add(objectId);
             }
@@ -377,41 +377,6 @@ namespace IndieBuff.Editor
             }
         }
 
-
-    }
-
-    [Serializable]
-    public struct SerializedObjectIdentifier
-    {
-        // Maintain all necessary fields
-        public string assetGuid;      // GUID of the containing asset
-        public long localIdentifier;  // Local ID within the asset
-        public string componentName;  // Type name for components
-        public int fileId;           // Added back to maintain compatibility
-
-        public static SerializedObjectIdentifier FromObject(UnityEngine.Object obj)
-        {
-            var identifier = new SerializedObjectIdentifier();
-
-            if (obj != null)
-            {
-                // Get the path and GUID of the containing asset
-                string assetPath = AssetDatabase.GetAssetPath(obj);
-                identifier.assetGuid = AssetDatabase.AssetPathToGUID(assetPath);
-
-                // Store both identifiers
-                identifier.localIdentifier = obj.GetInstanceID();
-                identifier.fileId = obj.GetInstanceID();
-
-                // For components, store the type name
-                if (obj is Component component)
-                {
-                    identifier.componentName = component.GetType().Name;
-                }
-            }
-
-            return identifier;
-        }
 
     }
 

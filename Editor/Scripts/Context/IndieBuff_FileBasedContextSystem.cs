@@ -14,37 +14,15 @@ namespace IndieBuff.Editor
     internal class IndieBuff_FileBasedContextSystem
     {
 
-        private Dictionary<string, SceneNode> nodes;
+        private Dictionary<string, IndieBuff_SceneNode> nodes;
         private Dictionary<string, HashSet<string>> adjacencyList;
         private SceneMetadata activeSceneData;
 
         private Dictionary<string, double> pageRankScores;
 
-
-        public class SceneNode
-        {
-            public GameObject GameObject { get; set; }
-            public string Name { get; set; }
-            public List<Component> Components { get; set; }
-            public List<SceneNode> Children { get; set; }
-            public SceneNode Parent { get; set; }
-            public double PageRankScore { get; set; }
-            public IndieBuff_DetailedSceneContext DetailedContext { get; set; }
-
-            public SceneNode(GameObject gameObject)
-            {
-                GameObject = gameObject;
-                Name = gameObject.name;
-                Components = new List<Component>(gameObject.GetComponents<Component>());
-                Children = new List<SceneNode>();
-                PageRankScore = 0;
-                DetailedContext = new IndieBuff_DetailedSceneContext();
-            }
-        }
-
         public IndieBuff_FileBasedContextSystem()
         {
-            nodes = new Dictionary<string, SceneNode>();
+            nodes = new Dictionary<string, IndieBuff_SceneNode>();
             adjacencyList = new Dictionary<string, HashSet<string>>();
             pageRankScores = new Dictionary<string, double>();
         }
@@ -110,9 +88,9 @@ namespace IndieBuff.Editor
             }
         }
 
-        private void ProcessGameObject(GameObject obj, SceneNode parent)
+        private void ProcessGameObject(GameObject obj, IndieBuff_SceneNode parent)
         {
-            var node = new SceneNode(obj);
+            var node = new IndieBuff_SceneNode(obj);
             if (parent != null)
             {
                 node.Parent = parent;
@@ -262,7 +240,7 @@ namespace IndieBuff.Editor
                     Objects = nodes.Values
                         .SelectMany(n => n.Components)
                         .Where(c => c != null)
-                        .Select(c => SerializedObjectIdentifier.FromObject(c))
+                        .Select(c => IndieBuff_SerializedObjectIdentifier.FromObject(c))
                         .ToList()
                 };
 
@@ -361,7 +339,7 @@ namespace IndieBuff.Editor
         }
 
 
-        private double CalculateTextScore(SceneNode node, string[] queryTerms)
+        private double CalculateTextScore(IndieBuff_SceneNode node, string[] queryTerms)
         {
             double maxScore = 0;
             foreach (var term in queryTerms)
@@ -423,7 +401,7 @@ namespace IndieBuff.Editor
         public class SceneMetadata
         {
             public string Guid { get; set; }
-            public List<SerializedObjectIdentifier> Objects { get; set; } = new List<SerializedObjectIdentifier>();
+            public List<IndieBuff_SerializedObjectIdentifier> Objects { get; set; } = new List<IndieBuff_SerializedObjectIdentifier>();
             public HashSet<string> ComponentTypes { get; set; } = new HashSet<string>();
             public Dictionary<string, HashSet<string>> TaggedObjects { get; set; } = new Dictionary<string, HashSet<string>>();
             public HashSet<string> GameObjectNames { get; set; } = new HashSet<string>();
@@ -472,7 +450,7 @@ namespace IndieBuff.Editor
                 int objCount = reader.ReadInt32();
                 for (int i = 0; i < objCount; i++)
                 {
-                    metadata.Objects.Add(new SerializedObjectIdentifier
+                    metadata.Objects.Add(new IndieBuff_SerializedObjectIdentifier
                     {
                         assetGuid = reader.ReadString(),
                         localIdentifier = reader.ReadInt64(),
