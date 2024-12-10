@@ -31,7 +31,14 @@ namespace IndieBuff.Editor
 
 
             ShowLoginComponent();
+            InitializeContexts();
+
+        }
+
+        private void InitializeContexts()
+        {
             IndieBuff_AssetContextUpdater.ScanAssets();
+            IndieBuff_SceneContextUpdater.Initialize();
         }
 
         private void ShowLoginComponent()
@@ -96,6 +103,7 @@ namespace IndieBuff.Editor
         private void OnDestroy()
         {
             DisposeCurrentComponent();
+            IndieBuff_SceneContextUpdater.Cleanup();
         }
     }
 }
