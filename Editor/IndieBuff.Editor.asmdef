@@ -13,7 +13,8 @@
         "Microsoft.CodeAnalysis.CSharp.dll",
         "System.Collections.Immutable.dll",
         "Newtonsoft.Json.dll",
-        "System.Runtime.CompilerServices.Unsafe.dll"
+        "System.Runtime.CompilerServices.Unsafe.dll",
+        "QuikGraph.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [],
