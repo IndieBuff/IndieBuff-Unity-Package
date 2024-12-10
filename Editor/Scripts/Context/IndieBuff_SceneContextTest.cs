@@ -60,10 +60,10 @@ namespace IndieBuff.Editor
     internal class SceneContextCollector
     {
         private const string CACHE_DIRECTORY = "ProjectSettings/Editor/SceneContextCache";
-        private static readonly Dictionary<string, IndieBuff_FileBasedContextSystem.SceneMetadata> memoryCache
-            = new Dictionary<string, IndieBuff_FileBasedContextSystem.SceneMetadata>();
+        private static readonly Dictionary<string, IndieBuff_SceneMetadata> memoryCache
+            = new Dictionary<string, IndieBuff_SceneMetadata>();
 
-        public static async Task<IndieBuff_FileBasedContextSystem.SceneMetadata> CollectSceneMetadata(
+        public static async Task<IndieBuff_SceneMetadata> CollectSceneMetadata(
             string scenePath,
             bool useCache = true,
             bool forceRefresh = false)
@@ -86,7 +86,7 @@ namespace IndieBuff.Editor
             return metadata;
         }
 
-        private static async Task<IndieBuff_FileBasedContextSystem.SceneMetadata> GetCachedMetadata(string scenePath, string sceneGuid)
+        private static async Task<IndieBuff_SceneMetadata> GetCachedMetadata(string scenePath, string sceneGuid)
         {
             if (memoryCache.TryGetValue(sceneGuid, out var cachedMetadata))
             {
@@ -105,7 +105,7 @@ namespace IndieBuff.Editor
                     using (var reader = new BinaryReader(stream))
                     {
                         var metadata = await Task.Run(() =>
-                            IndieBuff_FileBasedContextSystem.SceneMetadata.DeserializeFrom(reader));
+                            IndieBuff_SceneMetadata.DeserializeFrom(reader));
 
                         if (IsMetadataValid(scenePath, metadata))
                         {
@@ -123,7 +123,7 @@ namespace IndieBuff.Editor
             return null;
         }
 
-        private static bool IsMetadataValid(string scenePath, IndieBuff_FileBasedContextSystem.SceneMetadata metadata)
+        private static bool IsMetadataValid(string scenePath, IndieBuff_SceneMetadata metadata)
         {
             if (metadata == null) return false;
 
@@ -131,13 +131,13 @@ namespace IndieBuff.Editor
             return metadata.LastModified >= sceneTimestamp;
         }
 
-        private static async Task<IndieBuff_FileBasedContextSystem.SceneMetadata> ProcessSceneMetadata(string scenePath)
+        private static async Task<IndieBuff_SceneMetadata> ProcessSceneMetadata(string scenePath)
         {
             var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (!activeScene.IsValid() || !activeScene.isLoaded || activeScene.path != scenePath)
                 return null;
 
-            var metadata = new IndieBuff_FileBasedContextSystem.SceneMetadata
+            var metadata = new IndieBuff_SceneMetadata
             {
                 Guid = AssetDatabase.AssetPathToGUID(scenePath),
                 LastModified = File.GetLastWriteTime(scenePath).Ticks
@@ -152,7 +152,7 @@ namespace IndieBuff.Editor
             return metadata;
         }
 
-        private static void ProcessGameObject(GameObject obj, IndieBuff_FileBasedContextSystem.SceneMetadata metadata)
+        private static void ProcessGameObject(GameObject obj, IndieBuff_SceneMetadata metadata)
         {
             metadata.GameObjectNames.Add(obj.name);
 
@@ -184,7 +184,7 @@ namespace IndieBuff.Editor
             }
         }
 
-        private static async Task CacheMetadata(string scenePath, string sceneGuid, IndieBuff_FileBasedContextSystem.SceneMetadata metadata)
+        private static async Task CacheMetadata(string scenePath, string sceneGuid, IndieBuff_SceneMetadata metadata)
         {
             try
             {
