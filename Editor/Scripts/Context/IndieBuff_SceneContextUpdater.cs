@@ -14,20 +14,21 @@ namespace IndieBuff.Editor
                 EditorSceneManager.sceneSaved += OnSceneSaved;
                 EditorSceneManager.activeSceneChangedInEditMode += OnActiveSceneChanged;
             };
+
+            IndieBuff_SceneContext.Instance.Initialize();
         }
 
         private static void OnSceneSaved(Scene scene)
         {
-            if (scene.IsValid() && IndieBuff_SceneContext.Instance != null)
+            if (scene.IsValid())
             {
-                Debug.Log("Scene saved, updating graph via ContextManager...");
                 _ = IndieBuff_SceneContext.Instance.UpdateGraph();
             }
         }
 
         private static void OnActiveSceneChanged(Scene oldScene, Scene newScene)
         {
-            if (newScene.IsValid() && IndieBuff_SceneContext.Instance != null)
+            if (newScene.IsValid())
             {
                 Debug.Log("Scene changed, updating graph via ContextManager...");
                 _ = IndieBuff_SceneContext.Instance.UpdateGraph();

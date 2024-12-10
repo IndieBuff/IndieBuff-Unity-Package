@@ -32,12 +32,23 @@ namespace IndieBuff.Editor
 
         public IndieBuff_SceneContext()
         {
+            if (contextSystem == null)
+            {
+                Initialize();
+            }
+
+        }
+
+        public async void Initialize()
+        {
             contextSystem = new IndieBuff_FileBasedContextSystem();
-            _ = contextSystem.Initialize();
+            await contextSystem.Initialize();
+            await UpdateGraph();
         }
 
         public async Task UpdateGraph()
         {
+            if (isProcessing) return;
             isProcessing = true;
             try
             {

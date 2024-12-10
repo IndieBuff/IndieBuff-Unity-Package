@@ -30,6 +30,7 @@ namespace IndieBuff.Editor
             Dictionary<string, object> codeMap = new Dictionary<string, object>();
 
             // Build scene context (Placeholder for now)
+            IndieBuff_SceneContext.Instance.BuildRankedSceneContext(prompt);
             Dictionary<string, object> sceneMap = new Dictionary<string, object>();
 
             // Build asset context
