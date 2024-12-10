@@ -122,7 +122,7 @@ namespace IndieBuff.Editor
                 }
 
                 var projectPath = Application.dataPath;
-                var projectScanner = new ProjectScanner();
+                var projectScanner = new IndieBuff_ProjectScanner();
 
                 // Process changed/new files
                 var updatedData = await projectScanner.ScanFiles(changedFiles.ToList(), projectPath);
