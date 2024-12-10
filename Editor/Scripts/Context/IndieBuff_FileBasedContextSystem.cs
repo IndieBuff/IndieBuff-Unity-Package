@@ -1,4 +1,5 @@
 
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -291,52 +292,46 @@ namespace IndieBuff.Editor
 
 
             // SCENE ANALYSIS FILE
-            string filePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/SceneAnalysis.txt";
+            string filePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/SceneAnalysis.json";
 
-            await File.WriteAllTextAsync(filePath, GenerateDetailedAnalysisReport(detailedResults, query));
+            string jsonResults = JsonConvert.SerializeObject(GenerateDetailedAnalysisReport(detailedResults, query), Formatting.Indented);
+
+            await File.WriteAllTextAsync(filePath, jsonResults);
 
             // Return basic search results
             return detailedResults.Select(r => r.SearchResult).ToList();
         }
 
-        private string GenerateDetailedAnalysisReport(List<(IndieBuff_SearchResult SearchResult, IndieBuff_DetailedSceneContext DetailedContext)> detailedResults, string query)
+        private List<object> GenerateDetailedAnalysisReport(List<(IndieBuff_SearchResult SearchResult, IndieBuff_DetailedSceneContext DetailedContext)> detailedResults, string query)
         {
-            var sb = new StringBuilder();
+
+            List<object> results = new List<object>();
 
             foreach (var result in detailedResults)
             {
-                sb.AppendLine($"\nObject: {result.SearchResult.Name} (Score: {result.SearchResult.Score:F3})");
-                sb.AppendLine("Hierarchy Path: " + result.DetailedContext.HierarchyPath);
 
-                if (result.DetailedContext.Children.Any())
+                var data = new
                 {
-                    sb.AppendLine("\nChildren:");
-                    foreach (var child in result.DetailedContext.Children)
+                    type = "GameObject",
+                    name = result.SearchResult.Name,
+                    childCount = result.DetailedContext.Children.Count(),
+                    children = result.DetailedContext.Children,
+                    components = new List<object>()
+                };
+
+                foreach (var component in result.DetailedContext.Components)
+                {
+                    var single_component = new
                     {
-                        sb.AppendLine($"- {child}");
-                    }
+                        type = component.ComponentType,
+                        properties = component.Properties
+                    };
+                    data.components.Add(single_component);
                 }
 
-                if (result.DetailedContext.Components.Any())
-                {
-                    sb.AppendLine("\nComponents:");
-                    foreach (var component in result.DetailedContext.Components)
-                    {
-                        sb.AppendLine($"\n  {component.ComponentType}:");
-                        if (component.Properties?.Any() == true)
-                        {
-                            foreach (var prop in component.Properties)
-                            {
-                                sb.AppendLine($"    {prop.Key}: {prop.Value}");
-                            }
-                        }
-                    }
-                }
-
-                sb.AppendLine("\n----------------------------------------");
+                results.Add(data);
             }
-
-            return sb.ToString();
+            return results;
         }
 
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
+
 namespace IndieBuff.Editor
 {
     internal class IndieBuff_ContextDriver
@@ -25,7 +26,6 @@ namespace IndieBuff.Editor
         {
             // build user selected context
             Dictionary<string, object> selectionMap = await IndieBuff_UserSelectedContext.Instance.BuildUserContext();
-
             // Build code context (Placeholder for now)
             Dictionary<string, object> codeMap = new Dictionary<string, object>();
 

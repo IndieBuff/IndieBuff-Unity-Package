@@ -53,7 +53,6 @@ public class CodeStructureAssetProcessor : AssetPostprocessor
 
             if (currentScanData == null)
             {
-                Debug.LogWarning("No existing scan data found. Please perform initial scan first.");
                 return;
             }
 
