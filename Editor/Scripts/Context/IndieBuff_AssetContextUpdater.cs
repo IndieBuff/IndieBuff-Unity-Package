@@ -13,11 +13,12 @@ namespace IndieBuff.Editor
     {
 
         private static readonly string CacheFilePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/AssetCache.json";
+        private static readonly string scanOutputPath = IndieBuffConstants.baseAssetPath + "/Editor/Context/ProjectScan.json";
         public static List<IndieBuff_AssetNode> assetItems = new List<IndieBuff_AssetNode>();
         public static Action onAssetContextUpdated;
 
         private static ProjectScanData currentScanData;
-        private static readonly string scanOutputPath = IndieBuffConstants.baseAssetPath + "/Editor/Context/ProjectScan.json";
+
 
         static IndieBuff_AssetContextUpdater()
         {
