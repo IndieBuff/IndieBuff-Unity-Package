@@ -148,7 +148,7 @@ namespace IndieBuff.Editor
 
         private static async Task<FileBasedContextSystem.SceneMetadata> ProcessSceneMetadata(string scenePath)
         {
-            var activeScene = SceneManager.GetActiveScene();
+            var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (!activeScene.IsValid() || !activeScene.isLoaded || activeScene.path != scenePath)
                 return null;
 
@@ -158,13 +158,11 @@ namespace IndieBuff.Editor
                 LastModified = File.GetLastWriteTime(scenePath).Ticks
             };
 
-            await Task.Run(() => {
-                var rootObjects = activeScene.GetRootGameObjects();
-                foreach (var rootObject in rootObjects)
-                {
-                    ProcessGameObject(rootObject, metadata);
-                }
-            });
+            var rootObjects = activeScene.GetRootGameObjects();
+            foreach (var rootObject in rootObjects)
+            {
+                ProcessGameObject(rootObject, metadata);
+            }
 
             return metadata;
         }
