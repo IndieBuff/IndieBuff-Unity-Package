@@ -25,7 +25,13 @@ namespace IndieBuff.Editor
             LoadCache();
         }
 
-        public static void ScanAssets()
+        public static void Initialize()
+        {
+            ScanAssets();
+            IndieBuff_CodeContext.Instance.ScanProject();
+        }
+
+        private static void ScanAssets()
         {
             assetItems = new List<IndieBuff_AssetNode>();
             var allAssetPaths = AssetDatabase.GetAllAssetPaths();

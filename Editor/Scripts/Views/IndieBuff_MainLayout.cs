@@ -37,8 +37,9 @@ namespace IndieBuff.Editor
 
         private void InitializeContexts()
         {
-            IndieBuff_AssetContextUpdater.ScanAssets();
+            IndieBuff_AssetContextUpdater.Initialize();
             IndieBuff_SceneContextUpdater.Initialize();
+
         }
 
         private void ShowLoginComponent()

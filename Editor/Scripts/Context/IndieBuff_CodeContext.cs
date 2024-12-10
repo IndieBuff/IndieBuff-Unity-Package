@@ -18,14 +18,24 @@ namespace IndieBuff.Editor
         private string structureText = "";
         private ProjectScanData scanData;
 
-
         private const int DefaultMapTokens = 1024;
 
 
+        private static IndieBuff_CodeContext _instance;
+        internal static IndieBuff_CodeContext Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new IndieBuff_CodeContext();
+                }
+                return _instance;
+            }
+        }
 
 
-
-        private async void ScanProject()
+        public async void ScanProject()
         {
             if (isScanning)
             {
@@ -45,8 +55,6 @@ namespace IndieBuff.Editor
                 // Save scan data to file
                 var json = JsonConvert.SerializeObject(scanData);
                 File.WriteAllText(scanOutputPath, json);
-
-                Debug.Log($"Project scan completed in {sw.ElapsedMilliseconds}ms");
             }
             catch (Exception ex)
             {
@@ -58,7 +66,7 @@ namespace IndieBuff.Editor
             }
         }
 
-        private async void BuildGraphAndGenerateMap()
+        public async void BuildGraphAndGenerateMap()
         {
             if (isBuildingGraph)
             {
