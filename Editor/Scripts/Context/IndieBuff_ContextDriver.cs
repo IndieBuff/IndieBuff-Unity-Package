@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 using Newtonsoft.Json;
 
 namespace IndieBuff.Editor
@@ -31,10 +30,10 @@ namespace IndieBuff.Editor
             Dictionary<string, object> codeMap = new Dictionary<string, object>();
 
             // Build scene context (Placeholder for now)
+            IndieBuff_SceneContext.Instance.BuildRankedSceneContext(prompt);
             Dictionary<string, object> sceneMap = new Dictionary<string, object>();
 
             // Build asset context
-
             Dictionary<string, object> assetMap = await IndieBuff_AssetContextRanker.Instance.BuildRankedAssetContext(prompt);
 
             var settings = new JsonSerializerSettings
@@ -48,6 +47,8 @@ namespace IndieBuff.Editor
             var contextData = new
             {
                 selectionMap,
+                codeMap,
+                sceneMap,
                 assetMap,
             };
 

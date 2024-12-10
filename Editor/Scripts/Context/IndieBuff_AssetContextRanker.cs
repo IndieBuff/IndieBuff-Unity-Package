@@ -97,7 +97,7 @@ namespace IndieBuff.Editor
         {
 
             var queryWords = PrepQueryWords(prompt);
-            List<AssetNode> assetItems = IndieBuff_AssetContextUpdater.assetItems;
+            List<IndieBuff_AssetNode> assetItems = IndieBuff_AssetContextUpdater.assetItems;
 
             foreach (var asset in assetItems)
             {
@@ -107,7 +107,7 @@ namespace IndieBuff.Editor
                 asset.RelevancyScore = 1.0f + typeScore + timeScore + nameScore;
             }
 
-            List<AssetNode> rankedAssets = assetItems
+            List<IndieBuff_AssetNode> rankedAssets = assetItems
                 .OrderByDescending(asset => asset.RelevancyScore).ToList();
 
             List<UnityEngine.Object> _contextObjects = rankedAssets

@@ -11,7 +11,7 @@ namespace IndieBuff.Editor
     {
 
         private static readonly string CacheFilePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/AssetCache.json";
-        public static List<AssetNode> assetItems = new List<AssetNode>();
+        public static List<IndieBuff_AssetNode> assetItems = new List<IndieBuff_AssetNode>();
         public static Action onAssetContextUpdated;
 
         static IndieBuff_AssetContextUpdater()
@@ -21,7 +21,7 @@ namespace IndieBuff.Editor
 
         public static void ScanAssets()
         {
-            assetItems = new List<AssetNode>();
+            assetItems = new List<IndieBuff_AssetNode>();
             var allAssetPaths = AssetDatabase.GetAllAssetPaths();
 
             foreach (var path in allAssetPaths)
@@ -31,7 +31,7 @@ namespace IndieBuff.Editor
 
                 if (path.StartsWith("Assets/"))
                 {
-                    var child = new AssetNode
+                    var child = new IndieBuff_AssetNode
                     {
                         Name = Path.GetFileName(path),
                         Path = path,
@@ -52,7 +52,7 @@ namespace IndieBuff.Editor
             if (File.Exists(CacheFilePath))
             {
                 var json = File.ReadAllText(CacheFilePath);
-                assetItems = Newtonsoft.Json.JsonConvert.DeserializeObject<List<AssetNode>>(json) ?? new List<AssetNode>();
+                assetItems = Newtonsoft.Json.JsonConvert.DeserializeObject<List<IndieBuff_AssetNode>>(json) ?? new List<IndieBuff_AssetNode>();
             }
             else
             {
@@ -72,7 +72,7 @@ namespace IndieBuff.Editor
             }
             else
             {
-                var newNode = new AssetNode
+                var newNode = new IndieBuff_AssetNode
                 {
                     Name = Path.GetFileName(path),
                     Path = path,
