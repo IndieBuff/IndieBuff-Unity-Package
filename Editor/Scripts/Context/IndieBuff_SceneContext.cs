@@ -15,7 +15,7 @@ namespace IndieBuff.Editor
 
         private IndieBuff_FileBasedContextSystem contextSystem;
         private bool isProcessing;
-        private List<IndieBuff_SearchResult> queryResults = new List<IndieBuff_SearchResult>();
+        private Dictionary<string, object> queryResults = new Dictionary<string, object>();
 
         private static IndieBuff_SceneContext _instance;
         internal static IndieBuff_SceneContext Instance
@@ -74,20 +74,21 @@ namespace IndieBuff.Editor
         }
 
 
-        internal async void BuildRankedSceneContext(string prompt)
+        internal async Task<Dictionary<string, object>> BuildRankedSceneContext(string prompt)
         {
-            await ExecuteQuery(prompt);
+            Dictionary<string, object> finalResult = await ExecuteQuery(prompt);
 
             if (queryResults.Any())
             {
-                // do something with results
+                return finalResult;
             }
+            return finalResult;
 
         }
 
-        private async Task ExecuteQuery(string prompt)
+        private async Task<Dictionary<string, object>> ExecuteQuery(string prompt)
         {
-            if (string.IsNullOrEmpty(prompt)) return;
+            if (string.IsNullOrEmpty(prompt)) return queryResults;
 
             isProcessing = true;
 
@@ -95,12 +96,14 @@ namespace IndieBuff.Editor
             {
 
                 queryResults = await contextSystem.QueryContext(prompt);
+                return queryResults;
 
 
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Query failed: {ex.Message}");
+                return queryResults;
 
             }
             finally
@@ -124,7 +127,5 @@ namespace IndieBuff.Editor
                     break;
             }
         }
-
-
     }
 }

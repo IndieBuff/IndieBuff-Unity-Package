@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,15 +12,13 @@ namespace IndieBuff.Editor
     public class IndieBuff_CodeContext
     {
         private static readonly string scanOutputPath = IndieBuffConstants.baseAssetPath + "/Editor/Context/ProjectScan.json";
-        private static readonly string mapOutputPath = IndieBuffConstants.baseAssetPath + "/Editor/Context/CodeStructure.txt";
 
         private bool isScanning = false;
         private bool isBuildingGraph = false;
-        private string structureText = "";
         private ProjectScanData scanData;
 
         private const int DefaultMapTokens = 1024;
-
+        private Dictionary<string, object> codeMap = new Dictionary<string, object>();
 
         private static IndieBuff_CodeContext _instance;
         internal static IndieBuff_CodeContext Instance
@@ -66,11 +65,12 @@ namespace IndieBuff.Editor
             }
         }
 
-        public async void BuildGraphAndGenerateMap()
+        public async Task<Dictionary<string, object>> BuildGraphAndGenerateMap()
         {
+
             if (isBuildingGraph)
             {
-                return;
+                return codeMap;
             }
             isBuildingGraph = true;
             try
@@ -87,16 +87,19 @@ namespace IndieBuff.Editor
                     var graphBuilder = new IndieBuff_CodeGraphBuilder(DefaultMapTokens);
                     return graphBuilder.BuildGraphAndGenerateMap(scanData);
                 });
-                structureText = result;
+
+                result = result.Replace("\r", "");
 
                 // Save the map
-                File.WriteAllText(mapOutputPath, structureText);
+                codeMap.Add("map", result);
 
                 Debug.Log($"Graph building completed in {sw.ElapsedMilliseconds}ms");
+                return codeMap;
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Error during graph building: {ex}");
+                return codeMap;
             }
             finally
             {
@@ -105,7 +108,4 @@ namespace IndieBuff.Editor
         }
 
     }
-
-
-
 }

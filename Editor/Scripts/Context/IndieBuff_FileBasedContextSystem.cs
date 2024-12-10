@@ -254,13 +254,14 @@ namespace IndieBuff.Editor
             }
         }
 
-        public async Task<List<IndieBuff_SearchResult>> QueryContext(string query, int maxResults = 10)
+        public async Task<Dictionary<string, object>> QueryContext(string query, int maxResults = 10)
         {
             var results = new List<IndieBuff_SearchResult>();
-            if (string.IsNullOrEmpty(query)) return results;
+            var finalResults = new Dictionary<string, object>();
+            if (string.IsNullOrEmpty(query)) return finalResults;
 
             var queryTerms = query.ToLower().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (queryTerms.Length == 0) return results;
+            if (queryTerms.Length == 0) return finalResults;
 
             // Calculate scores for all nodes
             var scoredNodes = nodes.Values.Select(node => new
@@ -294,18 +295,15 @@ namespace IndieBuff.Editor
             // SCENE ANALYSIS FILE
             string filePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/SceneAnalysis.json";
 
-            string jsonResults = JsonConvert.SerializeObject(GenerateDetailedAnalysisReport(detailedResults, query), Formatting.Indented);
+            var result = GenerateDetailedAnalysisReport(detailedResults, query);
 
-            await File.WriteAllTextAsync(filePath, jsonResults);
-
-            // Return basic search results
-            return detailedResults.Select(r => r.SearchResult).ToList();
+            return result;
         }
 
-        private List<object> GenerateDetailedAnalysisReport(List<(IndieBuff_SearchResult SearchResult, IndieBuff_DetailedSceneContext DetailedContext)> detailedResults, string query)
+        private Dictionary<string, object> GenerateDetailedAnalysisReport(List<(IndieBuff_SearchResult SearchResult, IndieBuff_DetailedSceneContext DetailedContext)> detailedResults, string query)
         {
 
-            List<object> results = new List<object>();
+            var results = new Dictionary<string, object>();
 
             foreach (var result in detailedResults)
             {
@@ -329,7 +327,7 @@ namespace IndieBuff.Editor
                     data.components.Add(single_component);
                 }
 
-                results.Add(data);
+                results.Add(result.DetailedContext.HierarchyPath, data);
             }
             return results;
         }

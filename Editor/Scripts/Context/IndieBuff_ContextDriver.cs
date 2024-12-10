@@ -27,16 +27,15 @@ namespace IndieBuff.Editor
             // build user selected context
             Dictionary<string, object> selectionMap = await IndieBuff_UserSelectedContext.Instance.BuildUserContext();
 
-            // Build code context TODO: connect the code context to the json, just empty for now
-            IndieBuff_CodeContext.Instance.BuildGraphAndGenerateMap();
-            Dictionary<string, object> codeMap = new Dictionary<string, object>();
+            // Build code context
+            Dictionary<string, object> codeMap = await IndieBuff_CodeContext.Instance.BuildGraphAndGenerateMap();
 
-            // Build scene context TODO: connect the scene context to the json, just empty for now
-            IndieBuff_SceneContext.Instance.BuildRankedSceneContext(prompt);
-            Dictionary<string, object> sceneMap = new Dictionary<string, object>();
+            // Build scene context
+            Dictionary<string, object> sceneMap = await IndieBuff_SceneContext.Instance.BuildRankedSceneContext(prompt);
 
             // Build asset context
             Dictionary<string, object> assetMap = await IndieBuff_AssetContextRanker.Instance.BuildRankedAssetContext(prompt);
+
 
             var settings = new JsonSerializerSettings
             {
