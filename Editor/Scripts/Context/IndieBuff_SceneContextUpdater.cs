@@ -30,7 +30,6 @@ namespace IndieBuff.Editor
         {
             if (newScene.IsValid())
             {
-                Debug.Log("Scene changed, updating graph via ContextManager...");
                 _ = IndieBuff_SceneContext.Instance.UpdateGraph();
             }
         }
