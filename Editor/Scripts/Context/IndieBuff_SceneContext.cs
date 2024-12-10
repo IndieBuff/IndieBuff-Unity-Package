@@ -15,7 +15,6 @@ namespace IndieBuff.Editor
 
         private IndieBuff_FileBasedContextSystem contextSystem;
         private bool isProcessing;
-        private string queryInput;
         private List<IndieBuff_SearchResult> queryResults = new List<IndieBuff_SearchResult>();
 
         private static IndieBuff_SceneContext _instance;
@@ -62,6 +61,59 @@ namespace IndieBuff.Editor
 
             }
         }
+
+
+        internal async void BuildRankedSceneContext(string prompt)
+        {
+            await ExecuteQuery(prompt);
+
+            if (queryResults.Any())
+            {
+                // do something with results
+            }
+
+        }
+
+        private async Task ExecuteQuery(string prompt)
+        {
+            if (string.IsNullOrEmpty(prompt)) return;
+
+            isProcessing = true;
+
+            try
+            {
+
+                queryResults = await contextSystem.QueryContext(prompt);
+
+
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Query failed: {ex.Message}");
+
+            }
+            finally
+            {
+                isProcessing = false;
+
+            }
+        }
+
+        private void SelectResult(IndieBuff_SearchResult result)
+        {
+            switch (result.Type)
+            {
+                case IndieBuff_SearchResult.ResultType.SceneGameObject:
+                case IndieBuff_SearchResult.ResultType.SceneComponent:
+                    var foundObject = GameObject.Find(result.Name);
+                    if (foundObject != null)
+                    {
+                        Selection.activeGameObject = foundObject;
+                    }
+                    break;
+            }
+        }
+
 
     }
 }

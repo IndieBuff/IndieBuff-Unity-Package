@@ -291,7 +291,7 @@ namespace IndieBuff.Editor
 
 
             // SCENE ANALYSIS FILE
-            var filePath = Path.Combine(Application.dataPath, $"SceneAnalysis.txt");
+            string filePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/SceneAnalysis.txt";
 
             await File.WriteAllTextAsync(filePath, GenerateDetailedAnalysisReport(detailedResults, query));
 

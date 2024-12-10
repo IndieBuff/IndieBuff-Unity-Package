@@ -58,9 +58,6 @@ namespace IndieBuff.Editor
             }
         }
 
-
-
-
         public async Task UpdateGraph()
         {
             isProcessing = true;
