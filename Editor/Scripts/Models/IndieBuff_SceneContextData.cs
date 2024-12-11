@@ -16,7 +16,7 @@ namespace IndieBuff.Editor
         }
 
         public string Name { get; set; }
-        public ResultType Type { get; set; }
+        public IndieBuff_SerializedObjectIdentifier ObjectId { get; set; }
         public double Score { get; set; }
     }
 
@@ -61,9 +61,8 @@ namespace IndieBuff.Editor
     {
         // Maintain all necessary fields
         public string assetGuid;      // GUID of the containing asset
-        public long localIdentifier;  // Local ID within the asset
         public string componentName;  // Type name for components
-        public int fileId;           // Added back to maintain compatibility
+        public int instance_id;           // Added back to maintain compatibility
 
         public static IndieBuff_SerializedObjectIdentifier FromObject(UnityEngine.Object obj)
         {
@@ -76,8 +75,7 @@ namespace IndieBuff.Editor
                 identifier.assetGuid = AssetDatabase.AssetPathToGUID(assetPath);
 
                 // Store both identifiers
-                identifier.localIdentifier = obj.GetInstanceID();
-                identifier.fileId = obj.GetInstanceID();
+                identifier.instance_id = obj.GetInstanceID();
 
                 // For components, store the type name
                 if (obj is Component component)

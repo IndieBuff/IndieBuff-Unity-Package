@@ -112,20 +112,5 @@ namespace IndieBuff.Editor
 
             }
         }
-
-        private void SelectResult(IndieBuff_SearchResult result)
-        {
-            switch (result.Type)
-            {
-                case IndieBuff_SearchResult.ResultType.SceneGameObject:
-                case IndieBuff_SearchResult.ResultType.SceneComponent:
-                    var foundObject = GameObject.Find(result.Name);
-                    if (foundObject != null)
-                    {
-                        Selection.activeGameObject = foundObject;
-                    }
-                    break;
-            }
-        }
     }
 }

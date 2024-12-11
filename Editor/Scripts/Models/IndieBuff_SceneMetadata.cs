@@ -22,8 +22,7 @@ namespace IndieBuff.Editor
             foreach (var obj in Objects)
             {
                 writer.Write(obj.assetGuid);
-                writer.Write(obj.localIdentifier);
-                writer.Write(obj.fileId);
+                writer.Write(obj.instance_id);
                 writer.Write(obj.componentName ?? "");
             }
 
@@ -59,8 +58,7 @@ namespace IndieBuff.Editor
                 metadata.Objects.Add(new IndieBuff_SerializedObjectIdentifier
                 {
                     assetGuid = reader.ReadString(),
-                    localIdentifier = reader.ReadInt64(),
-                    fileId = reader.ReadInt32(),
+                    instance_id = reader.ReadInt32(),
                     componentName = reader.ReadString()
                 });
             }

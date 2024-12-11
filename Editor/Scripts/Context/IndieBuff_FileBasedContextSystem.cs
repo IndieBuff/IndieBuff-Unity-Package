@@ -264,75 +264,29 @@ namespace IndieBuff.Editor
             var queryTerms = query.ToLower().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (queryTerms.Length == 0) return finalResults;
 
-            // Calculate scores for all nodes
+
             var scoredNodes = nodes.Values.Select(node => new
             {
-                Node = node,
-                TextScore = CalculateTextScore(node, queryTerms),
-                PageRankScore = node.PageRankScore
+                Object = EditorUtility.InstanceIDToObject(
+                    IndieBuff_SerializedObjectIdentifier.FromObject(node.GameObject).instance_id
+                ),
+                Score = ((CalculateTextScore(node, queryTerms) * 0.7)) + (node.PageRankScore * 0.3)
             })
-            .Select(x => new
-            {
-                x.Node,
-                FinalScore = (x.TextScore * 0.7) + (x.PageRankScore * 0.3)
-            })
-            .Where(x => x.FinalScore > 0)
-            .OrderByDescending(x => x.FinalScore)
+            .Where(x => x.Score > 0 && x.Object != null)
+            .OrderByDescending(x => x.Score)
             .Take(maxResults)
+            .Select(x => x.Object)
             .ToList();
-
-            // Generate detailed context for top results
-            var detailedResults = scoredNodes.Select(x => (
-                SearchResult: new IndieBuff_SearchResult
-                {
-                    Name = x.Node.Name,
-                    Type = IndieBuff_SearchResult.ResultType.SceneGameObject,
-                    Score = x.FinalScore
-                },
-                DetailedContext: x.Node.DetailedContext
-            )).ToList();
+            
 
 
-            // SCENE ANALYSIS FILE
-            string filePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/SceneAnalysis.json";
+            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(scoredNodes, 1000);
+            builder.StartContextBuild();
 
-            var result = GenerateDetailedAnalysisReport(detailedResults, query);
+            await Task.Delay(100);
 
-            return result;
+            return builder.GetContextData();
         }
-
-        private Dictionary<string, object> GenerateDetailedAnalysisReport(List<(IndieBuff_SearchResult SearchResult, IndieBuff_DetailedSceneContext DetailedContext)> detailedResults, string query)
-        {
-
-            var results = new Dictionary<string, object>();
-
-            foreach (var result in detailedResults)
-            {
-
-                var data = new
-                {
-                    type = "GameObject",
-                    name = result.SearchResult.Name,
-                    childCount = result.DetailedContext.Children.Count(),
-                    children = result.DetailedContext.Children,
-                    components = new List<object>()
-                };
-
-                foreach (var component in result.DetailedContext.Components)
-                {
-                    var single_component = new
-                    {
-                        type = component.ComponentType,
-                        properties = component.Properties
-                    };
-                    data.components.Add(single_component);
-                }
-
-                results.Add(result.DetailedContext.HierarchyPath, data);
-            }
-            return results;
-        }
-
 
         private double CalculateTextScore(IndieBuff_SceneNode node, string[] queryTerms)
         {
