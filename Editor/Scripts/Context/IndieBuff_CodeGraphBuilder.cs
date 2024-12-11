@@ -12,7 +12,7 @@ namespace IndieBuff.Editor
         private readonly ConcurrentDictionary<string, int> referenceCount;
         private readonly ConcurrentDictionary<string, List<SymbolDefinition>> fileSymbols;
         private readonly StringBuilder stringBuilder;
-
+        
         public IndieBuff_CodeGraphBuilder(int maxMapTokens = 1024)
         {
             this.maxMapTokens = maxMapTokens;

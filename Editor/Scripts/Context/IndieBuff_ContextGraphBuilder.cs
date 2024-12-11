@@ -72,7 +72,8 @@ namespace IndieBuff.Editor
                         else if (prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase))
                         {
                             // Load prefab contents if it's a valid prefab file
-                            GameObject prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
+                            //GameObject prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
+                            GameObject prefabRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
 
                             if (prefabRoot != null)
                             {
@@ -233,7 +234,7 @@ namespace IndieBuff.Editor
                         string prefabPath = AssetDatabase.GetAssetPath(prefabContent);
                         if (prefabPath.EndsWith(".PREFAB", System.StringComparison.OrdinalIgnoreCase))
                         {
-                            PrefabUtility.UnloadPrefabContents(prefabContent);
+                            // logic to unload
                         }
 
                     }
@@ -259,7 +260,7 @@ namespace IndieBuff.Editor
             {
                 if (prefabContent != null)
                 {
-                    PrefabUtility.UnloadPrefabContents(prefabContent);
+                    //PrefabUtility.UnloadPrefabContents(prefabContent);
                 }
             }
         }
