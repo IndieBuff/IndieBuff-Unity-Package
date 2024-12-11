@@ -91,9 +91,9 @@ namespace IndieBuff.Editor
                 result = result.Replace("\r", "");
 
                 // Save the map
-                codeMap.Add("map", result);
+                codeMap["map"] = result;
 
-                Debug.Log($"Graph building completed in {sw.ElapsedMilliseconds}ms");
+                //Debug.Log($"Graph building completed in {sw.ElapsedMilliseconds}ms");
                 return codeMap;
             }
             catch (Exception ex)
