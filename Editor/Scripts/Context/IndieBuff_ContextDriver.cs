@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 
@@ -22,7 +23,7 @@ namespace IndieBuff.Editor
             }
         }
 
-        public async void BuildAllContext(string prompt)
+        public async Task<string> BuildAllContext(string prompt)
         {
             // build user selected context
             Dictionary<string, object> selectionMap = await IndieBuff_UserSelectedContext.Instance.BuildUserContext();
@@ -56,6 +57,7 @@ namespace IndieBuff.Editor
             ContextObjectString = JsonConvert.SerializeObject(new { context = contextData }, settings);
             string filePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/ContextOutput.json";
             System.IO.File.WriteAllText(filePath, ContextObjectString);
+            return ContextObjectString;
 
         }
     }

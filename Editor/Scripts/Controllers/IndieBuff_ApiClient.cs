@@ -87,7 +87,7 @@ namespace IndieBuff.Editor
         {
 
             await TokenManager.Instance.RefreshTokensAsync();
-            string contextString = IndieBuff_ContextDriver.Instance.ContextObjectString;
+            string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
             var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId != null ? IndieBuff_UserInfo.Instance.currentConvoId : null };
             var jsonPayload = JsonUtility.ToJson(requestData);
             var jsonStringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
@@ -130,8 +130,7 @@ namespace IndieBuff.Editor
 
         public async Task<HttpResponseMessage> GetAICommandResponseAsync(string prompt, CancellationToken cancellationToken = default)
         {
-            await Task.Delay(50, cancellationToken);
-            string contextString = IndieBuff_ContextDriver.Instance.ContextObjectString;
+            string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
             var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId != null ? IndieBuff_UserInfo.Instance.currentConvoId : null };
             var jsonPayload = JsonUtility.ToJson(requestData);
             var jsonStringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");

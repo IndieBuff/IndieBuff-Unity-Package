@@ -553,7 +553,6 @@ namespace IndieBuff.Editor
 
             var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
             parser.UseLoader(loadingBar);
-            ParseGameObjectContext(userMessage);
 
             cts = new CancellationTokenSource();
 
@@ -584,7 +583,6 @@ namespace IndieBuff.Editor
 
             var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
             parser.UseLoader(loadingBar);
-            ParseGameObjectContext(userMessage);
 
             cts = new CancellationTokenSource();
             try
@@ -646,10 +644,6 @@ namespace IndieBuff.Editor
 
         }
 
-        private void ParseGameObjectContext(string prompt)
-        {
-            IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
-        }
         private async void OnLogoutClicked()
         {
             bool userConfirmed = EditorUtility.DisplayDialog(
