@@ -12,8 +12,8 @@ namespace IndieBuff.Editor
     public class IndieBuff_AssetContextUpdater : AssetPostprocessor
     {
 
-        private static readonly string CacheFilePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/AssetCache.json";
-        private static readonly string scanOutputPath = IndieBuffConstants.baseAssetPath + "/Editor/Context/ProjectScan.json";
+        private static readonly string CacheFilePath = Path.Combine(Application.dataPath, "IndieBuff/Editor/Context/AssetCache.json");
+        private static readonly string scanOutputPath = Path.Combine(Application.dataPath, "IndieBuff/Editor/Context/ProjectScan.json");
         public static List<IndieBuff_AssetNode> assetItems = new List<IndieBuff_AssetNode>();
         public static Action onAssetContextUpdated;
 
@@ -38,7 +38,7 @@ namespace IndieBuff.Editor
 
             foreach (var path in allAssetPaths)
             {
-                if (Directory.Exists(path) || path.EndsWith(".meta") || path.StartsWith("Assets/IndieBuff/"))
+                if (Directory.Exists(path) || path.EndsWith(".meta") || path.StartsWith("Assets/IndieBuff/") || path.EndsWith("AssetCache.json"))
                     continue;
 
                 if (path.StartsWith("Assets/"))
@@ -74,7 +74,7 @@ namespace IndieBuff.Editor
 
         private static void AddOrUpdateAsset(string path)
         {
-            if (path == CacheFilePath || Directory.Exists(path) || path.EndsWith(".meta"))
+            if (path.EndsWith("AssetCache.json") || Directory.Exists(path) || path.EndsWith(".meta"))
                 return;
 
             var existingNode = assetItems.Find(node => node.Path == path);

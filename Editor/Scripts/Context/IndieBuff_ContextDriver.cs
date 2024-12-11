@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using UnityEngine;
 
 
 namespace IndieBuff.Editor
@@ -55,7 +57,7 @@ namespace IndieBuff.Editor
             };
 
             ContextObjectString = JsonConvert.SerializeObject(new { context = contextData }, settings);
-            string filePath = IndieBuffConstants.baseAssetPath + "/Editor/Context/ContextOutput.json";
+            string filePath = Path.Combine(Application.dataPath, "IndieBuff/Editor/Context/ContextOutput.json");
             System.IO.File.WriteAllText(filePath, ContextObjectString);
             return ContextObjectString;
 

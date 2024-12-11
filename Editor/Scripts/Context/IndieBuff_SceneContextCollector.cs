@@ -9,7 +9,7 @@ namespace IndieBuff.Editor
 {
     internal class IndieBuff_SceneContextCollector
     {
-        private static readonly string CACHE_DIRECTORY = IndieBuffConstants.baseAssetPath + "/Editor/Context/SceneContextCache";
+        private static readonly string CACHE_DIRECTORY = Path.Combine(Application.dataPath, "IndieBuff/Editor/Context/SceneContextCache");
         private static readonly Dictionary<string, IndieBuff_SceneMetadata> memoryCache
             = new Dictionary<string, IndieBuff_SceneMetadata>();
 
