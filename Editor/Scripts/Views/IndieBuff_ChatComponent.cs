@@ -564,7 +564,6 @@ namespace IndieBuff.Editor
                     parser.ParseChunk(chunk);
                 }, cts.Token);
                 HandleAIMessageMetadata(parser.getMetaData());
-                parser.HandleUnresolvedLine();
             }
             catch (Exception)
             {
