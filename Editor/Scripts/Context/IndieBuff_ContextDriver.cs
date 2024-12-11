@@ -57,8 +57,6 @@ namespace IndieBuff.Editor
             };
 
             ContextObjectString = JsonConvert.SerializeObject(new { context = contextData }, settings);
-            string filePath = Path.Combine(Application.dataPath, "IndieBuff/Editor/Context/ContextOutput.json");
-            System.IO.File.WriteAllText(filePath, ContextObjectString);
             return ContextObjectString;
 
         }

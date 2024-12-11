@@ -11,7 +11,7 @@ namespace IndieBuff.Editor
 {
     public class IndieBuff_CodeContext
     {
-        private static readonly string scanOutputPath = Path.Combine(Application.dataPath, "IndieBuff/Editor/Context/ProjectScan.json");
+        private static readonly string scanOutputPath = Path.Combine(Application.persistentDataPath, "IndieBuff/Context/IndieBuff_ProjectScan.json");
 
         private bool isScanning = false;
         private bool isBuildingGraph = false;

@@ -12,8 +12,8 @@ namespace IndieBuff.Editor
     public class IndieBuff_AssetContextUpdater : AssetPostprocessor
     {
 
-        private static readonly string CacheFilePath = Path.Combine(Application.dataPath, "IndieBuff/Editor/Context/AssetCache.json");
-        private static readonly string scanOutputPath = Path.Combine(Application.dataPath, "IndieBuff/Editor/Context/ProjectScan.json");
+        private static readonly string CacheFilePath = Path.Combine(Application.persistentDataPath, "IndieBuff/Context/IndieBuff_AssetCache.json");
+        private static readonly string scanOutputPath = Path.Combine(Application.persistentDataPath, "IndieBuff/Context/IndieBuff_ProjectScan.json");
         public static List<IndieBuff_AssetNode> assetItems = new List<IndieBuff_AssetNode>();
         public static Action onAssetContextUpdated;
 
@@ -110,6 +110,11 @@ namespace IndieBuff.Editor
 
         private static void SaveCache()
         {
+            string directoryPath = Path.GetDirectoryName(CacheFilePath);
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(assetItems, Newtonsoft.Json.Formatting.Indented);
             File.WriteAllText(CacheFilePath, json);
             AssetDatabase.Refresh();
@@ -190,6 +195,11 @@ namespace IndieBuff.Editor
         {
             try
             {
+                string directoryPath = Path.GetDirectoryName(scanOutputPath);
+                if (!Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
                 var json = JsonConvert.SerializeObject(currentScanData);
                 File.WriteAllText(scanOutputPath, json);
             }
