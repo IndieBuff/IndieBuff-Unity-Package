@@ -414,7 +414,7 @@ namespace IndieBuff.Editor
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"Skipped component {component.GetType().Name}: {e.Message}");
+                    //Debug.LogWarning($"Skipped component {component.GetType().Name}: {e.Message}");
                 }
             }
 
