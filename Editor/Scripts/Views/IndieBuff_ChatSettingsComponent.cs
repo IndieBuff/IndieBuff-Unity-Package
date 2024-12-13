@@ -59,6 +59,11 @@ namespace IndieBuff.Editor
 
             ChangeChatMode(ChatMode.Chat);
 
+
+            // disable while improving
+            commandModeButton.style.display = DisplayStyle.None;
+            commandModeButton.SetEnabled(false);
+
         }
 
         private void ChangeChatMode(ChatMode mode)
