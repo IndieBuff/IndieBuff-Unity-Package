@@ -412,7 +412,7 @@ namespace IndieBuff.Editor
 
                     componentsData[component.GetType().Name] = componentData;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     //Debug.LogWarning($"Skipped component {component.GetType().Name}: {e.Message}");
                 }
