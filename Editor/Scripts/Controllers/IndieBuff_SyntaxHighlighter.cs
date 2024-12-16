@@ -54,6 +54,17 @@ namespace IndieBuff.Editor
             var tokenText = token.Text;
             var kind = token.Kind();
 
+            if (kind == SyntaxKind.AsteriskToken ||
+    kind == SyntaxKind.PlusToken ||
+    kind == SyntaxKind.MinusToken ||
+    kind == SyntaxKind.SlashToken ||
+    kind == SyntaxKind.EqualsToken ||
+    kind == SyntaxKind.LessThanToken ||
+    kind == SyntaxKind.GreaterThanToken)
+            {
+                return WrapInColor(tokenText, methodColour);
+            }
+
             if (IsTypeIdentifier(token) || IsClassDeclaration(token) || isBaseType(token) || isAttribute(token))
                 return WrapInColor(tokenText, identifierColour);
 
