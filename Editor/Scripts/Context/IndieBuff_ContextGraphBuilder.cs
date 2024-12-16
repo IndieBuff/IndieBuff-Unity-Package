@@ -284,11 +284,13 @@ namespace IndieBuff.Editor
                     objectToProcess = prefabContentsMap[gameObject];
                 }
 
+                string key = GetUniqueGameObjectKey(objectToProcess);
 
                 var gameObjectData = new Dictionary<string, object>
                 {
                     ["type"] = "GameObject",
                     ["name"] = objectToProcess.name,
+                    ["hierarchy_path"] = key,
                     ["parent"] = objectToProcess.transform.parent != null ? objectToProcess.transform.parent.gameObject.name : "null",
                     ["tag"] = objectToProcess.tag,
                     ["layer"] = LayerMask.LayerToName(objectToProcess.layer),
@@ -313,7 +315,7 @@ namespace IndieBuff.Editor
                     }
                 }
 
-                string key = GetUniqueGameObjectKey(objectToProcess);
+                
                 AddToContext(key, gameObjectData);
 
 
