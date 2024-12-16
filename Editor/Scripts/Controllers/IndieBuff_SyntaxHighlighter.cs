@@ -9,13 +9,14 @@ namespace IndieBuff.Editor
 {
     public class IndieBuff_SyntaxHighlighter
     {
-        // Color configuration
-        private readonly string k_ColorKeyword = "<color=#569CD6>"; // Azure-like for keywords
-        private readonly string k_ColorIdentifier = "<color=#4EC9B0>";
-        private readonly string k_ColorMethod = "<color=#DCDCAA>"; // Turquoise-like for methods
-        private readonly string k_ColorString = "<color=#CE9178>"; // Sand-like for strings
-        private readonly string k_ColorComment = "<color=#6A9955>"; // Lime-like for comments
-        private readonly string k_ColorDefault = "<color=#9CDCFE>"; // Default text color
+        private readonly string keywordColour = "<color=#569CD6>";
+        private readonly string identifierColour = "<color=#4EC9B0>";
+        private readonly string methodColour = "<color=#DCDCAA>";
+        private readonly string stringColour = "<color=#CE9178>";
+        private readonly string commentColour = "<color=#6A9955>";
+        private readonly string numberColour = "<color=#9CDCFE>";
+        private readonly string defaultColour = "<color=#9CDCFE>";
+
 
         public string HighlightLine(string lineText)
         {
@@ -27,17 +28,14 @@ namespace IndieBuff.Editor
 
                 foreach (var token in root.DescendantTokens())
                 {
-
-                    // Process leading trivia (whitespace, comments)
                     foreach (var trivia in token.LeadingTrivia)
                     {
                         formattedLine.Append(ProcessTrivia(trivia));
                     }
 
-                    // Process the token itself
                     formattedLine.Append(ProcessToken(token));
 
-                    // Process trailing trivia
+
                     foreach (var trivia in token.TrailingTrivia)
                     {
                         formattedLine.Append(ProcessTrivia(trivia));
@@ -48,7 +46,6 @@ namespace IndieBuff.Editor
             }
             catch
             {
-                // Fallback to unmodified line if parsing fails
                 return lineText;
             }
         }
@@ -57,22 +54,23 @@ namespace IndieBuff.Editor
         {
             var tokenText = token.Text;
             var kind = token.Kind();
-            var parent = token.Parent;//
-            //Debug.Log(parent.Parent.Parent.Kind() + " - " + token.Kind() + " - " + tokenText);
 
             if (IsTypeIdentifier(token) || IsClassDeclaration(token) || isBaseType(token) || isAttribute(token))
-                return WrapInColor(tokenText, k_ColorIdentifier);
+                return WrapInColor(tokenText, identifierColour);
 
             if (isMethodDeclaration(token) || isMethodUsage(token) || isInvocation(token))
             {
-                return WrapInColor(tokenText, k_ColorMethod);
+                return WrapInColor(tokenText, methodColour);
             }
 
-            if (SyntaxFacts.IsKeywordKind(kind))
-                return WrapInColor(tokenText, k_ColorKeyword);
+            if (kind == SyntaxKind.NumericLiteralToken)
+                return WrapInColor(tokenText, numberColour);
 
-            if (kind is SyntaxKind.StringLiteralToken or SyntaxKind.InterpolatedStringTextToken)
-                return WrapInColor(tokenText, k_ColorString);
+            if (SyntaxFacts.IsKeywordKind(kind))
+                return WrapInColor(tokenText, keywordColour);
+
+            if (kind is SyntaxKind.StringLiteralToken or SyntaxKind.InterpolatedStringTextToken or SyntaxKind.InterpolatedStringEndToken or SyntaxKind.InterpolatedStringStartToken)
+                return WrapInColor(tokenText, stringColour);
 
             return tokenText;
         }
@@ -82,7 +80,7 @@ namespace IndieBuff.Editor
             if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
                 trivia.IsKind(SyntaxKind.MultiLineCommentTrivia))
             {
-                return WrapInColor(trivia.ToFullString(), k_ColorComment);
+                return WrapInColor(trivia.ToFullString(), commentColour);
             }
 
             return trivia.ToFullString();
@@ -131,32 +129,8 @@ namespace IndieBuff.Editor
         {
             return token.Parent is IdentifierNameSyntax identifier &&
                    identifier.Parent is MemberAccessExpressionSyntax memberAccess &&
-                   memberAccess.Name == identifier && // Ensure the token is the method name
-                   memberAccess.Parent is InvocationExpressionSyntax; // Ensure it's a method call
+                   memberAccess.Name == identifier &&
+                   memberAccess.Parent is InvocationExpressionSyntax;
         }
     }
 }
-
-
-/*
-using UnityEngine;
-
-public class ExampleScript : MonoBehaviour
-{
-    [SerializeField]
-    private int health = 100;
-
-    // test comment
-    private Vector3 startPosition;
-
-    private void Start()
-    {
-        InitializePlayer();
-    }
-
-    private void InitializePlayer()
-    {
-        Debug.Log($"{playerName} initialized with {health} health.");
-    }
-}
-*/
