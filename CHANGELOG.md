@@ -1,3 +1,9 @@
+## [1.1.1] - 2024-12-15
+
+### Fixed
+
+- Syntax highlighting wasn't really accurate, a little better now
+
 ## [1.1.0] - 2024-12-11
 
 ### Feature
