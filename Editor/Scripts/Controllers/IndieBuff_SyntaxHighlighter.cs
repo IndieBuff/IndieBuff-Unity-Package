@@ -9,13 +9,12 @@ namespace IndieBuff.Editor
 {
     public class IndieBuff_SyntaxHighlighter
     {
-        private readonly string keywordColour = "<color=#569CD6>";
-        private readonly string identifierColour = "<color=#4EC9B0>";
-        private readonly string methodColour = "<color=#DCDCAA>";
-        private readonly string stringColour = "<color=#CE9178>";
-        private readonly string commentColour = "<color=#6A9955>";
-        private readonly string numberColour = "<color=#9CDCFE>";
-        private readonly string defaultColour = "<color=#9CDCFE>";
+        private readonly string keywordColour = "<color=#C678DD>";
+        private readonly string identifierColour = "<color=#D19A66>";
+        private readonly string methodColour = "<color=#61AFEF>";
+        private readonly string stringColour = "<color=#98C379>";
+        private readonly string commentColour = "<color=#7F848E>";
+        private readonly string numberColour = "<color=#D19A66>";
 
 
         public string HighlightLine(string lineText)
@@ -94,7 +93,8 @@ namespace IndieBuff.Editor
         private bool IsTypeIdentifier(SyntaxToken token)
         {
             return token.Parent is IdentifierNameSyntax identifierName &&
-                   identifierName.Parent is VariableDeclarationSyntax;
+                   (identifierName.Parent is VariableDeclarationSyntax || identifierName.Parent is ObjectCreationExpressionSyntax);
+
         }
 
         private bool IsClassDeclaration(SyntaxToken token)
