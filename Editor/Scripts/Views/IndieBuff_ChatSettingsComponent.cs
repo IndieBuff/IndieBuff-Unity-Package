@@ -61,8 +61,8 @@ namespace IndieBuff.Editor
 
 
             // disable while improving
-            commandModeButton.style.display = DisplayStyle.None;
-            commandModeButton.SetEnabled(false);
+            // commandModeButton.style.display = DisplayStyle.None;
+            // commandModeButton.SetEnabled(false);
 
         }
 

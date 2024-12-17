@@ -593,10 +593,9 @@ namespace IndieBuff.Editor
                 if (response.IsSuccessStatusCode)
                 {
                     var data = response.Content.ReadAsStringAsync().Result;
-                    var responseContent = JsonConvert.DeserializeObject<commandResponse>(data);
-
-                    parser.ParseCommandMessage(responseContent.output[0]);
-                    HandleAIMessageMetadata(responseContent.output[1].Trim('\n'));
+                    Debug.Log(data);
+                    parser.ParseCommandMessage(data);
+                    //HandleAIMessageMetadata(responseContent.output[1].Trim('\n'));
                     loadingBar.StopLoading();
                     messageContainer.parent.style.visibility = Visibility.Visible;
                 }

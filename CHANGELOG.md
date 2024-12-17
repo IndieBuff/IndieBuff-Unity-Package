@@ -1,3 +1,9 @@
+## [x.x.x] - 2024-12-xx
+
+### Added
+
+- Faster response streaming, especially with base model
+
 ## [1.1.1] - 2024-12-15
 
 ### Fixed
