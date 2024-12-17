@@ -1,8 +1,8 @@
-## [x.x.x] - 2024-12-xx
+## [1.1.2] - 2024-12-17
 
-### Added
+### Fixed
 
-- Faster response streaming, especially with base model
+- Error handling on context parsers, should see less error logs
 
 ## [1.1.1] - 2024-12-15
 

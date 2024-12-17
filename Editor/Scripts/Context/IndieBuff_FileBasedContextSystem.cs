@@ -59,7 +59,7 @@ namespace IndieBuff.Editor
                 var connections = new HashSet<string>();
 
                 // Add parent connection
-                if (node.Parent != null)
+                if (node.Parent != null && nodes.ContainsKey(node.Parent.Name))
                 {
                     connections.Add(node.Parent.Name);
                 }
@@ -67,7 +67,10 @@ namespace IndieBuff.Editor
                 // Add children connections
                 foreach (var child in node.Children)
                 {
-                    connections.Add(child.Name);
+                    if (nodes.ContainsKey(child.Name))
+                    {
+                        connections.Add(child.Name);
+                    }
                 }
 
                 // Add component connections
@@ -77,7 +80,7 @@ namespace IndieBuff.Editor
 
                     var referencedObjects = EditorUtility.CollectDependencies(new UnityEngine.Object[] { component })
                         .OfType<GameObject>()
-                        .Where(go => go != node.GameObject && nodes.ContainsKey(go.name));
+                        .Where(go => go != node.GameObject && go != null && nodes.ContainsKey(go.name));
 
                     foreach (var referencedObj in referencedObjects)
                     {
@@ -160,10 +163,13 @@ namespace IndieBuff.Editor
                 var scores = new Dictionary<string, double>();
                 var newScores = new Dictionary<string, double>();
 
+                var nodeKeys = nodes.Keys.ToList();
+
                 // Initialize scores
-                foreach (var node in nodes.Keys)
+                foreach (var node in nodeKeys)
                 {
                     scores[node] = 1.0 / nodeCount;
+                    newScores[node] = 0.0;
                 }
 
                 int iteration = 0;
@@ -172,20 +178,26 @@ namespace IndieBuff.Editor
                 do
                 {
                     // Reset new scores
-                    foreach (var node in nodes.Keys)
+                    foreach (var node in nodeKeys)
                     {
                         newScores[node] = (1 - DAMPING) / nodeCount;
                     }
 
                     // Calculate new scores
-                    foreach (var node in nodes.Keys)
+                    foreach (var node in nodeKeys)
                     {
+                        if (!adjacencyList.ContainsKey(node)) continue;
+
                         var incomingNodes = adjacencyList
                             .Where(kvp => kvp.Value.Contains(node))
-                            .Select(kvp => kvp.Key);
+                            .Select(kvp => kvp.Key)
+                            .Where(key => scores.ContainsKey(key)) // Only consider nodes that have scores
+                            .ToList();
 
                         foreach (var inNode in incomingNodes)
                         {
+                            if (!adjacencyList.ContainsKey(inNode)) continue;
+
                             var outDegree = adjacencyList[inNode].Count;
                             if (outDegree > 0)
                             {
@@ -198,7 +210,7 @@ namespace IndieBuff.Editor
                     diff = 0;
                     var sum = newScores.Values.Sum();
 
-                    foreach (var node in nodes.Keys)
+                    foreach (var node in nodeKeys)
                     {
                         newScores[node] /= sum;
                         diff = Math.Max(diff, Math.Abs(newScores[node] - scores[node]));
@@ -213,7 +225,14 @@ namespace IndieBuff.Editor
                 // Update node scores
                 foreach (var node in nodes.Values)
                 {
-                    node.PageRankScore = scores[node.Name];
+                    if (scores.ContainsKey(node.Name))
+                    {
+                        node.PageRankScore = scores[node.Name];
+                    }
+                    else
+                    {
+                        node.PageRankScore = 0.0;
+                    }
                 }
             });
         }
@@ -283,7 +302,7 @@ namespace IndieBuff.Editor
             IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(scoredNodes, 1000);
             builder.StartContextBuild();
 
-            await Task.Delay(100);
+            await Task.Delay(1);
 
             return builder.GetContextData();
         }
