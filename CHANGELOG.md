@@ -1,3 +1,9 @@
+## [1.1.2] - 2024-12-17
+
+### Fixed
+
+- Error handling on context parsers, should see less error logs
+
 ## [1.1.1] - 2024-12-15
 
 ### Fixed
