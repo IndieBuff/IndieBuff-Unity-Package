@@ -593,7 +593,6 @@ namespace IndieBuff.Editor
                 if (response.IsSuccessStatusCode)
                 {
                     var data = response.Content.ReadAsStringAsync().Result;
-                    Debug.Log(data);
                     parser.ParseCommandMessage(data);
                     //HandleAIMessageMetadata(responseContent.output[1].Trim('\n'));
                     loadingBar.StopLoading();
@@ -611,7 +610,7 @@ namespace IndieBuff.Editor
         private async Task HandleAIResponse(string userMessage)
         {
             loadingBar.StartLoading();
-            var responseContainer = CreateAIChatResponseBox();
+            var responseContainer = CreateAIChatResponseBox("");
             responseArea.Add(responseContainer);
             responseContainer.style.visibility = Visibility.Hidden;
 

@@ -50,40 +50,53 @@ namespace IndieBuff.Editor
             //currentMessageLabel.value = message;
         }
 
-
         public void ParseCommandMessage(string message)
         {
-            messageContainer.parent.style.visibility = Visibility.Visible;
-            currentMessageLabel.value = "Hit 'Execute' to run the command or view the code below.";
-
-
-            Button runCommandButton = messageContainer.parent.Q<Button>("ExecuteButton");
-            runCommandButton.style.display = DisplayStyle.Flex;
-            runCommandButton.SetEnabled(true);
-            runCommandButton.text = "Execute";
-
-            string result = $@"{message}";
-
-
-            runCommandButton.clicked += () =>
-              {
-                  IndieBuff_DynamicScriptUtility.ExecuteRuntimeScript(result);
-              };
-
-            Foldout commandPreview = new Foldout();
-            commandPreview.text = "View Command";
-            commandPreview.value = false;
-            messageContainer.Add(commandPreview);
+            message = message.Trim('"').Trim('`');
+            message = message.Replace("\\n", "\n");
+            message = message[(message.IndexOf("\n") + 1)..];
 
             var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
-            currentMessageLabel = CreateNewAIResponseLabel("", "code-block");
-            messageContainer.Remove(currentMessageLabel);
-            commandPreview.Add(currentMessageLabel);
             foreach (var line in lines)
             {
-                currentMessageLabel.value += TransformCodeBlock(line);
+                currentMessageLabel.value += line + '\n';
             }
         }
+
+
+        // public void ParseCommandMessage(string message)
+        // {
+        //     messageContainer.parent.style.visibility = Visibility.Visible;
+        //     currentMessageLabel.value = "Hit 'Execute' to run the command or view the code below.";
+
+
+        //     Button runCommandButton = messageContainer.parent.Q<Button>("ExecuteButton");
+        //     runCommandButton.style.display = DisplayStyle.Flex;
+        //     runCommandButton.SetEnabled(true);
+        //     runCommandButton.text = "Execute";
+
+        //     string result = $@"{message}";
+
+
+        //     runCommandButton.clicked += () =>
+        //       {
+        //           IndieBuff_DynamicScriptUtility.ExecuteRuntimeScript(result);
+        //       };
+
+        //     Foldout commandPreview = new Foldout();
+        //     commandPreview.text = "View Command";
+        //     commandPreview.value = false;
+        //     messageContainer.Add(commandPreview);
+
+        //     var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
+        //     currentMessageLabel = CreateNewAIResponseLabel("", "code-block");
+        //     messageContainer.Remove(currentMessageLabel);
+        //     commandPreview.Add(currentMessageLabel);
+        //     foreach (var line in lines)
+        //     {
+        //         currentMessageLabel.value += TransformCodeBlock(line);
+        //     }
+        // }
 
         public void ParseChunk(string chunk)
         {
