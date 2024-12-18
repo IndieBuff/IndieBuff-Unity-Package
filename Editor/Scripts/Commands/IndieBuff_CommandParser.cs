@@ -75,6 +75,7 @@ namespace IndieBuff.Editor
         {
             try
             {
+                Debug.Log(command);
                 // Get the PropertyManager type
                 Type propertyManagerType = typeof(PropertyManager);
 
@@ -89,11 +90,21 @@ namespace IndieBuff.Editor
                 // Execute the method
                 object result = methodInfo.Invoke(null, new object[] { command.Parameters });
                 command.ExecutionResult = result?.ToString() ?? "Command executed successfully";
+                Debug.Log(command.ExecutionResult);
             }
             catch (Exception e)
             {
                 command.ExecutionResult = $"Failed: {e.Message}";
                 Debug.LogError($"Error executing command {command.MethodName}: {e}");
+            }
+        }
+
+
+        public static void ExecuteAllCommands(List<IndieBuff_CommandData> commands)
+        {
+            foreach (var command in commands)
+            {
+                ExecuteCommand(command);
             }
         }
     }

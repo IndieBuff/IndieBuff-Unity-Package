@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Indiebuff.Editor;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
@@ -305,7 +306,8 @@ namespace IndieBuff.Editor
 
                         if (message.action == "Command")
                         {
-                            parser.ParseCommandMessage(aiMessage);
+                            // FIX THIS 
+                            //parser.ParseCommandMessage(aiMessage);
                         }
                         else
                         {
@@ -581,23 +583,18 @@ namespace IndieBuff.Editor
             var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
             var messageLabel = messageContainer.Q<TextField>();
 
-            var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
+            var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
             parser.UseLoader(loadingBar);
 
             cts = new CancellationTokenSource();
             try
             {
 
-                var response = await IndieBuff_ApiClient.Instance.GetAICommandResponseAsync(userMessage, cts.Token);
-
-                if (response.IsSuccessStatusCode)
+                await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
                 {
-                    var data = response.Content.ReadAsStringAsync().Result;
-                    parser.ParseCommandMessage(data);
-                    //HandleAIMessageMetadata(responseContent.output[1].Trim('\n'));
-                    loadingBar.StopLoading();
-                    messageContainer.parent.style.visibility = Visibility.Visible;
-                }
+                    parser.ParseCommandChunk(chunk);
+
+                }, cts.Token);
             }
             catch (Exception)
             {
@@ -605,6 +602,8 @@ namespace IndieBuff.Editor
                 messageLabel.value = "An error has occured. Please try again.";
                 loadingBar.StopLoading();
             }
+
+
         }
 
         private async Task HandleAIResponse(string userMessage)
