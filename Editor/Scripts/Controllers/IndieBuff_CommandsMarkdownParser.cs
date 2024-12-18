@@ -43,6 +43,32 @@ namespace Indiebuff.Editor
             }
         }
 
+        public void ParseFullMessage(string message)
+        {
+            var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
+            foreach (var line in lines)
+            {
+                ProcessLineFromFullMessage(line);
+            }
+            FinishParsing();
+        }
+
+        private void ProcessLineFromFullMessage(string line)
+        {
+            if (string.IsNullOrEmpty(line) || !char.IsLetterOrDigit(line[0]))
+            {
+                return;
+            }
+            var commandData = IndieBuff_CommandParser.ParseCommandLine(line.Trim());
+            if (commandData != null)
+            {
+                parsedCommands.Add(commandData);
+                VisualElement commandContainer = CreateCommandElement(commandData);
+                messageContainer.Add(commandContainer);
+            }
+
+        }
+
         private void ProcessLine(string line)
         {
             if (string.IsNullOrEmpty(line) || !char.IsLetterOrDigit(line[0]))

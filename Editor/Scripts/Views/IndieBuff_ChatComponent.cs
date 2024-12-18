@@ -302,15 +302,17 @@ namespace IndieBuff.Editor
                         var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
                         var messageLabel = messageContainer.Q<TextField>();
 
-                        var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
+
 
                         if (message.action == "Command")
                         {
-                            // FIX THIS 
-                            //parser.ParseCommandMessage(aiMessage);
+                            Debug.Log(aiMessage);
+                            var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
+                            parser.ParseFullMessage(aiMessage);
                         }
                         else
                         {
+                            var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
                             parser.ParseFullMessage(aiMessage);
                         }
 
@@ -596,7 +598,7 @@ namespace IndieBuff.Editor
 
                 }, cts.Token);
                 string metadata = parser.FinishParsing();
-                Debug.Log(metadata);
+                HandleAIMessageMetadata(metadata);
             }
             catch (Exception)
             {
