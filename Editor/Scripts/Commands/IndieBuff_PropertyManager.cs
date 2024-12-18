@@ -46,8 +46,11 @@ namespace IndieBuff.Editor
 
             Type componentType = Type.GetType(componentName);
 
-            if (componentType == null)
-            {
+            if (componentType == null) {
+                componentType = Type.GetType("UnityEngine." + componentName + ", UnityEngine");
+            }
+
+            if (componentType == null) {
                 return "Failed to find component type: " + componentName;
             }
 
@@ -65,27 +68,67 @@ namespace IndieBuff.Editor
 
             SerializedObject serializedObject = new SerializedObject(existingComponent);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
-
-            if (property == null)
+            
+            try
             {
-                return "Failed to write property type" + hierarchyPath;
+                switch (property.propertyType)
+                {
+                    case SerializedPropertyType.Integer:
+                        property.intValue = int.Parse(value);
+                        break;
+                    case SerializedPropertyType.Boolean:
+                        property.boolValue = bool.Parse(value);
+                        break;
+                    case SerializedPropertyType.Float:
+                        property.floatValue = float.Parse(value);
+                        break;
+                    case SerializedPropertyType.String:
+                        property.stringValue = value;
+                        break;
+                    case SerializedPropertyType.Enum:
+                        property.enumValueIndex = Enum.Parse(typeof(Enum), value) != null ? int.Parse(value) : property.enumValueIndex;
+                        break;
+                    case SerializedPropertyType.ObjectReference:
+                        UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(value);
+                        if (obj != null) property.objectReferenceValue = obj;
+                        break;
+                    default:
+                        return "Unsupported PropertyType";
+                }
             }
-
-            Type typeValue = Type.GetType(property.type);
-
-            if (typeValue == null)
+            catch
             {
-                return "Failed to find property type" + hierarchyPath;
+                return "Error when parsring property type";
             }
-
-            var newValue = Convert.ChangeType(value, typeValue);
-
-            property.boxedValue = newValue;
-
 
             serializedObject.ApplyModifiedProperties();
 
-            EditorUtility.SetDirty(existingComponent);
+
+
+
+            //Type propertyType = GetPropertyType(property);
+
+
+           // if (property == null)
+            //{
+            //    return "Failed to write property type " + propertyName;
+           // }
+
+            //Type typeValue = Type.GetType(property.type);
+
+            //if (typeValue == null)
+           // {
+                //return "Failed to find property type" + hierarchyPath;
+            //}
+
+            //var newValue = Convert.ChangeType(value, (TypeCode)property.propertyType);
+
+           // property.boxedValue = newValue;
+
+
+            //serializedObject.ApplyModifiedProperties();
+
+            //EditorUtility.SetDirty(existingComponent);
 
             return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
         }
