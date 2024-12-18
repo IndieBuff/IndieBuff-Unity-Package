@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -125,5 +126,139 @@ namespace IndieBuff.Editor
             return $"Script {path} added to gameobject {hierarchyPath}";
 
         }
+    
+        public static string SetScriptField(Dictionary<string, string> parameters)
+        {
+            // Target parameters
+            string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
+            string assetPath = parameters.ContainsKey("asset_path") ? parameters["asset_path"] : null;
+
+            // Field parameters
+            string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
+            string fieldName = parameters.ContainsKey("field_name") ? parameters["field_name"] : null;
+            string fieldType = parameters.ContainsKey("field_type") ? parameters["field_type"] : null;
+            string fieldValue = parameters.ContainsKey("field_value") ? parameters["field_value"] : null;
+
+            // Find the target object (could be scene GameObject or asset)
+            UnityEngine.Object targetObject = null;
+            
+
+            if (targetObject == null && !string.IsNullOrEmpty(hierarchyPath))
+            {
+                targetObject = GameObject.Find(hierarchyPath);
+            }
+
+            if (targetObject == null && !string.IsNullOrEmpty(assetPath))
+            {
+                string fullPath = assetPath.StartsWith("Assets/") ? assetPath : "Assets/" + assetPath;
+                targetObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(fullPath);
+            }
+
+            if (targetObject == null)
+            {
+                return "Failed to find target object";
+            }
+
+            Type scriptType = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => a.GetTypes())
+                .FirstOrDefault(t => t.Name == scriptName);
+
+            if (scriptType == null)
+            {
+                return $"Failed to find script type: {scriptName}";
+            }
+
+            UnityEngine.Object scriptInstance = targetObject;
+            if (targetObject is GameObject gameObject)
+            {
+                Component component = gameObject.GetComponent(scriptType);
+                if (component == null)
+                {
+                    return $"Failed to find {scriptName} component on GameObject";
+                }
+                scriptInstance = component;
+            }
+
+            SerializedObject serializedObject = new SerializedObject(scriptInstance);
+            SerializedProperty field = serializedObject.FindProperty(fieldName);
+            
+            if (field == null)
+            {
+                return $"Failed to find field {fieldName}";
+            }
+
+            // Set the field value based on its type
+            try
+            {
+                switch (fieldType.ToLower())
+                {
+                    case "int":
+                        field.intValue = int.Parse(fieldValue);
+                        break;
+                    case "float":
+                        field.floatValue = float.Parse(fieldValue);
+                        break;
+                    case "bool":
+                        field.boolValue = bool.Parse(fieldValue);
+                        break;
+                    case "string":
+                        field.stringValue = fieldValue;
+                        break;
+                    case "gameobject":
+                        var referencedGO = GameObject.Find(fieldValue);
+                        if (referencedGO != null)
+                            field.objectReferenceValue = referencedGO;
+                        break;
+                    case "asset":
+                        string refPath = fieldValue.StartsWith("Assets/") ? fieldValue : "Assets/" + fieldValue;
+                        var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(refPath);
+                        if (asset != null)
+                            field.objectReferenceValue = asset;
+                        break;
+                    case "enum":
+                        field.enumValueIndex = int.Parse(fieldValue);
+                        break;
+                    case "vector2":
+                        var v2Values = fieldValue.Split(',');
+                        if (v2Values.Length == 2)
+                        {
+                            field.vector2Value = new Vector2(
+                                float.Parse(v2Values[0]),
+                                float.Parse(v2Values[1])
+                            );
+                        }
+                        break;
+                    case "vector3":
+                        var v3Values = fieldValue.Split(',');
+                        if (v3Values.Length == 3)
+                        {
+                            field.vector3Value = new Vector3(
+                                float.Parse(v3Values[0]),
+                                float.Parse(v3Values[1]),
+                                float.Parse(v3Values[2])
+                            );
+                        }
+                        break;
+                    default:
+                        return $"Unsupported field type: {fieldType}";
+                }
+
+                serializedObject.ApplyModifiedProperties();
+
+                // If it's an asset, mark it dirty
+                if (!string.IsNullOrEmpty(assetPath))
+                {
+                    EditorUtility.SetDirty(scriptInstance);
+                    AssetDatabase.SaveAssets();
+                }
+
+                return $"Successfully set {fieldName} to {fieldValue}";
+            }
+            catch (Exception e)
+            {
+                return $"Error setting field value: {e.Message}";
+            }
+        }
+    
     }
 }
