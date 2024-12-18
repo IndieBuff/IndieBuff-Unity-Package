@@ -15,6 +15,7 @@ namespace Indiebuff.Editor
         private TextField currentMessageLabel;
         private int chunkSize = 20;
         private int typingDelayMs = 10;
+        List<IndieBuff_CommandData> parsedCommands = new List<IndieBuff_CommandData>();
 
         private IndieBuff_LoadingBar loadingBar;
 
@@ -29,7 +30,7 @@ namespace Indiebuff.Editor
 
         public void ParseCommandMessage(string message)
         {
-            List<IndieBuff_CommandData> parsedCommands = new List<IndieBuff_CommandData>();
+
             message = message.Trim('"').Trim('`');
             message = message.Replace("\\n", "\n");
             message = message[(message.IndexOf("\n") + 1)..];
@@ -99,9 +100,56 @@ namespace Indiebuff.Editor
             {
                 if (c == '\n')
                 {
-
+                    ProcessLine(lineBuffer.ToString());
+                    lineBuffer.Clear();
+                }
+                else
+                {
+                    lineBuffer.Append(c);
                 }
             }
+        }
+
+        private void ProcessLine(string line)
+        {
+            if (string.IsNullOrEmpty(line) || !char.IsLetterOrDigit(line[0]))
+            {
+                return;
+            }
+            if (isLoading)
+            {
+                currentMessageLabel.value = "Loading Commands...";
+                isLoading = false;
+                loadingBar.StopLoading();
+                messageContainer.parent.style.visibility = Visibility.Visible;
+            }
+
+            var commandData = IndieBuff_CommandParser.ParseCommandLine(line.Trim());
+            Debug.Log("parsed command: " + commandData);
+            if (commandData != null)
+            {
+                parsedCommands.Add(commandData);
+                VisualElement commandContainer = CreateCommandElement(commandData);
+                messageContainer.Add(commandContainer);
+            }
+        }
+
+        private VisualElement CreateCommandElement(IndieBuff_CommandData commandData)
+        {
+            VisualElement cmdContainer = new VisualElement();
+            Label cmdLabel = new Label(commandData.ToString());
+            cmdContainer.Add(cmdLabel);
+
+            Button runCmdButton = new Button();
+            runCmdButton.text = "Execute";
+            runCmdButton.clicked += () =>
+            {
+                IndieBuff_CommandParser.ExecuteCommand(commandData);
+            };
+
+            cmdContainer.Add(runCmdButton);
+
+            return cmdContainer;
         }
 
         public void UseLoader(IndieBuff_LoadingBar loadingBar)
