@@ -306,7 +306,6 @@ namespace IndieBuff.Editor
 
                         if (message.action == "Command")
                         {
-                            Debug.Log(aiMessage);
                             var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
                             parser.ParseFullMessage(aiMessage);
                         }
