@@ -41,8 +41,6 @@ namespace IndieBuff.Editor
             primativeType = char.ToUpper(primativeType[0]) + primativeType.Substring(1).ToLower();
             PrimitiveType primitiveTypeEnum;
 
-            Debug.Log(primativeType);
-
             switch (primativeType)
             {
                 case "Cube":
@@ -167,6 +165,11 @@ namespace IndieBuff.Editor
             }
 
             Type componentType = Type.GetType(componentName);
+
+            if (componentType == null)
+            {
+                componentType = Type.GetType("UnityEngine." + componentName + ", UnityEngine");
+            }
 
             if (componentType == null)
             {
