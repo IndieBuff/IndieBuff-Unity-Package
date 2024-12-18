@@ -595,6 +595,8 @@ namespace IndieBuff.Editor
                     parser.ParseCommandChunk(chunk);
 
                 }, cts.Token);
+                string metadata = parser.FinishParsing();
+                Debug.Log(metadata);
             }
             catch (Exception)
             {
