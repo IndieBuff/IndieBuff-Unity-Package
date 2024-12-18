@@ -51,6 +51,12 @@ namespace IndieBuff.Editor
             }
 
             if (componentType == null) {
+                componentType = AppDomain.CurrentDomain.GetAssemblies()
+                                    .SelectMany(a => a.GetTypes())
+                                    .FirstOrDefault(t => t.Name == componentName);
+            }
+
+            if (componentType == null) {
                 return "Failed to find component type: " + componentName;
             }
 
@@ -68,7 +74,70 @@ namespace IndieBuff.Editor
 
             SerializedObject serializedObject = new SerializedObject(existingComponent);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
-            
+
+            // using reflection if no seralized property might gotta make own method
+            if (property == null)
+            {
+                try
+                {
+                    var prop = componentType.GetProperty(propertyName, 
+                        BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                    
+                    if (prop != null)
+                    {
+                        Type propType = prop.PropertyType;
+                        if (propType.IsEnum)
+                        {
+                            bool isFlags = propType.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
+                            if (isFlags && value.Contains(","))
+                            {
+                                string[] enumNames = value.Split(',');
+                                int finalValue = 0;
+                                foreach (string enumName in enumNames)
+                                {
+                                    if (Enum.TryParse(propType, enumName.Trim(), true, out object enumValue))
+                                    {
+                                        finalValue |= Convert.ToInt32(enumValue);
+                                    }
+                                    else
+                                    {
+                                        return $"Failed to parse enum value: {enumName}";
+                                    }
+                                }
+                                prop.SetValue(existingComponent, Enum.ToObject(propType, finalValue));
+                            }
+                            else
+                            {
+                                if (Enum.TryParse(propType, value, true, out object enumValue))
+                                {
+                                    prop.SetValue(existingComponent, enumValue);
+                                }
+                                else
+                                {
+                                    return $"Failed to parse enum value: {value}";
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var convertedValue = Convert.ChangeType(value, propType);
+                            prop.SetValue(existingComponent, convertedValue);
+                        }
+                        
+                        EditorUtility.SetDirty(existingComponent);
+                        return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
+                    }
+                    else
+                    {
+                        return $"Failed to find property '{propertyName}' on component {componentName}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return $"Failed to set property via reflection: {ex.Message}";
+                }
+            }
+
             try
             {
                 switch (property.propertyType)
@@ -98,37 +167,12 @@ namespace IndieBuff.Editor
             }
             catch
             {
+                Debug.Log(propertyName);
+                Debug.Log(property);
                 return "Error when parsring property type";
             }
 
             serializedObject.ApplyModifiedProperties();
-
-
-
-
-            //Type propertyType = GetPropertyType(property);
-
-
-           // if (property == null)
-            //{
-            //    return "Failed to write property type " + propertyName;
-           // }
-
-            //Type typeValue = Type.GetType(property.type);
-
-            //if (typeValue == null)
-           // {
-                //return "Failed to find property type" + hierarchyPath;
-            //}
-
-            //var newValue = Convert.ChangeType(value, (TypeCode)property.propertyType);
-
-           // property.boxedValue = newValue;
-
-
-            //serializedObject.ApplyModifiedProperties();
-
-            //EditorUtility.SetDirty(existingComponent);
 
             return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
         }
@@ -331,166 +375,6 @@ namespace IndieBuff.Editor
         }
 
 
-        public static string ModifySceneArrayProperty(Dictionary<string, string> parameters)
-        {
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
-            string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
-
-            string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
-
-            string operationType = parameters.ContainsKey("operation_type") ? parameters["operation_type"] : null;
-
-            string propertyName = parameters.ContainsKey("property_name") ? parameters["property_name"] : null;
-
-            string value = parameters.ContainsKey("value") ? parameters["value"] : null;
-
-
-            GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
-
-            if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
-            {
-                originalGameObject = GameObject.Find(hierarchyPath);
-            }
-
-            if (originalGameObject == null || string.IsNullOrEmpty(scriptName))
-            {
-                return "Failed to locate gameobject with name: " + hierarchyPath;
-            }
-
-
-            Type componentType = Type.GetType(scriptName);
-
-            if (componentType == null)
-            {
-                return "Failed to find script named: " + scriptName;
-            }
-
-            Component existingComponent = originalGameObject.GetComponent(componentType);
-            if (existingComponent == null)
-            {
-                return "Failed to find component named: " + scriptName;
-
-            }
-
-            if (string.IsNullOrEmpty(propertyName) || string.IsNullOrEmpty(value))
-            {
-                return "No value or property name for gameobject with name: " + hierarchyPath;
-            }
-
-
-            if (operationType != "add")
-            {
-                return "No operation type for gameobject with name: " + hierarchyPath;
-            }
-
-            PropertyInfo property = componentType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-
-            if (property == null || !property.CanWrite)
-            {
-                return "Failed to write property type" + hierarchyPath;
-            }
-
-            object currentValue = property.GetValue(existingComponent);
-
-            if (currentValue is IList list)
-            {
-                list.Add(value);
-
-                property.SetValue(existingComponent, list);
-            }
-
-            else
-            {
-                return "Failed to add value" + hierarchyPath;
-            }
-
-            EditorUtility.SetDirty(existingComponent);
-
-            return $"Property named '{propertyName}' added with value '{value}' to gameobject {hierarchyPath}";
-        }
-
-
-        public static string ModifyAssetArrayProperty(Dictionary<string, string> parameters)
-        {
-
-            string scriptPath = parameters.ContainsKey("script_path") ? parameters["script_path"] : null;
-
-            string operationType = parameters.ContainsKey("operation_type") ? parameters["operation_type"] : null;
-
-            string propertyName = parameters.ContainsKey("property_name") ? parameters["property_name"] : null;
-
-            string value = parameters.ContainsKey("value") ? parameters["value"] : null;
-
-
-            /*GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID)) {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
-
-            if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath)) {
-                originalGameObject = GameObject.Find(hierarchyPath);
-            }
-
-            if (originalGameObject == null || string.IsNullOrEmpty(scriptName)) {
-                return "Failed to locate gameobject with name: " + hierarchyPath;
-            }
-
-
-            Type componentType = Type.GetType(scriptName);
-
-            if (componentType == null) {
-                return "Failed to find script named: " + scriptName;
-            }
-
-            Component existingComponent = originalGameObject.GetComponent(componentType);
-            if (existingComponent == null)
-            {
-                return "Failed to find component named: " + scriptName;
-
-            }
-
-            if (string.IsNullOrEmpty(propertyName) || string.IsNullOrEmpty(value)) {
-                return "No value or property name for gameobject with name: " + hierarchyPath;
-            }
-
-
-            if (operationType != "add") {
-                return "No operation type for gameobject with name: " + hierarchyPath;  
-            }
-
-            PropertyInfo property = componentType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-
-            if (property == null || !property.CanWrite) {
-                return "Failed to write property type" + hierarchyPath;
-            }
-
-            object currentValue = property.GetValue(existingComponent);
-
-            if (currentValue is IList list)
-            {
-                list.Add(value);
-
-                property.SetValue(existingComponent, list);
-            }
-
-            else{
-                return "Failed to add value" + hierarchyPath;
-            }
-
-            EditorUtility.SetDirty(existingComponent);*/
-
-            return $"Property named '{propertyName}' added with value '{value}' to gameobject {scriptPath}";
-        }
 
         public static string SetCustomAssetSerializedProperty(Dictionary<string, string> parameters)
         {
@@ -505,10 +389,12 @@ namespace IndieBuff.Editor
             {
                 return "Failed to get script name";
             }
-            if (!scriptName.Contains("Assets/", StringComparison.OrdinalIgnoreCase)) // changed this to be normalized
+
+            if (!scriptName.Contains("Assets/", StringComparison.OrdinalIgnoreCase))
             {
                 scriptName = System.IO.Path.Combine("Assets/", scriptName);
             }
+
             if (!scriptName.Contains(".cs", StringComparison.OrdinalIgnoreCase))
             {
                 scriptName = System.IO.Path.Combine(scriptName, ".cs");
@@ -522,31 +408,39 @@ namespace IndieBuff.Editor
                 return "Failed to find script named: " + scriptName;
             }
 
-            var serializedObject = new SerializedObject(scriptAsset);
+            SerializedObject serializedObject = new SerializedObject(scriptAsset);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
 
-            if (property == null)
+            try
             {
-                return "Failed to find property: " + propertyName;
+                switch (property.propertyType)
+                {
+                    case SerializedPropertyType.Integer:
+                        property.intValue = int.Parse(value);
+                        break;
+                    case SerializedPropertyType.Boolean:
+                        property.boolValue = bool.Parse(value);
+                        break;
+                    case SerializedPropertyType.Float:
+                        property.floatValue = float.Parse(value);
+                        break;
+                    case SerializedPropertyType.String:
+                        property.stringValue = value;
+                        break;
+                    case SerializedPropertyType.Enum:
+                        property.enumValueIndex = Enum.Parse(typeof(Enum), value) != null ? int.Parse(value) : property.enumValueIndex;
+                        break;
+                    case SerializedPropertyType.ObjectReference:
+                        UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(value);
+                        if (obj != null) property.objectReferenceValue = obj;
+                        break;
+                    default:
+                        return "Unsupported PropertyType";
+                }
             }
-
-            // Handle different property types
-            switch (property.propertyType)
+            catch
             {
-                case SerializedPropertyType.Integer:
-                    property.intValue = Convert.ToInt32(value);
-                    break;
-                case SerializedPropertyType.Float:
-                    property.floatValue = Convert.ToSingle(value);
-                    break;
-                case SerializedPropertyType.String:
-                    property.stringValue = value;
-                    break;
-                case SerializedPropertyType.Boolean:
-                    property.boolValue = Convert.ToBoolean(value);
-                    break;
-                default:
-                    return $"Unsupported property type: {property.propertyType}";
+                return "Error when parsring property type";
             }
 
             serializedObject.ApplyModifiedProperties();
