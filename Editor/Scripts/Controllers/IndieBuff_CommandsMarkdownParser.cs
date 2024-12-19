@@ -195,10 +195,12 @@ namespace Indiebuff.Editor
 
             VisualElement checkIcon = new VisualElement();
             checkIcon.AddToClassList("check-icon");
+            checkIcon.style.display = DisplayStyle.None;
             cmdContainer.Add(checkIcon);
 
             Button runCmdButton = new Button();
-            runCmdButton.text = "Execute";
+            runCmdButton.text = commandData.MethodName;
+            runCmdButton.style.marginTop = 5;
             runCmdButton.clicked += () =>
             {
                 IndieBuff_CommandParser.ExecuteCommand(commandData);
@@ -209,14 +211,11 @@ namespace Indiebuff.Editor
             cmdContainer.Add(runCmdButton);
             commandButtons.Add(runCmdButton);
 
-            Label cmdLabel = new Label(commandData.MethodName);
-            cmdContainer.Add(cmdLabel);
-
             Foldout foldout = new Foldout();
             foldout.name = "command-foldout";
             foldout.text = "View Command";
             foldout.value = false;
-            foldout.style.marginTop = 10;
+            foldout.style.marginTop = 5;
             parentContainer.Add(foldout);
 
             return parentContainer;

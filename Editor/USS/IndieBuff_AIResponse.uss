@@ -222,6 +222,7 @@
     font-size: 12px;
     margin-top: 2px;
     margin-bottom: 2px;
+    width: 100%;
 }
 
 .command-container {

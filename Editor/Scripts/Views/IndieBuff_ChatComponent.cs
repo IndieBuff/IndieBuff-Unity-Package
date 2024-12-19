@@ -302,8 +302,6 @@ namespace IndieBuff.Editor
                         var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
                         var messageLabel = messageContainer.Q<TextField>();
 
-
-
                         if (message.action == "Command")
                         {
                             var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
