@@ -8,9 +8,8 @@ namespace IndieBuff.Editor
 {
     public class GameObjectManager : ICommandManager
     {
-        public static string CreateGameobject(Dictionary<string, string> parameters)
+        public static string CreateGameObject(Dictionary<string, string> parameters)
         {
-
             string gameObjectName = parameters.ContainsKey("game_object_name") ? parameters["game_object_name"] : null;
 
             if (string.IsNullOrEmpty(gameObjectName))

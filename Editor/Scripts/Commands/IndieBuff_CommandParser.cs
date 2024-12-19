@@ -13,12 +13,12 @@ namespace IndieBuff.Editor
         public static MethodInfo FindMethod(string methodName)
         {
             return Assembly.GetExecutingAssembly()
-    .GetTypes()
-    .Where(t => typeof(ICommandManager).IsAssignableFrom(t) && !t.IsInterface)
-    .Select(t => t.GetMethod(methodName,
-        BindingFlags.Public | BindingFlags.NonPublic |
-        BindingFlags.Instance | BindingFlags.Static))
-    .FirstOrDefault(m => m != null);
+            .GetTypes()
+            .Where(t => typeof(ICommandManager).IsAssignableFrom(t) && !t.IsInterface)
+            .Select(t => t.GetMethod(methodName,
+                BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.Instance | BindingFlags.Static))
+            .FirstOrDefault(m => m != null);
         }
 
         public static IndieBuff_CommandData ParseCommandLine(string line)
@@ -75,15 +75,14 @@ namespace IndieBuff.Editor
         {
             try
             {
-                Debug.Log(command);
-                // Get the PropertyManager type
-                Type propertyManagerType = typeof(PropertyManager);
+                Type propertyManagerType = typeof(ICommandManager);
 
                 MethodInfo methodInfo = FindMethod(command.MethodName);
 
                 if (methodInfo == null)
                 {
                     command.ExecutionResult = $"Failed: Method {command.MethodName} not found";
+                    Debug.Log(command.ExecutionResult);
                     return;
                 }
 

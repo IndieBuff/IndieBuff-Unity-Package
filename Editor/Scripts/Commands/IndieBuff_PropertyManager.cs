@@ -63,7 +63,7 @@ namespace IndieBuff.Editor
             Component existingComponent = originalGameObject.GetComponent(componentType);
             if (existingComponent == null)
             {
-                originalGameObject.AddComponent(componentType);
+                existingComponent = originalGameObject.AddComponent(componentType);
 
             }
 
@@ -93,22 +93,33 @@ namespace IndieBuff.Editor
                         Type propType = prop.PropertyType;
                         if (propType.IsEnum)
                         {
-                            bool isFlags = propType.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
-                            if (isFlags && value.Contains(","))
+                            if (value.Contains("|") || value.Contains(","))
                             {
-                                string[] enumNames = value.Split(',');
+                                // split by comma in case 2 groups of pipes
+                                string[] groups = value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                                 int finalValue = 0;
-                                foreach (string enumName in enumNames)
+                                
+                                foreach (string group in groups)
                                 {
-                                    if (Enum.TryParse(propType, enumName.Trim(), true, out object enumValue))
+                                    
+                                    string[] enumNames = group.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                                    int groupValue = 0;
+                                    
+                                    foreach (string enumName in enumNames.Select(n => n.Trim()))
                                     {
-                                        finalValue |= Convert.ToInt32(enumValue);
+                                        if (Enum.TryParse(propType, enumName, true, out object enumValue))
+                                        {
+                                            groupValue |= Convert.ToInt32(enumValue);
+                                        }
+                                        else
+                                        {
+                                            return $"Failed to parse enum value: {enumName}";
+                                        }
                                     }
-                                    else
-                                    {
-                                        return $"Failed to parse enum value: {enumName}";
-                                    }
+                                    
+                                    finalValue |= groupValue;
                                 }
+                                
                                 prop.SetValue(existingComponent, Enum.ToObject(propType, finalValue));
                             }
                             else
@@ -208,6 +219,11 @@ namespace IndieBuff.Editor
                 originalGameObject = GameObject.Find(hierarchyPath);
             }
 
+            if (originalGameObject == null)
+            {
+                return "Could not locate gameobject" + hierarchyPath;
+            }
+
             if (string.IsNullOrEmpty(localPosition))
             {
                 return "When setting transform position value is empty" + hierarchyPath;
@@ -269,10 +285,6 @@ namespace IndieBuff.Editor
         public static string SetTransform3DProperty(Dictionary<string, string> parameters)
         {
 
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string localPosition = parameters.ContainsKey("position") ? parameters["position"] : null;
@@ -282,14 +294,15 @@ namespace IndieBuff.Editor
 
             GameObject originalGameObject = null;
 
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
                 originalGameObject = GameObject.Find(hierarchyPath);
+            }
+
+            if (originalGameObject == null)
+            {
+                return "Could not locate gameobject" + hierarchyPath;
             }
 
             if (string.IsNullOrEmpty(localPosition))
