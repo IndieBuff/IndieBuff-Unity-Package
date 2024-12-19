@@ -199,3 +199,36 @@
 #ExecuteButton:active {
     background-color: rgb(112, 69, 238);
 }
+
+.command-container {
+    flex-direction: row;
+    background-color: rgb(50, 50, 50);
+    padding-top: 4px;
+    padding-right: 6px;
+    padding-bottom: 4px;
+    padding-left: 6px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+}
+
+.command-button {
+    margin-top: 0;
+    margin-right: 6px;
+    margin-bottom: 0;
+    margin-left: 4px;
+    padding-top: 1px;
+    padding-right: 3px;
+    padding-bottom: 1px;
+    padding-left: 3px;
+}
+
+.check-icon {
+    background-image: resource('Icons/IndieBuff_CheckIcon');
+    width: 10px;
+    height: 10px;
+}

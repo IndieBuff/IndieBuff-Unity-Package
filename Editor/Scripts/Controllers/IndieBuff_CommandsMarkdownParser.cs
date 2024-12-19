@@ -95,8 +95,11 @@ namespace Indiebuff.Editor
         private VisualElement CreateCommandElement(IndieBuff_CommandData commandData)
         {
             VisualElement cmdContainer = new VisualElement();
-            Label cmdLabel = new Label(commandData.ToString());
-            cmdContainer.Add(cmdLabel);
+            cmdContainer.AddToClassList("command-container");
+
+            VisualElement checkIcon = new VisualElement();
+            checkIcon.AddToClassList("check-icon");
+            cmdContainer.Add(checkIcon);
 
             Button runCmdButton = new Button();
             runCmdButton.text = "Execute";
@@ -105,9 +108,15 @@ namespace Indiebuff.Editor
                 IndieBuff_CommandParser.ExecuteCommand(commandData);
             };
             runCmdButton.SetEnabled(false);
+            runCmdButton.AddToClassList("command-button");
 
             cmdContainer.Add(runCmdButton);
             commandButtons.Add(runCmdButton);
+
+            Label cmdLabel = new Label(commandData.MethodName);
+            cmdContainer.Add(cmdLabel);
+
+
 
             return cmdContainer;
         }
