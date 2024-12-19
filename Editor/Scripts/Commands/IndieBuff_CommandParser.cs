@@ -71,12 +71,10 @@ namespace IndieBuff.Editor
         }
 
 
-        public static void ExecuteCommand(IndieBuff_CommandData command)
+        public static void ExecuteCommand(IndieBuff_CommandData command, bool isPartOfBatch = false)
         {
             try
             {
-                Type propertyManagerType = typeof(ICommandManager);
-
                 MethodInfo methodInfo = FindMethod(command.MethodName);
 
                 if (methodInfo == null)
@@ -86,10 +84,38 @@ namespace IndieBuff.Editor
                     return;
                 }
 
-                // Execute the method
+                // Queue commands only if we're in a batch AND after a waiting to execute set to true
+                bool shouldQueue = isPartOfBatch && 
+                                  EditorPrefs.GetBool(ScriptManager.WaitingToExecuteKey, false);
+
+                // If we should queue OR we're currently compiling
+                if (shouldQueue || EditorApplication.isCompiling || ScriptManager.domainReloadInProgress)
+                {
+                    Debug.Log("Queueing command: " + command.MethodName);
+                    ScriptManager.domainReloadInProgress = true;
+
+                    string currentList = EditorPrefs.GetString(ScriptManager.PendingParamsKey, "");
+                    string paramsString = $"{command.MethodName}||" + string.Join("|", command.Parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+
+                    if (currentList != "")
+                    {
+                        paramsString = $"{currentList}<|>{paramsString}";
+                    }
+                    
+                    EditorPrefs.SetString(ScriptManager.PendingParamsKey, paramsString);
+                    return;
+                }
+
+                // Execute the command
                 object result = methodInfo.Invoke(null, new object[] { command.Parameters });
                 command.ExecutionResult = result?.ToString() ?? "Command executed successfully";
                 Debug.Log(command.ExecutionResult);
+
+                // Set waiting flag if this was a CreateScript command. gotta add more methods or create a list of methods to check
+                if (command.MethodName == "CreateScript" && command.ExecutionResult.Contains("New script created at path"))
+                {
+                    EditorPrefs.SetBool(ScriptManager.WaitingToExecuteKey, true);
+                }
             }
             catch (Exception e)
             {
@@ -102,8 +128,8 @@ namespace IndieBuff.Editor
         public static void ExecuteAllCommands(List<IndieBuff_CommandData> commands)
         {
             foreach (var command in commands)
-            {
-                ExecuteCommand(command);
+            {                
+                ExecuteCommand(command, isPartOfBatch: true);
             }
         }
     }

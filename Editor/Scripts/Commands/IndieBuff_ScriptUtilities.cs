@@ -8,6 +8,7 @@ using System.Linq;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace IndieBuff.Editor
 {
@@ -159,14 +160,11 @@ namespace IndieBuff.Editor
                             }
                         }
 
-                        if (methodName == "AddScriptToGameObject")
-                        {
-                            ScriptManager.ApplyScriptToGameObject(parameters);
-                        }
-                        else if (methodName == "SetScriptField")
-                        {
-                            ScriptManager.ApplyScriptField(parameters);
-                        }
+                        MethodInfo methodInfo = IndieBuff_CommandParser.FindMethod(methodName);
+
+                        object result = methodInfo.Invoke(null, new object[] { parameters });
+                        string cmdResult = result?.ToString() ?? "Command executed successfully";
+                        Debug.Log(cmdResult);
                     }
                 }
                 EditorPrefs.SetBool(ScriptManager.WaitingToExecuteKey, false);

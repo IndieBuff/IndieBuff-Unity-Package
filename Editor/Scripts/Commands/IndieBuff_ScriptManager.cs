@@ -52,28 +52,8 @@ namespace IndieBuff.Editor
             return $"New script created at path: {path}";
         }
 
+
         public static string AddScriptToGameObject(Dictionary<string, string> parameters)
-        {
-            if (EditorApplication.isCompiling || domainReloadInProgress)
-            {
-                domainReloadInProgress = true;
-                EditorPrefs.SetBool(WaitingToExecuteKey, true);
-
-                string currentList = EditorPrefs.GetString(PendingParamsKey, "");
-                string paramsString = "AddScriptToGameObject||" + string.Join("|", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-
-                if(currentList != ""){
-                    paramsString = $"{currentList}<|>{paramsString}";
-                }
-
-                EditorPrefs.SetString(PendingParamsKey, paramsString);
-                return "Waiting for compilation to complete...";
-            }
-
-            return ApplyScriptToGameObject(parameters);
-        }
-
-        public static string ApplyScriptToGameObject(Dictionary<string, string> parameters)
         {
             string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
             ? parameters["instance_id"]
@@ -132,29 +112,7 @@ namespace IndieBuff.Editor
 
         }
 
-
         public static string SetScriptField(Dictionary<string, string> parameters)
-        {
-            if (EditorApplication.isCompiling || domainReloadInProgress)
-            {
-                domainReloadInProgress = true;
-                EditorPrefs.SetBool(WaitingToExecuteKey, true);
-
-                string currentList = EditorPrefs.GetString(PendingParamsKey, "");
-                string paramsString = "SetScriptField||" + string.Join("|", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-
-                if(currentList != ""){
-                    paramsString = $"{currentList}<|>{paramsString}";
-                }
-
-                EditorPrefs.SetString(PendingParamsKey, paramsString);
-                return "Waiting for compilation to complete...";
-            }
-            
-            return ApplyScriptField(parameters);
-        }
-
-        public static string ApplyScriptField(Dictionary<string, string> parameters)
         {
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
