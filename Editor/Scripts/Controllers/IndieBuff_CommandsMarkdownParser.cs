@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using IndieBuff.Editor;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -15,13 +16,14 @@ namespace Indiebuff.Editor
         private TextField currentMessageLabel;
         private List<IndieBuff_CommandData> parsedCommands = new List<IndieBuff_CommandData>();
         private List<Button> commandButtons = new List<Button>();
-
+        private IndieBuff_SyntaxHighlighter syntaxHighlighter;
         private IndieBuff_LoadingBar loadingBar;
 
         public IndieBuff_CommandsMarkdownParser(VisualElement container, TextField currentLabel)
         {
             isLoading = true;
             lineBuffer = new StringBuilder();
+            syntaxHighlighter = new IndieBuff_SyntaxHighlighter();
 
             messageContainer = container;
             currentMessageLabel = currentLabel;
@@ -65,8 +67,77 @@ namespace Indiebuff.Editor
                 parsedCommands.Add(commandData);
                 VisualElement commandContainer = CreateCommandElement(commandData);
                 messageContainer.Add(commandContainer);
+
+                if (commandData.MethodName == "CreateScript" || commandData.MethodName == "ModifyScript")
+                {
+                    CreateCodeFoldout(commandData);
+
+
+                }
+            }
+        }
+
+        private void CreateCodeFoldout(IndieBuff_CommandData commandData)
+        {
+            Foldout commandPreview = new Foldout();
+            commandPreview.text = "View Script";
+            commandPreview.value = false;
+            messageContainer.Add(commandPreview);
+
+            var lines = commandData.Parameters["script_content"].Split(new[] { '\n' }, StringSplitOptions.None);
+            TextField cmdLabel = CreateNewAIResponseLabel("", "code-block");
+            commandPreview.Add(cmdLabel);
+            string rawCode = "";
+            foreach (var codeLine in lines)
+            {
+                rawCode += codeLine + "\n";
+                cmdLabel.value += TransformCodeBlock(codeLine);
             }
 
+            Button copyButton = new Button();
+            copyButton.AddToClassList("copy-button");
+            copyButton.tooltip = "Copy code";
+
+            VisualElement copyButtonIcon = new VisualElement();
+            copyButtonIcon.AddToClassList("copy-button-icon");
+            copyButton.Add(copyButtonIcon);
+
+
+            copyButton.clickable.clicked += () =>
+            {
+                EditorGUIUtility.systemCopyBuffer = rawCode;
+            };
+
+            cmdLabel.Add(copyButton);
+        }
+
+        private TextField CreateNewAIResponseLabel(string initialText = "", string styleClass = "")
+        {
+            var label = new TextField
+            {
+                value = initialText,
+                isReadOnly = true,
+                multiline = true,
+            };
+            label.AddToClassList("message-text");
+            if (styleClass != "")
+            {
+                label.AddToClassList(styleClass);
+            }
+
+            var textInput = label.Q(className: "unity-text-element");
+            if (textInput is TextElement textElement)
+            {
+                textElement.enableRichText = true;
+            }
+
+            messageContainer.Add(label);
+            return label;
+        }
+
+        private string TransformCodeBlock(string line)
+        {
+            return syntaxHighlighter.HighlightLine(line) + "\n";
         }
 
         private void ProcessLine(string line)
@@ -194,6 +265,20 @@ namespace Indiebuff.Editor
         runCommandButton.style.display = DisplayStyle.Flex;
         runCommandButton.SetEnabled(true);
         runCommandButton.text = "Execute All";
+
+        Foldout commandPreview = new Foldout();
+        commandPreview.text = "View Command";
+        commandPreview.value = false;
+        messageContainer.Add(commandPreview);
+
+        var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
+        currentMessageLabel = CreateNewAIResponseLabel("", "code-block");
+        messageContainer.Remove(currentMessageLabel);
+        commandPreview.Add(currentMessageLabel);
+        foreach (var line in lines)
+        {
+            currentMessageLabel.value += TransformCodeBlock(line);
+        }
 
         runCommandButton.clicked += () =>
           {

@@ -202,7 +202,16 @@
 
 .command-container {
     flex-direction: row;
-    background-color: rgb(50, 50, 50);
+    background-color: rgb(63, 63, 63);
+    font-size: 12px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-right-color: rgba(210, 210, 210, 0.32);
+    border-top-color: rgba(210, 210, 210, 0.32);
+    border-bottom-color: rgba(210, 210, 210, 0.32);
+    border-left-color: rgba(210, 210, 210, 0.32);
     padding-top: 4px;
     padding-right: 6px;
     padding-bottom: 4px;
