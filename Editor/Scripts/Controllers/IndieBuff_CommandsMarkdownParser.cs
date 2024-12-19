@@ -70,6 +70,11 @@ namespace Indiebuff.Editor
 
                 InitializeViewCommand(commandData, commandContainer.Q<Foldout>("command-foldout"));
             }
+            else
+            {
+                VisualElement errorContainer = CreateCommandElementError();
+                messageContainer.Add(errorContainer);
+            }
         }
 
         private void InitializeViewCommand(IndieBuff_CommandData commandData, Foldout commandPreview)
@@ -180,6 +185,23 @@ namespace Indiebuff.Editor
                 VisualElement commandContainer = CreateCommandElement(commandData);
                 messageContainer.Add(commandContainer);
             }
+        }
+
+        private VisualElement CreateCommandElementError()
+        {
+            VisualElement parentContainer = new VisualElement();
+            parentContainer.AddToClassList("command-container-holder");
+            parentContainer.style.flexDirection = FlexDirection.Column;
+
+            VisualElement cmdContainer = new VisualElement();
+            parentContainer.Add(cmdContainer);
+            cmdContainer.AddToClassList("command-container");
+
+            Label errorLabel = new Label();
+            errorLabel.text = "Error: Could not parse command for request.";
+            cmdContainer.Add(errorLabel);
+
+            return parentContainer;
         }
 
         private VisualElement CreateCommandElement(IndieBuff_CommandData commandData)
