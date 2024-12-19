@@ -68,47 +68,66 @@ namespace Indiebuff.Editor
                 VisualElement commandContainer = CreateCommandElement(commandData);
                 messageContainer.Add(commandContainer);
 
-                if (commandData.MethodName == "CreateScript" || commandData.MethodName == "ModifyScript")
-                {
-                    CreateCodeFoldout(commandData);
-
-
-                }
+                InitializeViewCommand(commandData, commandContainer.Q<Foldout>("command-foldout"));
             }
         }
 
-        private void CreateCodeFoldout(IndieBuff_CommandData commandData)
+        private void InitializeViewCommand(IndieBuff_CommandData commandData, Foldout commandPreview)
         {
-            Foldout commandPreview = new Foldout();
-            commandPreview.text = "View Script";
-            commandPreview.value = false;
-            messageContainer.Add(commandPreview);
-
-            var lines = commandData.Parameters["script_content"].Split(new[] { '\n' }, StringSplitOptions.None);
             TextField cmdLabel = CreateNewAIResponseLabel("", "code-block");
-            commandPreview.Add(cmdLabel);
-            string rawCode = "";
-            foreach (var codeLine in lines)
+            cmdLabel.style.borderRightWidth = 0;
+            cmdLabel.style.borderLeftWidth = 0;
+            cmdLabel.style.borderBottomWidth = 0;
+            cmdLabel.style.marginLeft = 0;
+            cmdLabel.style.marginRight = 0;
+            cmdLabel.style.borderTopLeftRadius = 0;
+            cmdLabel.style.borderTopRightRadius = 0;
+            cmdLabel.style.marginTop = 5;
+
+
+            if (commandData.MethodName == "CreateScript" || commandData.MethodName == "ModifyScript")
             {
-                rawCode += codeLine + "\n";
-                cmdLabel.value += TransformCodeBlock(codeLine);
+
+                commandPreview.text = "View Script";
+                var lines = commandData.Parameters["script_content"].Split(new[] { '\n' }, StringSplitOptions.None);
+                string rawCode = "";
+                foreach (var codeLine in lines)
+                {
+                    rawCode += codeLine + "\n";
+                    cmdLabel.value += TransformCodeBlock(codeLine);
+                }
+
+                Button copyButton = new Button();
+                copyButton.AddToClassList("copy-button");
+                copyButton.tooltip = "Copy code";
+
+                VisualElement copyButtonIcon = new VisualElement();
+                copyButtonIcon.AddToClassList("copy-button-icon");
+                copyButton.Add(copyButtonIcon);
+
+
+                copyButton.clickable.clicked += () =>
+                {
+                    EditorGUIUtility.systemCopyBuffer = rawCode;
+                };
+                cmdLabel.Add(copyButton);
+            }
+            else
+            {
+                cmdLabel.style.paddingLeft = 2;
+                cmdLabel.style.paddingRight = 2;
+                cmdLabel.style.paddingTop = 10;
+                cmdLabel.style.paddingBottom = 0;
+                foreach (var param in commandData.Parameters)
+                {
+                    cmdLabel.value += param.Key + ": " + param.Value + "\n";
+                }
+
             }
 
-            Button copyButton = new Button();
-            copyButton.AddToClassList("copy-button");
-            copyButton.tooltip = "Copy code";
-
-            VisualElement copyButtonIcon = new VisualElement();
-            copyButtonIcon.AddToClassList("copy-button-icon");
-            copyButton.Add(copyButtonIcon);
+            commandPreview.Add(cmdLabel);
 
 
-            copyButton.clickable.clicked += () =>
-            {
-                EditorGUIUtility.systemCopyBuffer = rawCode;
-            };
-
-            cmdLabel.Add(copyButton);
         }
 
         private TextField CreateNewAIResponseLabel(string initialText = "", string styleClass = "")
@@ -165,7 +184,13 @@ namespace Indiebuff.Editor
 
         private VisualElement CreateCommandElement(IndieBuff_CommandData commandData)
         {
+
+            VisualElement parentContainer = new VisualElement();
+            parentContainer.AddToClassList("command-container-holder");
+            parentContainer.style.flexDirection = FlexDirection.Column;
+
             VisualElement cmdContainer = new VisualElement();
+            parentContainer.Add(cmdContainer);
             cmdContainer.AddToClassList("command-container");
 
             VisualElement checkIcon = new VisualElement();
@@ -187,9 +212,14 @@ namespace Indiebuff.Editor
             Label cmdLabel = new Label(commandData.MethodName);
             cmdContainer.Add(cmdLabel);
 
+            Foldout foldout = new Foldout();
+            foldout.name = "command-foldout";
+            foldout.text = "View Command";
+            foldout.value = false;
+            foldout.style.marginTop = 10;
+            parentContainer.Add(foldout);
 
-
-            return cmdContainer;
+            return parentContainer;
         }
 
         public void UseLoader(IndieBuff_LoadingBar loadingBar)
@@ -226,85 +256,3 @@ namespace Indiebuff.Editor
 
     }
 }
-
-/*
-  public void ParseCommandMessage(string message)
-    {
-
-        message = message.Trim('"').Trim('`');
-        message = message.Replace("\\n", "\n");
-        message = message[(message.IndexOf("\n") + 1)..];
-        message = message.Replace("\\", "");
-        message = message.TrimEnd('\n');
-
-        Debug.Log(message);
-
-        var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
-        foreach (var line in lines)
-        {
-            try
-            {
-                var commandData = IndieBuff_CommandParser.ParseCommandLine(line.Trim());
-                Debug.Log("parsed command: " + commandData);
-                if (commandData != null)
-                {
-                    parsedCommands.Add(commandData);
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Error parsing command: {line}\nError: {e.Message}");
-            }
-        }
-
-        messageContainer.parent.style.visibility = Visibility.Visible;
-        currentMessageLabel.value = "Hit 'Execute All' to run the commands or run each manually.";
-
-
-        Button runCommandButton = messageContainer.parent.Q<Button>("ExecuteButton");
-        runCommandButton.style.display = DisplayStyle.Flex;
-        runCommandButton.SetEnabled(true);
-        runCommandButton.text = "Execute All";
-
-        Foldout commandPreview = new Foldout();
-        commandPreview.text = "View Command";
-        commandPreview.value = false;
-        messageContainer.Add(commandPreview);
-
-        var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
-        currentMessageLabel = CreateNewAIResponseLabel("", "code-block");
-        messageContainer.Remove(currentMessageLabel);
-        commandPreview.Add(currentMessageLabel);
-        foreach (var line in lines)
-        {
-            currentMessageLabel.value += TransformCodeBlock(line);
-        }
-
-        runCommandButton.clicked += () =>
-          {
-              IndieBuff_CommandParser.ExecuteAllCommands(parsedCommands);
-          };
-
-        for (int i = 0; i < parsedCommands.Count; i++)
-        {
-            VisualElement cmdContainer = new VisualElement();
-            Label cmdNumLabel = new Label($"Command {i + 1}: ");
-            Label cmdLabel = new Label(parsedCommands[i].ToString());
-            cmdContainer.Add(cmdNumLabel);
-            cmdContainer.Add(cmdLabel);
-
-            Button runCmdButton = new Button();
-            IndieBuff_CommandData cmd = parsedCommands[i];
-            runCmdButton.text = "Execute";
-            runCmdButton.clicked += () =>
-            {
-                Debug.Log("pressed");
-                IndieBuff_CommandParser.ExecuteCommand(cmd);
-            };
-
-            cmdContainer.Add(runCmdButton);
-
-            messageContainer.Add(cmdContainer);
-        }
-    }
-*/

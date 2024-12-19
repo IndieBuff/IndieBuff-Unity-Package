@@ -200,11 +200,10 @@
     background-color: rgb(112, 69, 238);
 }
 
-.command-container {
-    flex-direction: row;
-    background-color: rgb(63, 63, 63);
-    font-size: 12px;
+.command-container-holder {
     border-top-width: 1px;
+    flex-direction: column;
+    background-color: rgb(63, 63, 63);
     border-right-width: 1px;
     border-bottom-width: 1px;
     border-left-width: 1px;
@@ -212,16 +211,22 @@
     border-top-color: rgba(210, 210, 210, 0.32);
     border-bottom-color: rgba(210, 210, 210, 0.32);
     border-left-color: rgba(210, 210, 210, 0.32);
-    padding-top: 4px;
-    padding-right: 6px;
-    padding-bottom: 4px;
-    padding-left: 6px;
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
-    margin-top: 6px;
-    margin-bottom: 6px;
+    padding-top: 4px;
+    padding-right: 6px;
+    padding-bottom: 4px;
+    padding-left: 6px;
+    font-size: 12px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.command-container {
+    flex-direction: row;
+
     align-items: center;
 }
 
@@ -234,6 +239,15 @@
     padding-right: 3px;
     padding-bottom: 1px;
     padding-left: 3px;
+    background-color: rgb(106, 81, 120);
+}
+
+.command-button:hover {
+    background-color: rgb(114, 95, 125);
+}
+
+.command-button:active {
+    background-color: rgb(106, 81, 120);  
 }
 
 .check-icon {
