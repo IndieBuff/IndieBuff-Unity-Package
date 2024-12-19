@@ -72,8 +72,13 @@ namespace IndieBuff.Editor
                 return "No value or property name for gameobject with name: " + hierarchyPath;
             }
 
+            if (propertyName.StartsWith("M_") || propertyName.StartsWith("m_"))
+            {
+                propertyName = propertyName.Substring(2);
+            }
             SerializedObject serializedObject = new SerializedObject(existingComponent);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
+
 
             // using reflection if no seralized property might gotta make own method
             if (property == null)

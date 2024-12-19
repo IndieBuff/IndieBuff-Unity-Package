@@ -158,7 +158,7 @@ namespace IndieBuff.Editor
         {
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
-            string assetPath = parameters.ContainsKey("asset_path") ? parameters["asset_path"] : null;
+            string assetPath = parameters.ContainsKey("script_path") ? parameters["script_path"] : null;
 
             string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
             string fieldName = parameters.ContainsKey("field_name") ? parameters["field_name"] : null;
