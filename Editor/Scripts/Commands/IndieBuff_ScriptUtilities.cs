@@ -136,19 +136,38 @@ namespace IndieBuff.Editor
                 ScriptManager.domainReloadInProgress = false;
 
                 string paramsString = EditorPrefs.GetString(ScriptManager.PendingParamsKey, "");
-                if (!string.IsNullOrEmpty(paramsString))
+                string[] cmds = paramsString.Split(new string[] { "<|>" }, StringSplitOptions.None);
+
+                foreach (string cmd in cmds)
                 {
-                    var parameters = new Dictionary<string, string>();
-                    string[] pairs = paramsString.Split('|');
-                    foreach (string pair in pairs)
+                    if (!string.IsNullOrEmpty(cmd))
                     {
-                        string[] keyValue = pair.Split('=');
-                        if (keyValue.Length == 2)
+                        string[] methodAndParams = cmd.Split(new[] { "||" }, 2, StringSplitOptions.None);
+                        if (methodAndParams.Length != 2) continue;
+
+                        string methodName = methodAndParams[0];
+                        string paramString = methodAndParams[1];
+
+                        var parameters = new Dictionary<string, string>();
+                        string[] pairs = paramString.Split('|');
+                        foreach (string pair in pairs)
                         {
-                            parameters[keyValue[0]] = keyValue[1];
+                            string[] keyValue = pair.Split('=');
+                            if (keyValue.Length == 2)
+                            {
+                                parameters[keyValue[0]] = keyValue[1];
+                            }
+                        }
+
+                        if (methodName == "AddScriptToGameObject")
+                        {
+                            ScriptManager.ApplyScriptToGameObject(parameters);
+                        }
+                        else if (methodName == "SetScriptField")
+                        {
+                            ScriptManager.ApplyScriptField(parameters);
                         }
                     }
-                    ScriptManager.ApplyScriptToGameObject(parameters);
                 }
                 EditorPrefs.SetBool(ScriptManager.WaitingToExecuteKey, false);
                 EditorPrefs.SetString(ScriptManager.PendingParamsKey, "");

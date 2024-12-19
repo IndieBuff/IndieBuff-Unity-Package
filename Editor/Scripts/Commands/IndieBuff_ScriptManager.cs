@@ -59,9 +59,14 @@ namespace IndieBuff.Editor
                 domainReloadInProgress = true;
                 EditorPrefs.SetBool(WaitingToExecuteKey, true);
 
-                string paramsString = string.Join("|", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-                EditorPrefs.SetString(PendingParamsKey, paramsString);
+                string currentList = EditorPrefs.GetString(PendingParamsKey, "");
+                string paramsString = "AddScriptToGameObject||" + string.Join("|", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
 
+                if(currentList != ""){
+                    paramsString = $"{currentList}<|>{paramsString}";
+                }
+
+                EditorPrefs.SetString(PendingParamsKey, paramsString);
                 return "Waiting for compilation to complete...";
             }
 
@@ -126,20 +131,40 @@ namespace IndieBuff.Editor
             return $"Script {path} added to gameobject {hierarchyPath}";
 
         }
-    
+
+
         public static string SetScriptField(Dictionary<string, string> parameters)
         {
-            // Target parameters
+            if (EditorApplication.isCompiling || domainReloadInProgress)
+            {
+                domainReloadInProgress = true;
+                EditorPrefs.SetBool(WaitingToExecuteKey, true);
+
+                string currentList = EditorPrefs.GetString(PendingParamsKey, "");
+                string paramsString = "SetScriptField||" + string.Join("|", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+
+                if(currentList != ""){
+                    paramsString = $"{currentList}<|>{paramsString}";
+                }
+
+                EditorPrefs.SetString(PendingParamsKey, paramsString);
+                return "Waiting for compilation to complete...";
+            }
+            
+            return ApplyScriptField(parameters);
+        }
+
+        public static string ApplyScriptField(Dictionary<string, string> parameters)
+        {
+
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
             string assetPath = parameters.ContainsKey("asset_path") ? parameters["asset_path"] : null;
 
-            // Field parameters
             string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
             string fieldName = parameters.ContainsKey("field_name") ? parameters["field_name"] : null;
             string fieldType = parameters.ContainsKey("field_type") ? parameters["field_type"] : null;
             string fieldValue = parameters.ContainsKey("field_value") ? parameters["field_value"] : null;
 
-            // Find the target object (could be scene GameObject or asset)
             UnityEngine.Object targetObject = null;
             
 
@@ -187,7 +212,6 @@ namespace IndieBuff.Editor
                 return $"Failed to find field {fieldName}";
             }
 
-            // Set the field value based on its type
             try
             {
                 switch (fieldType.ToLower())
@@ -245,7 +269,7 @@ namespace IndieBuff.Editor
 
                 serializedObject.ApplyModifiedProperties();
 
-                // If it's an asset, mark it dirty
+
                 if (!string.IsNullOrEmpty(assetPath))
                 {
                     EditorUtility.SetDirty(scriptInstance);
@@ -258,7 +282,6 @@ namespace IndieBuff.Editor
             {
                 return $"Error setting field value: {e.Message}";
             }
-        }
-    
+        }        
     }
 }
