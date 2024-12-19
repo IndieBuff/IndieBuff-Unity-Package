@@ -140,6 +140,8 @@ namespace IndieBuff.Editor
         public Dictionary<string, string> Parameters { get; set; }
         public string ExecutionResult { get; set; }
 
+        public string Description { get; set; }
+
         public override string ToString()
         {
             return $"{MethodName}, {string.Join(", ", Parameters.Select(p => $"[\"{p.Key}\":\"{p.Value}\"]"))}";
