@@ -91,6 +91,9 @@ namespace IndieBuff.Editor
                     if (prop != null)
                     {
                         Type propType = prop.PropertyType;
+                        
+
+                        // handling enums
                         if (propType.IsEnum)
                         {
                             if (value.Contains("|") || value.Contains(","))
@@ -134,6 +137,111 @@ namespace IndieBuff.Editor
                                 }
                             }
                         }
+
+                        else if (propType.IsArray)
+                        {
+                            try
+                            {
+                                // Get the type of elements in the array
+                                Type elementType = propType.GetElementType();
+                                
+                                
+                                Array existingArray;
+                                if (elementType == typeof(Material) && existingComponent is Renderer renderer)
+                                {
+                                    existingArray = renderer.sharedMaterials;
+                                }
+                                else
+                                {
+                                    existingArray = prop.GetValue(existingComponent) as Array;
+                                    if (existingArray == null)
+                                    {
+                                        existingArray = Array.CreateInstance(elementType, 0);
+                                    }
+                                }
+            
+                                
+                                // Create new array with +1 length
+                                Array updatedArray = Array.CreateInstance(elementType, existingArray.Length + 1);
+                                existingArray.CopyTo(updatedArray, 0);
+
+                                // Handle UnityEngine.Object types (like Materials, GameObjects, etc.)
+                                if (typeof(UnityEngine.Object).IsAssignableFrom(elementType))
+                                {
+                                    string[] guids = AssetDatabase.FindAssets($"t:{elementType.Name} {value}");
+                                    if (guids.Length > 0)
+                                    {
+                                        string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                                        var newItem = AssetDatabase.LoadAssetAtPath(assetPath, elementType);
+                                        
+                                        if (newItem != null)
+                                        {
+                                            updatedArray.SetValue(newItem, existingArray.Length);
+                                            prop.SetValue(existingComponent, updatedArray);
+                                            EditorUtility.SetDirty(existingComponent);
+                                            return $"Added {value} to array in {hierarchyPath}";
+                                        }
+                                    }
+                                    return $"Failed to find asset: {value}";
+                                }
+                                // Handle primitive types (int, string, etc.)
+                                else
+                                {
+                                    try
+                                    {
+                                        var convertedValue = Convert.ChangeType(value, elementType);
+                                        updatedArray.SetValue(convertedValue, existingArray.Length);
+                                        prop.SetValue(existingComponent, updatedArray);
+                                        EditorUtility.SetDirty(existingComponent);
+                                        return $"Added {value} to array in {hierarchyPath}";
+                                    }
+                                    catch
+                                    {
+                                        return $"Failed to convert {value} to type {elementType.Name}";
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                return $"Failed to modify array: {ex.Message}";
+                            }
+                        }
+                        // Check if it's a List<T>
+                        else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(List<>))
+                        {
+                            try
+                            {
+                                var currentList = prop.GetValue(existingComponent) as IList;
+                                if (currentList == null)
+                                {
+                                    currentList = Activator.CreateInstance(propType) as IList;
+                                }
+
+                                Type elementType = propType.GetGenericArguments()[0];
+                                
+                                // Find and add the asset
+                                string[] guids = AssetDatabase.FindAssets($"t:{elementType.Name} {value}");
+                                if (guids.Length > 0)
+                                {
+                                    string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                                    var newItem = AssetDatabase.LoadAssetAtPath(assetPath, elementType);
+                                    
+                                    if (newItem != null)
+                                    {
+                                        currentList.Add(newItem);
+                                        prop.SetValue(existingComponent, currentList);
+                                        EditorUtility.SetDirty(existingComponent);
+                                        return $"Added {value} to list in {hierarchyPath}";
+                                    }
+                                }
+                                return $"Failed to find asset: {value}";
+                            }
+                            catch (Exception ex)
+                            {
+                                return $"Failed to modify list: {ex.Message}";
+                            }
+                        }
+
                         else
                         {
                             var convertedValue = Convert.ChangeType(value, propType);
@@ -143,6 +251,7 @@ namespace IndieBuff.Editor
                         EditorUtility.SetDirty(existingComponent);
                         return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
                     }
+                    
                     else
                     {
                         return $"Failed to find property '{propertyName}' on component {componentName}";
@@ -183,8 +292,6 @@ namespace IndieBuff.Editor
             }
             catch
             {
-                Debug.Log(propertyName);
-                Debug.Log(property);
                 return "Error when parsring property type";
             }
 

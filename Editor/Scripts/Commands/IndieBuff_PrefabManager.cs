@@ -154,9 +154,6 @@ namespace IndieBuff.Editor
 
         public static string ConvertToPrefab(Dictionary<string, string> parameters)
         {
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-                ? parameters["instance_id"]
-                : null;
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
             string prefabPath = parameters.ContainsKey("prefab_path") ? parameters["prefab_path"] : null;
@@ -164,11 +161,6 @@ namespace IndieBuff.Editor
 
             // Find the source GameObject
             GameObject sourceObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                sourceObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (sourceObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -213,5 +205,6 @@ namespace IndieBuff.Editor
 
             return $"Failed to convert GameObject to prefab at {fullPath}";
         }
+    
     }
 }
