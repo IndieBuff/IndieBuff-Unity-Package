@@ -67,15 +67,10 @@ namespace IndieBuff.Editor
             return true;
         }
 
-        internal async Task<Dictionary<string, object>> BuildUserContext()
+        internal Task<Dictionary<string, object>> BuildUserContext()
         {
-            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects, 2000);
-            builder.StartContextBuild();
-
-            await Task.Delay(100);
-
-
-            return builder.GetContextData();
+            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects);
+            return builder.StartContextBuild();
         }
 
     }
