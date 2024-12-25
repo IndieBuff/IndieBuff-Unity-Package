@@ -1,3 +1,9 @@
+## [1.1.3] - 2024-12-25
+
+### Fixed
+
+- Incorrect placeholder text for Unity 6 users
+
 ## [1.1.2] - 2024-12-17
 
 ### Fixed
