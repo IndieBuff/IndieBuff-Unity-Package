@@ -20,7 +20,6 @@ namespace IndieBuff.Editor
         private ChatMode _currentMode = ChatMode.Chat;
         public Action onChatModeChanged;
         public Action onMessagesLoaded;
-        public Action onConversationChanged;
 
         private string _currentConvoId;
         private bool _isInitialized = false;
@@ -49,7 +48,6 @@ namespace IndieBuff.Editor
                     _currentConvoId = value;
                     SessionState.SetString(CurrentConvoIdKey, value);
                     _ = LoadCurrentConversation();
-                    onConversationChanged?.Invoke();
                 }
             }
         }

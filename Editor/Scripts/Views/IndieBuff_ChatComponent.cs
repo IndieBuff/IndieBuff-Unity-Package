@@ -132,16 +132,16 @@ namespace IndieBuff.Editor
 
 
 
-            IndieBuff_UserInfo.Instance.onConvoChanged += OnConvoChanged;
+            //IndieBuff_UserInfo.Instance.onConvoChanged += OnConvoChanged;
 
             IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
             {
                 aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
             };
 
-            IndieBuff_UserInfo.Instance.onChatModeChanged += () =>
+            IndieBuff_ConvoHandler.Instance.onChatModeChanged += () =>
             {
-                if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
+                if (IndieBuff_ConvoHandler.Instance.currentMode == ChatMode.Chat)
                 {
                     placeholderLabel.text = "Ask IndieBuff for help or code";
                 }
@@ -268,7 +268,7 @@ namespace IndieBuff.Editor
 
 
 
-        public void Cleanup()
+        //public void Cleanup()
         {
             IndieBuff_UserInfo.Instance.onConvoChanged -= OnConvoChanged;
         }
@@ -337,6 +337,25 @@ namespace IndieBuff.Editor
             }
         }
 
+        private void OnNewChatClicked()
+        {
+            IndieBuff_UserInfo.Instance.Clear();
+            chatName.text = "New Chat";
+            responseArea.Clear();
+        }
+
+        private void HandleAIMessageMetadata(string metadata)
+        {
+            string[] metadataParts = metadata.Split('|');
+            IndieBuff_UserInfo.Instance.currentConvoId = metadataParts[0];
+
+            if (metadataParts[1] != "None" && metadataParts[1] != "")
+            {
+                IndieBuff_UserInfo.Instance.currentConvoTitle = metadataParts[1];
+            }
+
+        }
+
         private void ScrollToBottom()
         {
             float contentHeight = responseArea.contentContainer.layout.height;
@@ -360,8 +379,6 @@ namespace IndieBuff.Editor
                     }
                 }
             }
-
-            msgContainer.parent.Q<VisualElement>("FeedbackWidgets").style.display = DisplayStyle.Flex;
         }
 
         private void OnChatInputKeyDown(KeyDownEvent evt)
@@ -409,13 +426,6 @@ namespace IndieBuff.Editor
             chatHistoryButton.clicked += OnChatHistoryClicked;
         }
 
-        private void OnNewChatClicked()
-        {
-            IndieBuff_UserInfo.Instance.Clear();
-            chatName.text = "New Chat";
-            responseArea.Clear();
-        }
-
         private void OnChatHistoryClicked()
         {
             float panelWidth = chatHistoryPanel.resolvedStyle.width;
@@ -456,7 +466,7 @@ namespace IndieBuff.Editor
             chatInputArea.value = string.Empty;
             await HandleAIResponse(userMessage);
 
-            await IndieBuff_UserInfo.Instance.GetAllUsersChats();
+            //await IndieBuff_UserInfo.Instance.GetAllUsersChats();
             isStreamingMessage = false;
             sendChatButton.Q<VisualElement>("StopChatIcon").style.display = DisplayStyle.None;
             sendChatButton.Q<VisualElement>("SendChatIcon").style.display = DisplayStyle.Flex;
@@ -496,37 +506,6 @@ namespace IndieBuff.Editor
             var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(responseBoxStylePath);
 
             aiMessageContainer.styleSheets.Add(styleSheet);
-
-            var copyResponseButton = aiMessageContainer.Q<Button>("CopyResponseButton");
-            var thumbsUpButton = aiMessageContainer.Q<Button>("ThumbsUpButton");
-            var thumbsDownButton = aiMessageContainer.Q<Button>("ThumbsDownButton");
-
-            copyResponseButton.clicked += () => { };
-            thumbsUpButton.clicked += async () =>
-            {
-                await HandleOnFeedbackClick(responseArea.IndexOf(aiMessageContainer), true);
-                thumbsDownButton.SetEnabled(false);
-                thumbsUpButton.SetEnabled(false);
-
-                thumbsDownButton.RemoveFromClassList("feedback-button");
-                thumbsUpButton.RemoveFromClassList("feedback-button");
-
-                thumbsDownButton.tooltip = "";
-                thumbsUpButton.tooltip = "";
-            };
-            thumbsDownButton.clicked += async () =>
-            {
-                await HandleOnFeedbackClick(responseArea.IndexOf(aiMessageContainer), false);
-                thumbsDownButton.SetEnabled(false);
-                thumbsUpButton.SetEnabled(false);
-
-                thumbsDownButton.RemoveFromClassList("feedback-button");
-                thumbsUpButton.RemoveFromClassList("feedback-button");
-
-                thumbsDownButton.tooltip = "";
-                thumbsUpButton.tooltip = "";
-            };
-
             var messageContainer = aiMessageContainer.Q<VisualElement>("MessageContainer");
             var messageLabel = new TextField
             {
@@ -617,7 +596,7 @@ namespace IndieBuff.Editor
             await Task.Delay(50);
             responseArea.ScrollTo(responseContainer);
 
-            if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
+            if (IndieBuff_ConvoHandler.Instance.currentMode == ChatMode.Chat)
             {
                 await HandleStreamingAIResponse(userMessage, responseContainer);
             }
@@ -627,18 +606,6 @@ namespace IndieBuff.Editor
 
             }
 
-
-        }
-
-        private void HandleAIMessageMetadata(string metadata)
-        {
-            string[] metadataParts = metadata.Split('|');
-            IndieBuff_UserInfo.Instance.currentConvoId = metadataParts[0];
-
-            if (metadataParts[1] != "None" && metadataParts[1] != "")
-            {
-                IndieBuff_UserInfo.Instance.currentConvoTitle = metadataParts[1];
-            }
 
         }
 
@@ -659,16 +626,6 @@ namespace IndieBuff.Editor
             }
         }
 
-        private async Task HandleOnFeedbackClick(int index, bool thumbsUp)
-        {
-            IndieBuff_ConversationData convo = IndieBuff_UserInfo.Instance.conversations.Find(convo => convo._id == IndieBuff_UserInfo.Instance.currentConvoId);
-            string messageId = convo.messages[index];
-            await IndieBuff_ApiClient.Instance.PostMessageFeedbackAsync(messageId, thumbsUp);
-        }
-    }
 
-    public class commandResponse
-    {
-        public string[] output { get; set; }
     }
 }

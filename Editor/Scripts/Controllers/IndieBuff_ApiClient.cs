@@ -123,8 +123,6 @@ namespace IndieBuff.Editor
                 Debug.Log(response.Content.ReadAsStringAsync().Result);
                 throw new Exception("Error: Response was unsuccessful");
             }
-
-
         }
 
         public Task<HttpResponseMessage> GetIndieBuffUserAsync()
@@ -136,27 +134,6 @@ namespace IndieBuff.Editor
         {
             return SendRequestAsync(() => client.GetAsync("plugin-chat/available-models"));
         }
-
-        public Task<HttpResponseMessage> PostMessageFeedbackAsync(string messageId, bool isPositive)
-        {
-            var requestData = new FeedbackRequest { messageId = messageId, isPositive = isPositive };
-            var jsonPayload = JsonUtility.ToJson(requestData);
-
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/feedback")
-            {
-                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-            };
-
-            return SendRequestAsync(() => client.SendAsync(requestMessage));
-        }
-
-        [Serializable]
-        public class FeedbackRequest
-        {
-            public string messageId;
-            public bool isPositive;
-        }
-
 
         [Serializable]
         public class ChatRequest

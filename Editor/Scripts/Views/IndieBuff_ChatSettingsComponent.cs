@@ -93,7 +93,7 @@ namespace IndieBuff.Editor
                     break;
             }
 
-            IndieBuff_UserInfo.Instance.currentMode = mode;
+            IndieBuff_ConvoHandler.Instance.currentMode = mode;
         }
 
 
