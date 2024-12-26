@@ -88,7 +88,7 @@ namespace IndieBuff.Editor
 
             await TokenManager.Instance.RefreshTokensAsync();
             string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
-            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId != null ? IndieBuff_UserInfo.Instance.currentConvoId : null };
+            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_ConvoHandler.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity" };
             var jsonPayload = JsonUtility.ToJson(requestData);
             var jsonStringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
@@ -127,60 +127,44 @@ namespace IndieBuff.Editor
 
         }
 
+        // public Task<HttpResponseMessage> GetAllUsersChatsAsync()
+        // {
+        //     var requestData = new ChatRequest { gameEngine = "unity" };
+        //     var jsonPayload = JsonUtility.ToJson(requestData);
 
-        public async Task<HttpResponseMessage> GetAICommandResponseAsync(string prompt, CancellationToken cancellationToken = default)
-        {
-            string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
-            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId != null ? IndieBuff_UserInfo.Instance.currentConvoId : null };
-            var jsonPayload = JsonUtility.ToJson(requestData);
-            var jsonStringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+        //     var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/get-chats")
+        //     {
+        //         Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
+        //     };
 
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/chat")
-            {
-                Content = jsonStringContent
-            };
+        //     return SendRequestAsync(() => client.SendAsync(requestMessage));
+        // }
 
-            var response = await SendRequestAsync(() => client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken));
-            return response;
-        }
-        public Task<HttpResponseMessage> GetAllUsersChatsAsync()
-        {
-            var requestData = new ChatRequest { gameEngine = "unity" };
-            var jsonPayload = JsonUtility.ToJson(requestData);
+        // public Task<HttpResponseMessage> GetConvoHistoryAsync()
+        // {
+        //     var requestData = new ChatRequest { gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId };
+        //     var jsonPayload = JsonUtility.ToJson(requestData);
 
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/get-chats")
-            {
-                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-            };
+        //     var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/chat-history")
+        //     {
+        //         Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
+        //     };
 
-            return SendRequestAsync(() => client.SendAsync(requestMessage));
-        }
+        //     return SendRequestAsync(() => client.SendAsync(requestMessage));
+        // }
 
-        public Task<HttpResponseMessage> GetConvoHistoryAsync()
-        {
-            var requestData = new ChatRequest { gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId };
-            var jsonPayload = JsonUtility.ToJson(requestData);
+        // public Task<HttpResponseMessage> DeleteConvoAsync(string convoId)
+        // {
+        //     var requestData = new ChatRequest { gameEngine = "unity", conversationId = convoId };
+        //     var jsonPayload = JsonUtility.ToJson(requestData);
 
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/chat-history")
-            {
-                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-            };
+        //     var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/delete-chat")
+        //     {
+        //         Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
+        //     };
 
-            return SendRequestAsync(() => client.SendAsync(requestMessage));
-        }
-
-        public Task<HttpResponseMessage> DeleteConvoAsync(string convoId)
-        {
-            var requestData = new ChatRequest { gameEngine = "unity", conversationId = convoId };
-            var jsonPayload = JsonUtility.ToJson(requestData);
-
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/delete-chat")
-            {
-                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-            };
-
-            return SendRequestAsync(() => client.SendAsync(requestMessage));
-        }
+        //     return SendRequestAsync(() => client.SendAsync(requestMessage));
+        // }
 
         public Task<HttpResponseMessage> GetIndieBuffUserAsync()
         {
@@ -219,7 +203,6 @@ namespace IndieBuff.Editor
             public string prompt;
             public string context;
             public string gameEngine;
-            public string conversationId = null;
             public string chatMode;
             public string aiModel;
         }
