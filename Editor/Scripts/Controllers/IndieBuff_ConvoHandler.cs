@@ -1,109 +1,68 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using SQLite;
-using UnityEngine;
+using UnityEditor;
 
 namespace IndieBuff.Editor
 {
     public class IndieBuff_ConvoHandler
     {
-        private readonly SQLiteAsyncConnection _database;
-        string dbPath = Path.Combine(Application.persistentDataPath, "IndieBuff/Conversations/IndieBuff_Convos.db");
+        private static IndieBuff_ConvoHandler _instance;
+        private IndieBuff_ConvoDBController db;
 
+        public List<IndieBuff_ConversationData> conversations = new List<IndieBuff_ConversationData>();
+        public List<IndieBuff_MessageData> currentMessages = new List<IndieBuff_MessageData>();
 
-        public IndieBuff_ConvoHandler()
+        const string CurrentConvoIdKey = "IndieBuffUserSession_CurrentConvoId";
+        const string CurrentConvoTitleKey = "IndieBuffUserSession_CurrentConvoTitle";
+
+        private ChatMode _currentMode = ChatMode.Chat;
+        public Action onChatModeChanged;
+
+        public ChatMode currentMode
         {
-            _database = new SQLiteAsyncConnection(dbPath);
-            InitializeDatabase().Wait();
-        }
-
-        private async Task InitializeDatabase()
-        {
-            await _database.CreateTableAsync<Conversation>();
-            await _database.CreateTableAsync<Message>();
-        }
-
-        public async Task<int> CreateConversation(string title, string aiModel)
-        {
-            var conversation = new Conversation
+            get => _currentMode;
+            set
             {
-                Title = title,
-                CreatedAt = DateTime.Now,
-                LastUpdatedAt = DateTime.Now,
-                LastUsedModel = aiModel
-            };
-            return await _database.InsertAsync(conversation);
+                if (_currentMode != value)
+                {
+                    _currentMode = value;
+                    onChatModeChanged?.Invoke();
+                }
+            }
         }
 
-        public async Task<Conversation> GetConversation(int conversationId)
+        private string _lastConvoId;
+        public string currentConvoId
         {
-            return await _database.GetAsync<Conversation>(conversationId);
-        }
-
-        public async Task<List<Conversation>> GetAllConversations()
-        {
-            return await _database.Table<Conversation>().ToListAsync();
-        }
-
-        public async Task UpdateConversation(Conversation conversation)
-        {
-            conversation.LastUpdatedAt = DateTime.UtcNow;
-            await _database.UpdateAsync(conversation);
-        }
-
-        public async Task DeleteConversation(int conversationId)
-        {
-            await _database.DeleteAsync<Conversation>(conversationId);
-            await _database.Table<Message>().Where(m => m.ConversationId == conversationId).DeleteAsync();
-        }
-
-        public async Task<int> AddMessage(int conversationId, string role, string content, string messageType, string aiModel)
-        {
-            var message = new Message
+            get => SessionState.GetString(CurrentConvoIdKey, null);
+            set
             {
-                ConversationId = conversationId,
-                Role = role,
-                Content = content,
-                Timestamp = DateTime.UtcNow,
-                MessageType = messageType,
-                AiModel = aiModel
-            };
-            var conversation = await GetConversation(conversationId);
-            conversation.LastUsedModel = aiModel;
-            await UpdateConversation(conversation);
-
-            return await _database.InsertAsync(message);
+                if (_lastConvoId != value)
+                {
+                    _lastConvoId = value;
+                    SessionState.SetString(CurrentConvoIdKey, value);
+                    // onConvoChanged?.Invoke();
+                }
+            }
         }
 
-        public async Task<List<Message>> GetConversationMessages(int conversationId)
+        private IndieBuff_ConvoHandler()
         {
-            return await _database.Table<Message>().Where(m => m.ConversationId == conversationId).OrderBy(m => m.Timestamp).ToListAsync();
+            db = new IndieBuff_ConvoDBController();
+
+
         }
 
-    }
+        public static IndieBuff_ConvoHandler Instance
+        {
+            get
+            {
+                _instance ??= new IndieBuff_ConvoHandler();
+                return _instance;
+            }
+        }
 
 
-    public class Conversation
-    {
-        [PrimaryKey, AutoIncrement]
-        public int ConversationId { get; set; }
-        public string Title { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime LastUpdatedAt { get; set; }
-        public string LastUsedModel { get; set; }
     }
-    public class Message
-    {
-        [PrimaryKey, AutoIncrement]
-        public int MessageId { get; set; }
-        [Indexed]
-        public int ConversationId { get; set; }
-        public string Role { get; set; }
-        public string Content { get; set; }
-        public DateTime Timestamp { get; set; }
-        public string MessageType { get; set; }
-        public string AiModel { get; set; }
-    }
+
 }
