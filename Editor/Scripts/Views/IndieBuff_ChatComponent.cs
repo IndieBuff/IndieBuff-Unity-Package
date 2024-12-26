@@ -131,7 +131,7 @@ namespace IndieBuff.Editor
             aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
 
 
-
+            // FIX HERE
             //IndieBuff_UserInfo.Instance.onConvoChanged += OnConvoChanged;
 
             IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
@@ -235,8 +235,6 @@ namespace IndieBuff.Editor
             }
         }
 
-
-
         private void OnRootPointerDown(PointerDownEvent evt)
         {
             if (activePopup != null)
@@ -266,94 +264,74 @@ namespace IndieBuff.Editor
             });
         }
 
-
-
+        // FIX HERE
         //public void Cleanup()
-        {
-            IndieBuff_UserInfo.Instance.onConvoChanged -= OnConvoChanged;
-        }
+        // {
+        //     IndieBuff_UserInfo.Instance.onConvoChanged -= OnConvoChanged;
+        // }
 
+        // FIX HERE
         private void InitializeConversation()
         {
             _ = InitializeConversationAsync();
         }
 
+        // FIX HERE
         private async Task InitializeConversationAsync()
         {
 
-            var convoId = IndieBuff_UserInfo.Instance.currentConvoId;
+            List<IndieBuff_MessageData> messages = IndieBuff_ConvoHandler.Instance.currentMessages;
 
-            if (!string.IsNullOrEmpty(convoId))
+            foreach (var message in messages)
             {
-                List<IndieBuff_MessageData> messages = await IndieBuff_UserInfo.Instance.GetConversationHistory();
-                foreach (var message in messages)
+                if (message.Role == "user")
                 {
-                    if (message.role == "user")
+                    var userMessage = message.Content;
+                    AddUserMessageToResponseArea($"<b><b>You:</b></b>\n{userMessage}");
+                }
+                else if (message.Role == "assistant")
+                {
+                    var aiMessage = message.Content;
+                    var responseContainer = CreateAIChatResponseBox("");
+                    responseArea.Add(responseContainer);
+
+                    var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
+                    var messageLabel = messageContainer.Q<TextField>();
+
+                    if (message.ChatMode == ChatMode.Prototype)
                     {
-                        var userMessage = message.content;
-                        AddUserMessageToResponseArea($"<b><b>You:</b></b>\n{userMessage}");
+                        var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
+                        parser.ParseFullMessage(aiMessage);
                     }
                     else
                     {
-                        var aiMessage = message.content;
-                        var responseContainer = CreateAIChatResponseBox("");
-                        responseArea.Add(responseContainer);
-
-                        var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
-                        var messageLabel = messageContainer.Q<TextField>();
-
-                        if (message.action == "Command")
-                        {
-                            var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
-                            parser.ParseFullMessage(aiMessage);
-                        }
-                        else
-                        {
-                            var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
-                            parser.ParseFullMessage(aiMessage);
-                        }
-
-                        TrimMessageEndings(messageContainer);
-                        // HandleAIMessageMetadata(parser.getMetaData());
+                        var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
+                        parser.ParseFullMessage(aiMessage);
                     }
-                }
 
-                chatName.text = IndieBuff_UserInfo.Instance.currentConvoTitle;
-                await Task.Delay(100);
-                ScrollToBottom();
+                    TrimMessageEndings(messageContainer);
+                    // HandleAIMessageMetadata(parser.getMetaData());
+                }
             }
+
+            chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
+            await Task.Delay(100);
+            ScrollToBottom();
         }
 
-        private async void OnConvoChanged()
+        // FIX HERE
+        private async void onMessagesLoaded()
         {
             responseArea.Clear();
-            if (!string.IsNullOrEmpty(IndieBuff_UserInfo.Instance.currentConvoId))
-            {
-                await InitializeConversationAsync();
-            }
-            else
-            {
-                chatName.text = "New Chat";
-            }
+            await InitializeConversationAsync();
         }
 
+        // FIX HERE
         private void OnNewChatClicked()
         {
-            IndieBuff_UserInfo.Instance.Clear();
+            IndieBuff_ConvoHandler.Instance.ClearConversation();
             chatName.text = "New Chat";
             responseArea.Clear();
-        }
-
-        private void HandleAIMessageMetadata(string metadata)
-        {
-            string[] metadataParts = metadata.Split('|');
-            IndieBuff_UserInfo.Instance.currentConvoId = metadataParts[0];
-
-            if (metadataParts[1] != "None" && metadataParts[1] != "")
-            {
-                IndieBuff_UserInfo.Instance.currentConvoTitle = metadataParts[1];
-            }
-
         }
 
         private void ScrollToBottom()
@@ -366,6 +344,7 @@ namespace IndieBuff.Editor
             responseArea.MarkDirtyRepaint();
         }
 
+        // FIX HERE
         private void TrimMessageEndings(VisualElement msgContainer)
         {
             foreach (var child in msgContainer.Children())
@@ -381,6 +360,7 @@ namespace IndieBuff.Editor
             }
         }
 
+        // FIX HERE
         private void OnChatInputKeyDown(KeyDownEvent evt)
         {
             if (evt.keyCode == KeyCode.Return && !evt.shiftKey)
@@ -440,6 +420,7 @@ namespace IndieBuff.Editor
             }
         }
 
+        // FIX HERE
         private async Task SendMessageAsync()
         {
             if (isStreamingMessage)
@@ -525,6 +506,7 @@ namespace IndieBuff.Editor
             return aiMessageContainer;
         }
 
+        // FIX HERE
         private async Task HandleStreamingAIResponse(string userMessage, VisualElement responseContainer)
         {
 
@@ -542,7 +524,6 @@ namespace IndieBuff.Editor
                 {
                     parser.ParseChunk(chunk);
                 }, cts.Token);
-                HandleAIMessageMetadata(parser.getMetaData());
             }
             catch (Exception)
             {
@@ -556,6 +537,7 @@ namespace IndieBuff.Editor
 
         }
 
+        // FIX HERE
         private async Task HandleAICommandResponse(string userMessage, VisualElement responseContainer)
         {
             var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
@@ -574,7 +556,6 @@ namespace IndieBuff.Editor
 
                 }, cts.Token);
                 string metadata = parser.FinishParsing();
-                HandleAIMessageMetadata(metadata);
             }
             catch (Exception)
             {
@@ -586,6 +567,7 @@ namespace IndieBuff.Editor
 
         }
 
+        // FIX HERE
         private async Task HandleAIResponse(string userMessage)
         {
             loadingBar.StartLoading();
@@ -625,7 +607,6 @@ namespace IndieBuff.Editor
                 OnLogoutSuccess?.Invoke();
             }
         }
-
 
     }
 }

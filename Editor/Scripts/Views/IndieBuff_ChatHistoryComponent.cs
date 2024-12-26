@@ -19,29 +19,29 @@ namespace IndieBuff.Editor
             panelWidth = chatPanel.resolvedStyle.width;
             historyScrollView = chatPanel.Q<ScrollView>("ChatHistoryScrollView");
 
-            IndieBuff_UserInfo.Instance.onConvoHistoryListUpdated += () => SetUpChatHistory();
+            //IndieBuff_UserInfo.Instance.onConvoHistoryListUpdated += () => SetUpChatHistory();
             SetUpChatHistory();
         }
 
         private void OnDestroy()
         {
-            IndieBuff_UserInfo.Instance.onConvoHistoryListUpdated -= () => SetUpChatHistory();
+            //IndieBuff_UserInfo.Instance.onConvoHistoryListUpdated -= () => SetUpChatHistory();
         }
 
         public void SetUpChatHistory()
         {
             historyScrollView.Clear();
-            var convos = IndieBuff_UserInfo.Instance.conversations;
+            var convos = IndieBuff_ConvoHandler.Instance.conversations;
 
             foreach (var convo in convos)
             {
                 var chatHistoryItem = new VisualElement();
                 chatHistoryItem.AddToClassList("chat-history-list-item");
-                chatHistoryItem.tooltip = convo.title;
+                chatHistoryItem.tooltip = convo.Title;
 
                 var chatHistoryItemButton = new Button();
                 chatHistoryItemButton.AddToClassList("chat-history-item-button");
-                chatHistoryItemButton.text = convo.title;
+                chatHistoryItemButton.text = convo.Title;
                 chatHistoryItemButton.enableRichText = false;
 
                 var chatHistoryItemDeleteButton = new Button();
@@ -53,8 +53,8 @@ namespace IndieBuff.Editor
 
                 chatHistoryItemButton.clicked += () =>
                 {
-                    IndieBuff_UserInfo.Instance.currentConvoId = convo._id;
-                    IndieBuff_UserInfo.Instance.currentConvoTitle = convo.title;
+                    IndieBuff_ConvoHandler.Instance.currentConvoId = convo.ConversationId.ToString();
+                    IndieBuff_ConvoHandler.Instance.currentConvoTitle = convo.Title;
                     closePanelAction?.Invoke();
                 };
 
@@ -64,19 +64,7 @@ namespace IndieBuff.Editor
                     {
                         chatHistoryItemDeleteButton.SetEnabled(false);
 
-                        bool success = await IndieBuff_UserInfo.Instance.DeleteConversation(convo._id);
-
-
-                        if (success)
-                        {
-                            //historyScrollView.Remove(chatHistoryItem);
-                        }
-                        else
-                        {
-
-                            Debug.LogError("Failed to delete conversation");
-                            chatHistoryItemDeleteButton.SetEnabled(true);
-                        }
+                        await IndieBuff_ConvoHandler.Instance.DeleteConversation(convo.ConversationId);
                     }
                     catch (Exception ex)
                     {
