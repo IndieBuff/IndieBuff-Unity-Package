@@ -127,45 +127,6 @@ namespace IndieBuff.Editor
 
         }
 
-        // public Task<HttpResponseMessage> GetAllUsersChatsAsync()
-        // {
-        //     var requestData = new ChatRequest { gameEngine = "unity" };
-        //     var jsonPayload = JsonUtility.ToJson(requestData);
-
-        //     var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/get-chats")
-        //     {
-        //         Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-        //     };
-
-        //     return SendRequestAsync(() => client.SendAsync(requestMessage));
-        // }
-
-        // public Task<HttpResponseMessage> GetConvoHistoryAsync()
-        // {
-        //     var requestData = new ChatRequest { gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId };
-        //     var jsonPayload = JsonUtility.ToJson(requestData);
-
-        //     var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/chat-history")
-        //     {
-        //         Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-        //     };
-
-        //     return SendRequestAsync(() => client.SendAsync(requestMessage));
-        // }
-
-        // public Task<HttpResponseMessage> DeleteConvoAsync(string convoId)
-        // {
-        //     var requestData = new ChatRequest { gameEngine = "unity", conversationId = convoId };
-        //     var jsonPayload = JsonUtility.ToJson(requestData);
-
-        //     var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/delete-chat")
-        //     {
-        //         Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-        //     };
-
-        //     return SendRequestAsync(() => client.SendAsync(requestMessage));
-        // }
-
         public Task<HttpResponseMessage> GetIndieBuffUserAsync()
         {
             return SendRequestAsync(() => client.GetAsync("plugin-chat/user-info"));

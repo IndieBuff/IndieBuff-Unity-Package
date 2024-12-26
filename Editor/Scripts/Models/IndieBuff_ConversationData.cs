@@ -25,7 +25,17 @@ namespace IndieBuff.Editor
         public string Role { get; set; }
         public string Content { get; set; }
         public DateTime Timestamp { get; set; }
-        public string MessageType { get; set; }
+        public ChatMode ChatMode { get; set; }
         public string AiModel { get; set; }
+    }
+
+    [Serializable]
+    public enum ChatMode
+    {
+        Chat,
+        Command,
+        Prototype,
+        Debug,
+        Onboard,
     }
 }

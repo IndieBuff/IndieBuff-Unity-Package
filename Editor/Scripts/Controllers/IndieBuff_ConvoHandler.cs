@@ -149,7 +149,7 @@ namespace IndieBuff.Editor
             return title;
         }
 
-        public async Task AddMessage(string role, string content, string messageType, string aiModel)
+        public async Task AddMessage(string role, string content, ChatMode chatMode, string aiModel)
         {
             try
             {
@@ -161,7 +161,7 @@ namespace IndieBuff.Editor
 
                 if (!string.IsNullOrEmpty(currentConvoId))
                 {
-                    await db.AddMessage(int.Parse(currentConvoId), role, content, messageType, aiModel);
+                    await db.AddMessage(int.Parse(currentConvoId), role, content, chatMode, aiModel);
                     await LoadCurrentConversation();
                 }
                 else

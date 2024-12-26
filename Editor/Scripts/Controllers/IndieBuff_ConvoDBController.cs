@@ -59,7 +59,7 @@ namespace IndieBuff.Editor
             await _database.Table<IndieBuff_MessageData>().Where(m => m.ConversationId == conversationId).DeleteAsync();
         }
 
-        public async Task<int> AddMessage(int conversationId, string role, string content, string messageType, string aiModel)
+        public async Task<int> AddMessage(int conversationId, string role, string content, ChatMode chatMode, string aiModel)
         {
             var message = new IndieBuff_MessageData
             {
@@ -67,7 +67,7 @@ namespace IndieBuff.Editor
                 Role = role,
                 Content = content,
                 Timestamp = DateTime.UtcNow,
-                MessageType = messageType,
+                ChatMode = chatMode,
                 AiModel = aiModel
             };
             var conversation = await GetConversation(conversationId);
