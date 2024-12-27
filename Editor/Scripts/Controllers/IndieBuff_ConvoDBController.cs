@@ -44,7 +44,14 @@ namespace IndieBuff.Editor
 
         public async Task<IndieBuff_ConversationData> GetConversation(int conversationId)
         {
-            return await _database.GetAsync<IndieBuff_ConversationData>(conversationId);
+            var conversation = await _database.Table<IndieBuff_ConversationData>()
+                                               .Where(c => c.ConversationId == conversationId)
+                                               .FirstOrDefaultAsync();
+            if (conversation == null)
+            {
+                throw new Exception($"Conversation with ID {conversationId} not found.");
+            }
+            return conversation;
         }
 
         public async Task<List<IndieBuff_ConversationData>> GetAllConversations()

@@ -25,6 +25,8 @@ namespace IndieBuff.Editor
 
         private string rawCode = "";
 
+        public StringBuilder fullMessage;
+
         private IndieBuff_LoadingBar loadingBar;
 
 
@@ -35,14 +37,21 @@ namespace IndieBuff.Editor
             inInlineCodeBlock = false;
             isLoading = true;
             lineBuffer = new StringBuilder();
+            fullMessage = new StringBuilder();
             syntaxHighlighter = new IndieBuff_SyntaxHighlighter();
 
             messageContainer = container;
             currentMessageLabel = currentLabel;
         }
 
+        public string GetFullMessage()
+        {
+            return fullMessage.ToString();
+        }
+
         public void ParseFullMessage(string message)
         {
+            fullMessage.Append(message);
             var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
             foreach (var line in lines)
             {
@@ -54,6 +63,7 @@ namespace IndieBuff.Editor
 
         public void ParseChunk(string chunk)
         {
+            fullMessage.Append(chunk);
             foreach (char c in chunk)
             {
                 if (c == '\n')

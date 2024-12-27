@@ -57,10 +57,6 @@ namespace IndieBuff.Editor
             };
 
             ContextObjectString = JsonConvert.SerializeObject(new { context = contextData }, settings);
-
-            // REMOVE AFTER TESTING
-            Debug.Log(ContextObjectString);
-
             return ContextObjectString;
 
         }

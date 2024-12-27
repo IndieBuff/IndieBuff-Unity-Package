@@ -136,7 +136,12 @@ namespace IndieBuff.Editor
             await LoadCurrentConversation();
         }
 
-        public async Task CreateNewConversation(string title, string aiModel = "Base Model")
+        public async Task RefreshConvoList()
+        {
+            await LoadConversations();
+        }
+
+        private async Task CreateNewConversation(string title, string aiModel = "Base Model")
         {
             try
             {

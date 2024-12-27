@@ -132,7 +132,6 @@ namespace IndieBuff.Editor
 
 
             // FIX HERE
-            //IndieBuff_UserInfo.Instance.onConvoChanged += OnConvoChanged;
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded += onMessagesLoaded;
 
             IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
@@ -265,7 +264,7 @@ namespace IndieBuff.Editor
             });
         }
 
-
+        // FIX HERE
         public void Cleanup()
         {
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded -= onMessagesLoaded;
@@ -313,7 +312,6 @@ namespace IndieBuff.Editor
                     }
 
                     TrimMessageEndings(messageContainer);
-                    // HandleAIMessageMetadata(parser.getMetaData());
                 }
             }
 
@@ -450,7 +448,9 @@ namespace IndieBuff.Editor
             chatInputArea.value = string.Empty;
             await HandleAIResponse(userMessage);
 
-            //await IndieBuff_UserInfo.Instance.GetAllUsersChats();
+            // FIX HERE
+            await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
+
             isStreamingMessage = false;
             sendChatButton.Q<VisualElement>("StopChatIcon").style.display = DisplayStyle.None;
             sendChatButton.Q<VisualElement>("SendChatIcon").style.display = DisplayStyle.Flex;
@@ -535,8 +535,9 @@ namespace IndieBuff.Editor
                 loadingBar.StopLoading();
             }
 
-            await Task.Delay(50);
-            TrimMessageEndings(messageContainer);
+            await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
+            //await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", parser.GetFullMessage(), ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
+            await IndieBuff_ConvoHandler.Instance.RefreshCurrentConversation();
 
         }
 
