@@ -446,22 +446,20 @@ namespace IndieBuff.Editor
             chatInputArea.value = string.Empty;
             await HandleAIResponse(userMessage);
 
-            // FIX HERE
-            //await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
-            // await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
-            // await IndieBuff_ConvoHandler.Instance.RefreshCurrentConversation();
-
             isStreamingMessage = false;
             sendChatButton.Q<VisualElement>("StopChatIcon").style.display = DisplayStyle.None;
             sendChatButton.Q<VisualElement>("SendChatIcon").style.display = DisplayStyle.Flex;
 
         }
 
+        // FIX HERE
         private async Task HandleChatDatabase(string userMessage, string aiMessage)
         {
             await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
-            await Task.Delay(50);
             await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
+
+            chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
+
         }
 
         private void AddUserMessageToResponseArea(string message)

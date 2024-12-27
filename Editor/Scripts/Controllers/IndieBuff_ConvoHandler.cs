@@ -39,7 +39,6 @@ namespace IndieBuff.Editor
             }
         }
 
-
         public int currentConvoId
         {
             get => SessionState.GetInt(CurrentConvoIdKey, -1);
@@ -47,12 +46,8 @@ namespace IndieBuff.Editor
             {
                 if (_currentConvoId != value)
                 {
-
                     _currentConvoId = value;
                     SessionState.SetInt(CurrentConvoIdKey, value);
-                    _ = LoadCurrentConversation();
-
-
                 }
             }
         }
@@ -125,8 +120,6 @@ namespace IndieBuff.Editor
             try
             {
                 currentMessages = await db.GetConversationMessages(_currentConvoId);
-                IndieBuff_ConversationData conversation = await db.GetConversation(_currentConvoId);
-                currentConvoTitle = conversation.Title;
                 onMessagesLoaded?.Invoke();
             }
             catch (Exception)
@@ -173,18 +166,16 @@ namespace IndieBuff.Editor
         {
             try
             {
-                int tempConvoId = _currentConvoId;
-                if (tempConvoId == -1)
+                if (_currentConvoId == -1)
                 {
                     string title = GenerateDefaultTitle(content);
-                    tempConvoId = await CreateNewConversation(title, aiModel);
+                    currentConvoId = await CreateNewConversation(title, aiModel);
                     currentConvoTitle = title;
                 }
 
-                if (tempConvoId != -1)
+                if (currentConvoId != -1)
                 {
-                    await db.AddMessage(tempConvoId, role, content, chatMode, aiModel);
-                    currentConvoId = tempConvoId;
+                    await db.AddMessage(_currentConvoId, role, content, chatMode, aiModel);
                 }
                 else
                 {
@@ -202,7 +193,14 @@ namespace IndieBuff.Editor
             try
             {
                 await db.DeleteConversation(conversationId);
+
+                if (_currentConvoId == conversationId)
+                {
+                    ClearConversation();
+                    onMessagesLoaded?.Invoke();
+                }
                 await LoadConversations();
+
             }
             catch (Exception e)
             {
