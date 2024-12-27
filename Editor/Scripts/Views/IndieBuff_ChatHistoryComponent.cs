@@ -23,7 +23,7 @@ namespace IndieBuff.Editor
             SetUpChatHistory();
         }
 
-        private void OnDestroy()
+        public void Cleanup()
         {
             IndieBuff_ConvoHandler.Instance.onConversationsLoaded -= () => SetUpChatHistory();
         }
@@ -54,7 +54,7 @@ namespace IndieBuff.Editor
 
                 chatHistoryItemButton.clicked += () =>
                 {
-                    IndieBuff_ConvoHandler.Instance.currentConvoId = convo.ConversationId.ToString();
+                    IndieBuff_ConvoHandler.Instance.currentConvoId = convo.ConversationId;
                     IndieBuff_ConvoHandler.Instance.currentConvoTitle = convo.Title;
                     closePanelAction?.Invoke();
                 };

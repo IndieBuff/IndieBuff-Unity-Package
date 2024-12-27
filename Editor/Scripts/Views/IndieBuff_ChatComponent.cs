@@ -268,6 +268,7 @@ namespace IndieBuff.Editor
         public void Cleanup()
         {
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded -= onMessagesLoaded;
+            chatHistoryComponent.Cleanup();
         }
 
         // FIX HERE
@@ -281,9 +282,6 @@ namespace IndieBuff.Editor
         {
 
             List<IndieBuff_MessageData> messages = IndieBuff_ConvoHandler.Instance.currentMessages;
-
-            Debug.Log(messages.Count + " " + IndieBuff_ConvoHandler.Instance.currentConvoId);
-
             foreach (var message in messages)
             {
                 if (message.Role == "user")
@@ -449,12 +447,21 @@ namespace IndieBuff.Editor
             await HandleAIResponse(userMessage);
 
             // FIX HERE
-            await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
+            //await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
+            // await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
+            // await IndieBuff_ConvoHandler.Instance.RefreshCurrentConversation();
 
             isStreamingMessage = false;
             sendChatButton.Q<VisualElement>("StopChatIcon").style.display = DisplayStyle.None;
             sendChatButton.Q<VisualElement>("SendChatIcon").style.display = DisplayStyle.Flex;
 
+        }
+
+        private async Task HandleChatDatabase(string userMessage, string aiMessage)
+        {
+            await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
+            await Task.Delay(50);
+            await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
         }
 
         private void AddUserMessageToResponseArea(string message)
@@ -535,9 +542,8 @@ namespace IndieBuff.Editor
                 loadingBar.StopLoading();
             }
 
-            await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
-            //await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", parser.GetFullMessage(), ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
-            await IndieBuff_ConvoHandler.Instance.RefreshCurrentConversation();
+            await HandleChatDatabase(userMessage, parser.GetFullMessage());
+
 
         }
 

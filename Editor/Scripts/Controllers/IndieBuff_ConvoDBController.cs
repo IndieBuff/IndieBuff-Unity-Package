@@ -39,7 +39,9 @@ namespace IndieBuff.Editor
                 LastUpdatedAt = DateTime.Now,
                 LastUsedModel = aiModel
             };
-            return await _database.InsertAsync(conversation);
+            await _database.InsertAsync(conversation);
+            Debug.Log("DB CONV ID: " + conversation.ConversationId);
+            return conversation.ConversationId;
         }
 
         public async Task<IndieBuff_ConversationData> GetConversation(int conversationId)
@@ -56,7 +58,9 @@ namespace IndieBuff.Editor
 
         public async Task<List<IndieBuff_ConversationData>> GetAllConversations()
         {
-            return await _database.Table<IndieBuff_ConversationData>().ToListAsync();
+            return await _database.Table<IndieBuff_ConversationData>()
+                                 .OrderByDescending(c => c.LastUpdatedAt)
+                                 .ToListAsync();
         }
 
         public async Task UpdateConversation(IndieBuff_ConversationData conversation)

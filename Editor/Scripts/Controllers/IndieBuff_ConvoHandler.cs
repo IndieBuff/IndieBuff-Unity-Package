@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UnityEditor;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace IndieBuff.Editor
         public Action onConversationsLoaded;
         public Action onMessagesLoaded;
 
-        private string _currentConvoId;
+        private int _currentConvoId;
         private bool _isInitialized = false;
 
         public ChatMode currentMode
@@ -39,16 +40,19 @@ namespace IndieBuff.Editor
         }
 
 
-        public string currentConvoId
+        public int currentConvoId
         {
-            get => SessionState.GetString(CurrentConvoIdKey, null);
+            get => SessionState.GetInt(CurrentConvoIdKey, -1);
             set
             {
                 if (_currentConvoId != value)
                 {
+
                     _currentConvoId = value;
-                    SessionState.SetString(CurrentConvoIdKey, value);
+                    SessionState.SetInt(CurrentConvoIdKey, value);
                     _ = LoadCurrentConversation();
+
+
                 }
             }
         }
@@ -81,11 +85,11 @@ namespace IndieBuff.Editor
             if (_isInitialized) return;
             await db.InitializeDatabaseAsync();
 
-            _currentConvoId = SessionState.GetString(CurrentConvoIdKey, null);
+            _currentConvoId = SessionState.GetInt(CurrentConvoIdKey, -1);
 
             await LoadConversations();
 
-            if (!string.IsNullOrEmpty(_currentConvoId))
+            if (_currentConvoId != -1)
             {
                 await LoadCurrentConversation();
             }
@@ -111,8 +115,7 @@ namespace IndieBuff.Editor
 
         private async Task LoadCurrentConversation()
         {
-            Debug.Log("loading current convo: " + _currentConvoId);
-            if (string.IsNullOrEmpty(_currentConvoId))
+            if (currentConvoId == -1)
             {
                 currentMessages = new List<IndieBuff_MessageData>();
                 onMessagesLoaded?.Invoke();
@@ -121,7 +124,9 @@ namespace IndieBuff.Editor
 
             try
             {
-                currentMessages = await db.GetConversationMessages(int.Parse(_currentConvoId));
+                currentMessages = await db.GetConversationMessages(_currentConvoId);
+                IndieBuff_ConversationData conversation = await db.GetConversation(_currentConvoId);
+                currentConvoTitle = conversation.Title;
                 onMessagesLoaded?.Invoke();
             }
             catch (Exception)
@@ -141,18 +146,21 @@ namespace IndieBuff.Editor
             await LoadConversations();
         }
 
-        private async Task CreateNewConversation(string title, string aiModel = "Base Model")
+        private async Task<int> CreateNewConversation(string title, string aiModel = "Base Model")
         {
             try
             {
                 var newConvoId = await db.CreateConversation(title, aiModel);
-                currentConvoId = newConvoId.ToString();
                 await LoadConversations();
+
+                return newConvoId;
             }
             catch (Exception e)
             {
                 Debug.LogError($"Failed to create new conversation: {e.Message}");
             }
+
+            return -1;
         }
 
         private string GenerateDefaultTitle(string firstMessage)
@@ -165,16 +173,18 @@ namespace IndieBuff.Editor
         {
             try
             {
-                if (string.IsNullOrEmpty(_currentConvoId))
+                int tempConvoId = _currentConvoId;
+                if (tempConvoId == -1)
                 {
                     string title = GenerateDefaultTitle(content);
-                    await CreateNewConversation(title, aiModel);
+                    tempConvoId = await CreateNewConversation(title, aiModel);
+                    currentConvoTitle = title;
                 }
 
-                if (!string.IsNullOrEmpty(currentConvoId))
+                if (tempConvoId != -1)
                 {
-                    await db.AddMessage(int.Parse(currentConvoId), role, content, chatMode, aiModel);
-                    await LoadCurrentConversation();
+                    await db.AddMessage(tempConvoId, role, content, chatMode, aiModel);
+                    currentConvoId = tempConvoId;
                 }
                 else
                 {
@@ -202,9 +212,9 @@ namespace IndieBuff.Editor
 
         public void ClearConversation()
         {
-            SessionState.SetString(CurrentConvoIdKey, null);
+            SessionState.SetInt(CurrentConvoIdKey, -1);
             currentMessages.Clear();
-            _currentConvoId = null;
+            _currentConvoId = -1;
             SessionState.SetString(CurrentConvoTitleKey, "New Chat");
         }
 
