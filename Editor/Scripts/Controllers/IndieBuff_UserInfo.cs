@@ -32,6 +32,23 @@ namespace IndieBuff.Editor
             }
         }
 
+        private ChatMode _currentMode = ChatMode.Chat;
+        public ChatMode lastUsedMode = ChatMode.Chat;
+        public Action onChatModeChanged;
+
+        public ChatMode currentMode
+        {
+            get => _currentMode;
+            set
+            {
+                if (_currentMode != value)
+                {
+                    _currentMode = value;
+                    onChatModeChanged?.Invoke();
+                }
+            }
+        }
+
         public async Task InitializeUserInfo()
         {
             await GetIndieBuffUser();

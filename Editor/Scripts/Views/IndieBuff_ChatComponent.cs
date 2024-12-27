@@ -139,9 +139,9 @@ namespace IndieBuff.Editor
                 aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
             };
 
-            IndieBuff_ConvoHandler.Instance.onChatModeChanged += () =>
+            IndieBuff_UserInfo.Instance.onChatModeChanged += () =>
             {
-                if (IndieBuff_ConvoHandler.Instance.currentMode == ChatMode.Chat)
+                if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
                 {
                     placeholderLabel.text = "Ask IndieBuff for help or code";
                 }
@@ -544,6 +544,11 @@ namespace IndieBuff.Editor
                 loadingBar.StopLoading();
             }
 
+            if (cts.Token.IsCancellationRequested)
+            {
+                return;
+            }
+
             int splitIndex = parser.GetFullMessage().LastIndexOf('\n');
             string aiMessage;
             string summaryMessage;
@@ -564,8 +569,6 @@ namespace IndieBuff.Editor
             }
 
             await HandleChatDatabase(userMessage, aiMessage, summaryMessage);
-
-
         }
 
         // FIX HERE
@@ -609,7 +612,7 @@ namespace IndieBuff.Editor
             await Task.Delay(50);
             responseArea.ScrollTo(responseContainer);
 
-            if (IndieBuff_ConvoHandler.Instance.currentMode == ChatMode.Chat)
+            if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
             {
                 await HandleStreamingAIResponse(userMessage, responseContainer);
             }

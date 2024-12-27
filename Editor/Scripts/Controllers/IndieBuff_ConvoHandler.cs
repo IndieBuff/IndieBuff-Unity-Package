@@ -18,26 +18,12 @@ namespace IndieBuff.Editor
         const string CurrentConvoIdKey = "IndieBuffUserSession_CurrentConvoId";
         const string CurrentConvoTitleKey = "IndieBuffUserSession_CurrentConvoTitle";
 
-        private ChatMode _currentMode = ChatMode.Chat;
-        public Action onChatModeChanged;
+
         public Action onConversationsLoaded;
         public Action onMessagesLoaded;
 
         private int _currentConvoId;
         private bool _isInitialized = false;
-
-        public ChatMode currentMode
-        {
-            get => _currentMode;
-            set
-            {
-                if (_currentMode != value)
-                {
-                    _currentMode = value;
-                    onChatModeChanged?.Invoke();
-                }
-            }
-        }
 
         public int currentConvoId
         {
