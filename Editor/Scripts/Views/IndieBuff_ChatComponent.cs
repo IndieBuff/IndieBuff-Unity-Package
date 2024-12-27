@@ -453,8 +453,12 @@ namespace IndieBuff.Editor
         }
 
         // FIX HERE
-        private async Task HandleChatDatabase(string userMessage, string aiMessage)
+        private async Task HandleChatDatabase(string userMessage, string aiMessage, string summaryMessage = "")
         {
+            if (!string.IsNullOrWhiteSpace(summaryMessage))
+            {
+                await IndieBuff_ConvoHandler.Instance.AddMessage("summary", summaryMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
+            }
             await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
             await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
 
@@ -540,7 +544,26 @@ namespace IndieBuff.Editor
                 loadingBar.StopLoading();
             }
 
-            await HandleChatDatabase(userMessage, parser.GetFullMessage());
+            int splitIndex = parser.GetFullMessage().LastIndexOf('\n');
+            string aiMessage;
+            string summaryMessage;
+
+            if (splitIndex != -1)
+            {
+                aiMessage = parser.GetFullMessage().Substring(0, splitIndex);
+                string jsonInput = parser.GetFullMessage().Substring(splitIndex + 1);
+                jsonInput = jsonInput.Replace('\'', '\"');
+                var parsedJson = JsonUtility.FromJson<IndieBuff_SummaryResponse>(jsonInput);
+                summaryMessage = parsedJson.content;
+
+            }
+            else
+            {
+                aiMessage = parser.GetFullMessage();
+                summaryMessage = "";
+            }
+
+            await HandleChatDatabase(userMessage, aiMessage, summaryMessage);
 
 
         }

@@ -54,9 +54,13 @@ namespace IndieBuff.Editor
 
                 chatHistoryItemButton.clicked += async () =>
                 {
-                    IndieBuff_ConvoHandler.Instance.currentConvoId = convo.ConversationId;
-                    IndieBuff_ConvoHandler.Instance.currentConvoTitle = convo.Title;
-                    await IndieBuff_ConvoHandler.Instance.RefreshCurrentConversation();
+                    if (IndieBuff_ConvoHandler.Instance.currentConvoId != convo.ConversationId)
+                    {
+                        IndieBuff_ConvoHandler.Instance.currentConvoId = convo.ConversationId;
+                        IndieBuff_ConvoHandler.Instance.currentConvoTitle = convo.Title;
+                        await IndieBuff_ConvoHandler.Instance.RefreshCurrentConversation();
+                    }
+
                     closePanelAction?.Invoke();
                 };
 

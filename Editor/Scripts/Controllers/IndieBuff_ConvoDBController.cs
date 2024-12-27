@@ -40,7 +40,7 @@ namespace IndieBuff.Editor
                 LastUsedModel = aiModel
             };
             await _database.InsertAsync(conversation);
-            Debug.Log("DB CONV ID: " + conversation.ConversationId);
+
             return conversation.ConversationId;
         }
 

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -89,6 +91,13 @@ namespace IndieBuff.Editor
             await TokenManager.Instance.RefreshTokensAsync();
             string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
             var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_ConvoHandler.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity" };
+            List<MessageHistoryObject> messageHistory = IndieBuff_ConvoHandler.Instance.currentMessages.Select(message => new MessageHistoryObject
+            {
+                role = message.Role,
+                content = message.Content,
+                cmd = "hello"
+            }).ToList();
+            requestData.history = messageHistory;
             var jsonPayload = JsonUtility.ToJson(requestData);
             var jsonStringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
@@ -140,9 +149,18 @@ namespace IndieBuff.Editor
         {
             public string prompt;
             public string context;
+            public List<MessageHistoryObject> history = new List<MessageHistoryObject>();
             public string gameEngine;
             public string chatMode;
             public string aiModel;
+        }
+
+        [Serializable]
+        public class MessageHistoryObject
+        {
+            public string role;
+            public string content;
+            public string cmd;
         }
 
     }

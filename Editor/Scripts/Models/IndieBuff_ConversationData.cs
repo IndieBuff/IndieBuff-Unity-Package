@@ -29,6 +29,12 @@ namespace IndieBuff.Editor
         public string AiModel { get; set; }
     }
 
+    public class IndieBuff_SummaryResponse
+    {
+        public string role { get; set; }
+        public string content { get; set; }
+    }
+
     [Serializable]
     public enum ChatMode
     {
