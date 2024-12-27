@@ -19,17 +19,18 @@ namespace IndieBuff.Editor
             panelWidth = chatPanel.resolvedStyle.width;
             historyScrollView = chatPanel.Q<ScrollView>("ChatHistoryScrollView");
 
-            //IndieBuff_UserInfo.Instance.onConvoHistoryListUpdated += () => SetUpChatHistory();
+            IndieBuff_ConvoHandler.Instance.onConversationsLoaded += () => SetUpChatHistory();
             SetUpChatHistory();
         }
 
         private void OnDestroy()
         {
-            //IndieBuff_UserInfo.Instance.onConvoHistoryListUpdated -= () => SetUpChatHistory();
+            IndieBuff_ConvoHandler.Instance.onConversationsLoaded -= () => SetUpChatHistory();
         }
 
         public void SetUpChatHistory()
         {
+            Debug.Log("setting up chat history list");
             historyScrollView.Clear();
             var convos = IndieBuff_ConvoHandler.Instance.conversations;
 

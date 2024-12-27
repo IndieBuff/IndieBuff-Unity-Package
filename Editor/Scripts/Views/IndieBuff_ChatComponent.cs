@@ -133,6 +133,7 @@ namespace IndieBuff.Editor
 
             // FIX HERE
             //IndieBuff_UserInfo.Instance.onConvoChanged += OnConvoChanged;
+            IndieBuff_ConvoHandler.Instance.onMessagesLoaded += onMessagesLoaded;
 
             IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
             {
@@ -267,7 +268,7 @@ namespace IndieBuff.Editor
 
         public void Cleanup()
         {
-            // IndieBuff_UserInfo.Instance.onConvoChanged -= OnConvoChanged;
+            IndieBuff_ConvoHandler.Instance.onMessagesLoaded -= onMessagesLoaded;
         }
 
         // FIX HERE
@@ -281,6 +282,8 @@ namespace IndieBuff.Editor
         {
 
             List<IndieBuff_MessageData> messages = IndieBuff_ConvoHandler.Instance.currentMessages;
+
+            Debug.Log(messages.Count + " " + IndieBuff_ConvoHandler.Instance.currentConvoId);
 
             foreach (var message in messages)
             {

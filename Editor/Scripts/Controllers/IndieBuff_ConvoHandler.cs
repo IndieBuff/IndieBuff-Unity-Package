@@ -11,14 +11,15 @@ namespace IndieBuff.Editor
         private static IndieBuff_ConvoHandler _instance;
         private IndieBuff_ConvoDBController db;
 
-        public List<IndieBuff_ConversationData> conversations = new List<IndieBuff_ConversationData>();
-        public List<IndieBuff_MessageData> currentMessages = new List<IndieBuff_MessageData>();
+        public List<IndieBuff_ConversationData> conversations;
+        public List<IndieBuff_MessageData> currentMessages;
 
         const string CurrentConvoIdKey = "IndieBuffUserSession_CurrentConvoId";
         const string CurrentConvoTitleKey = "IndieBuffUserSession_CurrentConvoTitle";
 
         private ChatMode _currentMode = ChatMode.Chat;
         public Action onChatModeChanged;
+        public Action onConversationsLoaded;
         public Action onMessagesLoaded;
 
         private string _currentConvoId;
@@ -62,6 +63,8 @@ namespace IndieBuff.Editor
         private IndieBuff_ConvoHandler()
         {
             db = new IndieBuff_ConvoDBController();
+            currentMessages = new List<IndieBuff_MessageData>();
+            conversations = new List<IndieBuff_ConversationData>();
         }
 
         public static IndieBuff_ConvoHandler Instance
@@ -76,6 +79,7 @@ namespace IndieBuff.Editor
         public async Task Initialize()
         {
             if (_isInitialized) return;
+            await db.InitializeDatabaseAsync();
 
             _currentConvoId = SessionState.GetString(CurrentConvoIdKey, null);
 
@@ -99,10 +103,15 @@ namespace IndieBuff.Editor
             {
                 conversations = new List<IndieBuff_ConversationData>();
             }
+            finally
+            {
+                onConversationsLoaded?.Invoke();
+            }
         }
 
         private async Task LoadCurrentConversation()
         {
+            Debug.Log("loading current convo: " + _currentConvoId);
             if (string.IsNullOrEmpty(_currentConvoId))
             {
                 currentMessages = new List<IndieBuff_MessageData>();
@@ -189,6 +198,7 @@ namespace IndieBuff.Editor
         public void ClearConversation()
         {
             SessionState.SetString(CurrentConvoIdKey, null);
+            currentMessages.Clear();
             _currentConvoId = null;
             SessionState.SetString(CurrentConvoTitleKey, "New Chat");
         }
