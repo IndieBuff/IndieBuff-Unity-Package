@@ -10,16 +10,21 @@ namespace IndieBuff.Editor
     public class IndieBuff_ConvoDBController
     {
         private readonly SQLiteAsyncConnection _database;
-        string dbPath = Path.Combine(Application.persistentDataPath, "IndieBuff/Conversations/IndieBuff_Convos.db");
+        private static readonly string dbPath = Path.Combine(Application.persistentDataPath, "IndieBuff/Conversations/convos.sqlite");
 
 
         public IndieBuff_ConvoDBController()
         {
+            var directory = Path.GetDirectoryName(dbPath);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             _database = new SQLiteAsyncConnection(dbPath);
-            InitializeDatabase().Wait();
         }
 
-        private async Task InitializeDatabase()
+        public async Task InitializeDatabaseAsync()
         {
             await _database.CreateTableAsync<IndieBuff_ConversationData>();
             await _database.CreateTableAsync<IndieBuff_MessageData>();

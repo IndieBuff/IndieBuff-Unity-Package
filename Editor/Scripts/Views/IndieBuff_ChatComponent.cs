@@ -264,11 +264,11 @@ namespace IndieBuff.Editor
             });
         }
 
-        // FIX HERE
-        //public void Cleanup()
-        // {
-        //     IndieBuff_UserInfo.Instance.onConvoChanged -= OnConvoChanged;
-        // }
+
+        public void Cleanup()
+        {
+            // IndieBuff_UserInfo.Instance.onConvoChanged -= OnConvoChanged;
+        }
 
         // FIX HERE
         private void InitializeConversation()

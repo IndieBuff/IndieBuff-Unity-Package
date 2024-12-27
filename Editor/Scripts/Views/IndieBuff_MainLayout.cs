@@ -66,7 +66,7 @@ namespace IndieBuff.Editor
         {
             DisposeCurrentComponent();
             await IndieBuff_UserInfo.Instance.InitializeUserInfo();
-            await IndieBuff_ConvoHandler.Instance.Initialize();
+            //await IndieBuff_ConvoHandler.Instance.Initialize();
             rootVisualElement.Clear();
             VisualElement chatUI = chatComponentAsset.Instantiate();
 
