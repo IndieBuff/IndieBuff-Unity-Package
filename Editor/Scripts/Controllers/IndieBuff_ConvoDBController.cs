@@ -69,6 +69,19 @@ namespace IndieBuff.Editor
             await _database.UpdateAsync(conversation);
         }
 
+        public async Task UpdateConversationLastModel(int conversationId, string newModel)
+        {
+            var conversation = await _database.GetAsync<IndieBuff_ConversationData>(conversationId);
+            if (conversation == null)
+            {
+                throw new Exception("Conversation not found");
+            }
+            conversation.LastUsedModel = newModel;
+
+            await _database.UpdateAsync(conversation);
+        }
+
+
         public async Task DeleteConversation(int conversationId)
         {
             await _database.DeleteAsync<IndieBuff_ConversationData>(conversationId);

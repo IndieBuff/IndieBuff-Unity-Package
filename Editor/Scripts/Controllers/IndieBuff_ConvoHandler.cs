@@ -90,7 +90,6 @@ namespace IndieBuff.Editor
             }
             finally
             {
-                Debug.Log("this is being called");
                 onConversationsLoaded?.Invoke();
             }
         }
@@ -162,6 +161,7 @@ namespace IndieBuff.Editor
 
                 if (currentConvoId != -1)
                 {
+                    await db.UpdateConversationLastModel(_currentConvoId, aiModel);
                     await db.AddMessage(_currentConvoId, role, content, chatMode, aiModel);
                     currentMessages.Add(new IndieBuff_MessageData
                     {

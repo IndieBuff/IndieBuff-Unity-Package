@@ -329,6 +329,7 @@ namespace IndieBuff.Editor
         private void OnNewChatClicked()
         {
             IndieBuff_ConvoHandler.Instance.ClearConversation();
+            IndieBuff_UserInfo.Instance.lastUsedModel = "";
             chatName.text = "New Chat";
             responseArea.Clear();
         }
@@ -455,12 +456,16 @@ namespace IndieBuff.Editor
         // FIX HERE
         private async Task HandleChatDatabase(string userMessage, string aiMessage, string summaryMessage = "")
         {
+
+            IndieBuff_UserInfo.Instance.lastUsedMode = IndieBuff_UserInfo.Instance.currentMode;
+            IndieBuff_UserInfo.Instance.lastUsedModel = IndieBuff_UserInfo.Instance.selectedModel;
+
             if (!string.IsNullOrWhiteSpace(summaryMessage))
             {
-                await IndieBuff_ConvoHandler.Instance.AddMessage("summary", summaryMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
+                await IndieBuff_ConvoHandler.Instance.AddMessage("summary", summaryMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
             }
-            await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
-            await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, ChatMode.Chat, IndieBuff_UserInfo.Instance.selectedModel);
+            await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
+            await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
 
             chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
 
@@ -557,9 +562,10 @@ namespace IndieBuff.Editor
             {
                 aiMessage = parser.GetFullMessage().Substring(0, splitIndex);
                 string jsonInput = parser.GetFullMessage().Substring(splitIndex + 1);
-                jsonInput = jsonInput.Replace('\'', '\"');
+                Debug.Log(jsonInput);
                 var parsedJson = JsonUtility.FromJson<IndieBuff_SummaryResponse>(jsonInput);
                 summaryMessage = parsedJson.content;
+
 
             }
             else

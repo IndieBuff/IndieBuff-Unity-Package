@@ -16,6 +16,7 @@ namespace IndieBuff.Editor
         public IndieBuff_User currentUser;
         const string CurrentModelKey = "IndieBuffUserSession_CurrentModel";
         public Action onSelectedModelChanged;
+        public string lastUsedModel = "";
         private string _selectedModel = "Base Model";
 
         public string selectedModel
@@ -48,7 +49,6 @@ namespace IndieBuff.Editor
                 }
             }
         }
-
         public async Task InitializeUserInfo()
         {
             await GetIndieBuffUser();

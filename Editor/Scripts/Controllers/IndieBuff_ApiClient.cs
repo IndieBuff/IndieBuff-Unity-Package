@@ -90,12 +90,11 @@ namespace IndieBuff.Editor
 
             await TokenManager.Instance.RefreshTokensAsync();
             string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
-            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity" };
+            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", lastModel = IndieBuff_UserInfo.Instance.lastUsedModel };
             List<MessageHistoryObject> messageHistory = IndieBuff_ConvoHandler.Instance.currentMessages.Select(message => new MessageHistoryObject
             {
                 role = message.Role,
                 content = message.Content,
-                cmd = "hello"
             }).ToList();
             requestData.history = messageHistory;
             var jsonPayload = JsonUtility.ToJson(requestData);
@@ -153,6 +152,7 @@ namespace IndieBuff.Editor
             public string gameEngine;
             public string chatMode;
             public string aiModel;
+            public string lastModel;
         }
 
         [Serializable]
@@ -160,7 +160,6 @@ namespace IndieBuff.Editor
         {
             public string role;
             public string content;
-            public string cmd;
         }
 
     }

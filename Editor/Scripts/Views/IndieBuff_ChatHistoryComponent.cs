@@ -30,7 +30,6 @@ namespace IndieBuff.Editor
 
         public void SetUpChatHistory()
         {
-            Debug.Log("setting up chat history list");
             historyScrollView.Clear();
             var convos = IndieBuff_ConvoHandler.Instance.conversations;
 
