@@ -454,6 +454,7 @@ namespace IndieBuff.Editor
             await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
             await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
 
+            await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
             chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
 
         }
