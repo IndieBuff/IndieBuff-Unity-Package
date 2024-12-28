@@ -1,3 +1,22 @@
+## [1.2.0] - 2024-12-28
+
+### Added
+
+- Streaming speed for responses faster
+- Base Model speed & quality increased
+- Chats showcasing in chronological order of most recently used
+- Haiku 3-5 available for Indie tier users now
+
+### Feature
+
+- Chat history being stored locally in SQLite DB instead of on IndieBuff servers
+
+### Fixed
+
+- Feedback buttons weren't doing anything overly helpful
+- Black flash after new chats
+- Haiku 3 no longer being offered as an available AI model
+
 ## [1.1.3] - 2024-12-25
 
 ### Fixed
