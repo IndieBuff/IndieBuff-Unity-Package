@@ -18,7 +18,6 @@ namespace IndieBuff.Editor
         const string CurrentConvoIdKey = "IndieBuffUserSession_CurrentConvoId";
         const string CurrentConvoTitleKey = "IndieBuffUserSession_CurrentConvoTitle";
 
-
         public Action onConversationsLoaded;
         public Action onMessagesLoaded;
 
@@ -106,6 +105,8 @@ namespace IndieBuff.Editor
             try
             {
                 currentMessages = await db.GetConversationMessages(_currentConvoId);
+                IndieBuff_ConversationData convo = await db.GetConversation(_currentConvoId);
+                IndieBuff_UserInfo.Instance.lastUsedModel = convo.LastUsedModel;
                 onMessagesLoaded?.Invoke();
             }
             catch (Exception)
@@ -161,7 +162,6 @@ namespace IndieBuff.Editor
 
                 if (currentConvoId != -1)
                 {
-                    await db.UpdateConversationLastModel(_currentConvoId, aiModel);
                     await db.AddMessage(_currentConvoId, role, content, chatMode, aiModel);
                     currentMessages.Add(new IndieBuff_MessageData
                     {
@@ -171,6 +171,9 @@ namespace IndieBuff.Editor
                         Timestamp = DateTime.UtcNow,
                         ChatMode = chatMode
                     });
+
+                    IndieBuff_UserInfo.Instance.lastUsedMode = chatMode;
+                    IndieBuff_UserInfo.Instance.lastUsedModel = aiModel;
                 }
                 else
                 {

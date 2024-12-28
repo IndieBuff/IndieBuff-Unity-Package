@@ -85,6 +85,12 @@ namespace IndieBuff.Editor
                 availableModels = JsonConvert.DeserializeObject<List<string>>(data);
             }
         }
+
+        public void NewConversation()
+        {
+            lastUsedModel = "";
+            lastUsedMode = ChatMode.Chat;
+        }
     }
 
 }

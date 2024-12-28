@@ -90,6 +90,7 @@ namespace IndieBuff.Editor
 
             await TokenManager.Instance.RefreshTokensAsync();
             string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
+            Debug.Log("LAST USED MODEL: " + IndieBuff_UserInfo.Instance.lastUsedModel);
             var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", lastModel = IndieBuff_UserInfo.Instance.lastUsedModel };
             List<MessageHistoryObject> messageHistory = IndieBuff_ConvoHandler.Instance.currentMessages.Select(message => new MessageHistoryObject
             {

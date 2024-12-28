@@ -130,8 +130,6 @@ namespace IndieBuff.Editor
 
             aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
 
-
-            // FIX HERE
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded += onMessagesLoaded;
 
             IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
@@ -264,20 +262,17 @@ namespace IndieBuff.Editor
             });
         }
 
-        // FIX HERE
         public void Cleanup()
         {
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded -= onMessagesLoaded;
             chatHistoryComponent.Cleanup();
         }
 
-        // FIX HERE
         private void InitializeConversation()
         {
             _ = InitializeConversationAsync();
         }
 
-        // FIX HERE
         private async Task InitializeConversationAsync()
         {
 
@@ -318,18 +313,16 @@ namespace IndieBuff.Editor
             ScrollToBottom();
         }
 
-        // FIX HERE
         private async void onMessagesLoaded()
         {
             responseArea.Clear();
             await InitializeConversationAsync();
         }
 
-        // FIX HERE
         private void OnNewChatClicked()
         {
             IndieBuff_ConvoHandler.Instance.ClearConversation();
-            IndieBuff_UserInfo.Instance.lastUsedModel = "";
+            IndieBuff_UserInfo.Instance.NewConversation();
             chatName.text = "New Chat";
             responseArea.Clear();
         }
@@ -344,7 +337,6 @@ namespace IndieBuff.Editor
             responseArea.MarkDirtyRepaint();
         }
 
-        // FIX HERE
         private void TrimMessageEndings(VisualElement msgContainer)
         {
             foreach (var child in msgContainer.Children())
@@ -360,7 +352,6 @@ namespace IndieBuff.Editor
             }
         }
 
-        // FIX HERE
         private void OnChatInputKeyDown(KeyDownEvent evt)
         {
             if (evt.keyCode == KeyCode.Return && !evt.shiftKey)
@@ -420,7 +411,6 @@ namespace IndieBuff.Editor
             }
         }
 
-        // FIX HERE
         private async Task SendMessageAsync()
         {
             if (isStreamingMessage)
@@ -453,13 +443,10 @@ namespace IndieBuff.Editor
 
         }
 
-        // FIX HERE
         private async Task HandleChatDatabase(string userMessage, string aiMessage, string summaryMessage = "")
         {
-
             IndieBuff_UserInfo.Instance.lastUsedMode = IndieBuff_UserInfo.Instance.currentMode;
             IndieBuff_UserInfo.Instance.lastUsedModel = IndieBuff_UserInfo.Instance.selectedModel;
-
             if (!string.IsNullOrWhiteSpace(summaryMessage))
             {
                 await IndieBuff_ConvoHandler.Instance.AddMessage("summary", summaryMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
@@ -523,7 +510,6 @@ namespace IndieBuff.Editor
             return aiMessageContainer;
         }
 
-        // FIX HERE
         private async Task HandleStreamingAIResponse(string userMessage, VisualElement responseContainer)
         {
 
@@ -573,8 +559,6 @@ namespace IndieBuff.Editor
 
             await HandleChatDatabase(userMessage, aiMessage, summaryMessage);
         }
-
-        // FIX HERE
         private async Task HandleAICommandResponse(string userMessage, VisualElement responseContainer)
         {
             var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
@@ -604,7 +588,6 @@ namespace IndieBuff.Editor
 
         }
 
-        // FIX HERE
         private async Task HandleAIResponse(string userMessage)
         {
             loadingBar.StartLoading();
@@ -622,10 +605,7 @@ namespace IndieBuff.Editor
             else
             {
                 await HandleAICommandResponse(userMessage, responseContainer);
-
             }
-
-
         }
 
         private async void OnLogoutClicked()

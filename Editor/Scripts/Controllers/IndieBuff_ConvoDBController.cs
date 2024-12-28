@@ -37,7 +37,7 @@ namespace IndieBuff.Editor
                 Title = title,
                 CreatedAt = DateTime.Now,
                 LastUpdatedAt = DateTime.Now,
-                LastUsedModel = aiModel
+                LastUsedModel = ""
             };
             await _database.InsertAsync(conversation);
 
@@ -66,18 +66,6 @@ namespace IndieBuff.Editor
         public async Task UpdateConversation(IndieBuff_ConversationData conversation)
         {
             conversation.LastUpdatedAt = DateTime.UtcNow;
-            await _database.UpdateAsync(conversation);
-        }
-
-        public async Task UpdateConversationLastModel(int conversationId, string newModel)
-        {
-            var conversation = await _database.GetAsync<IndieBuff_ConversationData>(conversationId);
-            if (conversation == null)
-            {
-                throw new Exception("Conversation not found");
-            }
-            conversation.LastUsedModel = newModel;
-
             await _database.UpdateAsync(conversation);
         }
 
