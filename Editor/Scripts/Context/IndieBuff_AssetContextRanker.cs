@@ -93,7 +93,7 @@ namespace IndieBuff.Editor
                 return _instance;
             }
         }
-        internal async Task<Dictionary<string, object>> BuildRankedAssetContext(string prompt)
+        internal Task<Dictionary<string, object>> BuildRankedAssetContext(string prompt)
         {
 
             var queryWords = PrepQueryWords(prompt);
@@ -116,11 +116,7 @@ namespace IndieBuff.Editor
                 .ToList();
 
             IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects, 1000);
-            builder.StartContextBuild();
-
-            await Task.Delay(100);
-
-            return builder.GetContextData();
+            return builder.StartContextBuild();
         }
 
         private float CalculateTypeKeywordScore(string type, string[] queryWords)

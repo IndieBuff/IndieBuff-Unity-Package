@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -88,7 +90,14 @@ namespace IndieBuff.Editor
 
             await TokenManager.Instance.RefreshTokensAsync();
             string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
-            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId != null ? IndieBuff_UserInfo.Instance.currentConvoId : null };
+            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", lastModel = IndieBuff_UserInfo.Instance.lastUsedModel };
+            List<MessageHistoryObject> messageHistory = IndieBuff_ConvoHandler.Instance.currentMessages.Select(message => new MessageHistoryObject
+            {
+                role = message.Role,
+                content = message.Content,
+                cmd = "hello"
+            }).ToList();
+            requestData.history = messageHistory;
             var jsonPayload = JsonUtility.ToJson(requestData);
             var jsonStringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
@@ -123,63 +132,6 @@ namespace IndieBuff.Editor
                 Debug.Log(response.Content.ReadAsStringAsync().Result);
                 throw new Exception("Error: Response was unsuccessful");
             }
-
-
-        }
-
-
-        public async Task<HttpResponseMessage> GetAICommandResponseAsync(string prompt, CancellationToken cancellationToken = default)
-        {
-            string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
-            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId != null ? IndieBuff_UserInfo.Instance.currentConvoId : null };
-            var jsonPayload = JsonUtility.ToJson(requestData);
-            var jsonStringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/chat")
-            {
-                Content = jsonStringContent
-            };
-
-            var response = await SendRequestAsync(() => client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken));
-            return response;
-        }
-        public Task<HttpResponseMessage> GetAllUsersChatsAsync()
-        {
-            var requestData = new ChatRequest { gameEngine = "unity" };
-            var jsonPayload = JsonUtility.ToJson(requestData);
-
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/get-chats")
-            {
-                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-            };
-
-            return SendRequestAsync(() => client.SendAsync(requestMessage));
-        }
-
-        public Task<HttpResponseMessage> GetConvoHistoryAsync()
-        {
-            var requestData = new ChatRequest { gameEngine = "unity", conversationId = IndieBuff_UserInfo.Instance.currentConvoId };
-            var jsonPayload = JsonUtility.ToJson(requestData);
-
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/chat-history")
-            {
-                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-            };
-
-            return SendRequestAsync(() => client.SendAsync(requestMessage));
-        }
-
-        public Task<HttpResponseMessage> DeleteConvoAsync(string convoId)
-        {
-            var requestData = new ChatRequest { gameEngine = "unity", conversationId = convoId };
-            var jsonPayload = JsonUtility.ToJson(requestData);
-
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/delete-chat")
-            {
-                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-            };
-
-            return SendRequestAsync(() => client.SendAsync(requestMessage));
         }
 
         public Task<HttpResponseMessage> GetIndieBuffUserAsync()
@@ -192,36 +144,24 @@ namespace IndieBuff.Editor
             return SendRequestAsync(() => client.GetAsync("plugin-chat/available-models"));
         }
 
-        public Task<HttpResponseMessage> PostMessageFeedbackAsync(string messageId, bool isPositive)
-        {
-            var requestData = new FeedbackRequest { messageId = messageId, isPositive = isPositive };
-            var jsonPayload = JsonUtility.ToJson(requestData);
-
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/feedback")
-            {
-                Content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json")
-            };
-
-            return SendRequestAsync(() => client.SendAsync(requestMessage));
-        }
-
-        [Serializable]
-        public class FeedbackRequest
-        {
-            public string messageId;
-            public bool isPositive;
-        }
-
-
         [Serializable]
         public class ChatRequest
         {
             public string prompt;
             public string context;
+            public List<MessageHistoryObject> history = new List<MessageHistoryObject>();
             public string gameEngine;
-            public string conversationId = null;
             public string chatMode;
             public string aiModel;
+            public string lastModel;
+        }
+
+        [Serializable]
+        public class MessageHistoryObject
+        {
+            public string role;
+            public string content;
+            public string cmd;
         }
 
     }

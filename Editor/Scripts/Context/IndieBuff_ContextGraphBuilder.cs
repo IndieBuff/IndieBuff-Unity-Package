@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
@@ -29,15 +30,17 @@ namespace IndieBuff.Editor
         private int m_ObjectDepth = 0;
         private int _maxTokenCount;
         private int currentTokenCount = 0;
+        private TaskCompletionSource<Dictionary<string, object>> _completionSource;
 
-        public IndieBuff_ContextGraphBuilder(List<UnityEngine.Object> contextObjects, int maxTokenCount)
+        public IndieBuff_ContextGraphBuilder(List<UnityEngine.Object> contextObjects, int maxTokenCount = int.MaxValue)
         {
             _contextObjects = contextObjects;
             _maxTokenCount = maxTokenCount;
         }
 
-        internal void StartContextBuild()
+        internal Task<Dictionary<string, object>> StartContextBuild()
         {
+            _completionSource = new TaskCompletionSource<Dictionary<string, object>>();
             isProcessing = true;
             contextData = new Dictionary<string, object>();
             objectsToProcess = new Queue<GameObject>();
@@ -100,6 +103,7 @@ namespace IndieBuff.Editor
             }
 
             EditorApplication.update += ProcessObjectsQueue;
+            return _completionSource.Task;
         }
 
         private int EstimateTokenCount(object obj)
@@ -239,6 +243,7 @@ namespace IndieBuff.Editor
 
                     }
                 }
+                _completionSource?.TrySetResult(contextData);
 
             }
             catch (Exception e)
@@ -315,7 +320,7 @@ namespace IndieBuff.Editor
                     }
                 }
 
-                
+
                 AddToContext(key, gameObjectData);
 
 
@@ -1023,10 +1028,5 @@ namespace IndieBuff.Editor
                    (type.IsArray && IsSerializableValue(type.GetElementType()));
         }
 
-
-        public Dictionary<string, object> GetContextData()
-        {
-            return contextData;
-        }
     }
 }

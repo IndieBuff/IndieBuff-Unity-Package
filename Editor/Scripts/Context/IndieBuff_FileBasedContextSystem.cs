@@ -273,15 +273,14 @@ namespace IndieBuff.Editor
             }
         }
 
-        public async Task<Dictionary<string, object>> QueryContext(string query, int maxResults = 10)
+        public Task<Dictionary<string, object>> QueryContext(string query, int maxResults = 10)
         {
-            await Task.Delay(10);
             var results = new List<IndieBuff_SearchResult>();
             var finalResults = new Dictionary<string, object>();
-            if (string.IsNullOrEmpty(query)) return finalResults;
+            if (string.IsNullOrEmpty(query)) return Task.FromResult(finalResults);
 
             var queryTerms = query.ToLower().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (queryTerms.Length == 0) return finalResults;
+            if (queryTerms.Length == 0) return Task.FromResult(finalResults);
 
 
             var scoredNodes = nodes.Values.Select(node => new
@@ -296,15 +295,11 @@ namespace IndieBuff.Editor
             .Take(maxResults)
             .Select(x => x.Object)
             .ToList();
-            
+
 
 
             IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(scoredNodes, 1000);
-            builder.StartContextBuild();
-
-            await Task.Delay(1);
-
-            return builder.GetContextData();
+            return builder.StartContextBuild();
         }
 
         private double CalculateTextScore(IndieBuff_SceneNode node, string[] queryTerms)

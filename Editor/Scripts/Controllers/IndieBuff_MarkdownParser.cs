@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -24,6 +25,8 @@ namespace IndieBuff.Editor
 
         private string rawCode = "";
 
+        public StringBuilder fullMessage;
+
         private IndieBuff_LoadingBar loadingBar;
 
 
@@ -34,14 +37,21 @@ namespace IndieBuff.Editor
             inInlineCodeBlock = false;
             isLoading = true;
             lineBuffer = new StringBuilder();
+            fullMessage = new StringBuilder();
             syntaxHighlighter = new IndieBuff_SyntaxHighlighter();
 
             messageContainer = container;
             currentMessageLabel = currentLabel;
         }
 
+        public string GetFullMessage()
+        {
+            return fullMessage.ToString();
+        }
+
         public void ParseFullMessage(string message)
         {
+            fullMessage.Append(message);
             var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
             foreach (var line in lines)
             {
@@ -51,42 +61,9 @@ namespace IndieBuff.Editor
         }
 
 
-        public void ParseCommandMessage(string message)
-        {
-            messageContainer.parent.style.visibility = Visibility.Visible;
-            currentMessageLabel.value = "Hit 'Execute' to run the command or view the code below.";
-
-
-            Button runCommandButton = messageContainer.parent.Q<Button>("ExecuteButton");
-            runCommandButton.style.display = DisplayStyle.Flex;
-            runCommandButton.SetEnabled(true);
-            runCommandButton.text = "Execute";
-
-            string result = $@"{message}";
-
-
-            runCommandButton.clicked += () =>
-              {
-                  IndieBuff_DynamicScriptUtility.ExecuteRuntimeScript(result);
-              };
-
-            Foldout commandPreview = new Foldout();
-            commandPreview.text = "View Command";
-            commandPreview.value = false;
-            messageContainer.Add(commandPreview);
-
-            var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
-            currentMessageLabel = CreateNewAIResponseLabel("", "code-block");
-            messageContainer.Remove(currentMessageLabel);
-            commandPreview.Add(currentMessageLabel);
-            foreach (var line in lines)
-            {
-                currentMessageLabel.value += TransformCodeBlock(line);
-            }
-        }
-
         public void ParseChunk(string chunk)
         {
+            fullMessage.Append(chunk);
             foreach (char c in chunk)
             {
                 if (c == '\n')
