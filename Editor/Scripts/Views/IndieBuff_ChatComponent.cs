@@ -561,12 +561,9 @@ namespace IndieBuff.Editor
             if (splitIndex != -1)
             {
                 aiMessage = parser.GetFullMessage().Substring(0, splitIndex);
-                string jsonInput = parser.GetFullMessage().Substring(splitIndex + 1);
-                Debug.Log(jsonInput);
+                string jsonInput = parser.GetFullMessage().Substring(splitIndex + 1).Trim();
                 var parsedJson = JsonUtility.FromJson<IndieBuff_SummaryResponse>(jsonInput);
                 summaryMessage = parsedJson.content;
-
-
             }
             else
             {
