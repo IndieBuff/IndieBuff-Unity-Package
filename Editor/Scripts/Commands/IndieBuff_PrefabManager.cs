@@ -3,6 +3,10 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 using System;
+using UnityEditor.SceneManagement;
+using UnityEditor.Experimental.SceneManagement;
+using UnityEditor.SearchService;
+using UnityEngine.SceneManagement;
 
 namespace IndieBuff.Editor
 {
@@ -40,12 +44,13 @@ namespace IndieBuff.Editor
 
             // Create an empty GameObject to convert to prefab
             GameObject tempObject = new GameObject(Path.GetFileNameWithoutExtension(prefabPath));
+            Undo.RegisterCreatedObjectUndo(tempObject, "Create Prefab");
             
             // Create the prefab asset
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(tempObject, prefabPath);
             
             // Clean up the temporary object
-            UnityEngine.Object.DestroyImmediate(tempObject);
+            Undo.DestroyObjectImmediate(tempObject);
 
             if (prefab != null)
             {
@@ -119,8 +124,9 @@ namespace IndieBuff.Editor
             // Create directory if it doesn't exist
             Directory.CreateDirectory(Path.GetDirectoryName(prefabPath));
 
-            // Create an empty primative GameObject to convert to prefab
+            // Create an empty primitive GameObject to convert to prefab
             GameObject gameObjectPrimative = GameObject.CreatePrimitive(primitiveTypeEnum);
+            Undo.RegisterCreatedObjectUndo(gameObjectPrimative, "Create Primitive Prefab");
 
             string prefabName = Path.GetFileNameWithoutExtension(prefabPath);
 
@@ -129,7 +135,7 @@ namespace IndieBuff.Editor
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(gameObjectPrimative, prefabPath);
             
             // Clean up the temporary object
-            UnityEngine.Object.DestroyImmediate(gameObjectPrimative);
+            Undo.DestroyObjectImmediate(gameObjectPrimative);
 
             if (prefab != null)
             {
@@ -178,12 +184,13 @@ namespace IndieBuff.Editor
 
             // Create an instance of the original prefab
             GameObject tempInstance = PrefabUtility.InstantiatePrefab(originalPrefab) as GameObject;
+            Undo.RegisterCreatedObjectUndo(tempInstance, "Create Prefab Variant");
             
             // Create the variant
             GameObject variant = PrefabUtility.SaveAsPrefabAsset(tempInstance, variantPath);
             
             // Clean up the temporary instance
-            UnityEngine.Object.DestroyImmediate(tempInstance);
+            Undo.DestroyObjectImmediate(tempInstance);
 
             if (variant != null)
             {
@@ -233,12 +240,13 @@ namespace IndieBuff.Editor
 
             // Create an instance of the source prefab
             GameObject tempInstance = PrefabUtility.InstantiatePrefab(sourcePrefab) as GameObject;
+            Undo.RegisterCreatedObjectUndo(tempInstance, "Duplicate Prefab");
             
             // Save as new prefab
             GameObject duplicatedPrefab = PrefabUtility.SaveAsPrefabAsset(tempInstance, duplicatePath);
             
             // Clean up the temporary instance
-            UnityEngine.Object.DestroyImmediate(tempInstance);
+            Undo.DestroyObjectImmediate(tempInstance);
 
             if (duplicatedPrefab != null)
             {
@@ -287,6 +295,9 @@ namespace IndieBuff.Editor
 
             // Create directory if it doesn't exist
             Directory.CreateDirectory(Path.GetDirectoryName(prefabPath));
+
+            // Record the original object state
+            Undo.RegisterCompleteObjectUndo(sourceObject, "Convert To Prefab");
 
             // Create the prefab asset from the scene object
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(sourceObject, prefabPath);
@@ -388,24 +399,13 @@ namespace IndieBuff.Editor
                 return $"Component of type '{componentType}' already exists on prefab at {prefabPath}";
             }
 
-            // Create a temporary instance of the prefab
-            GameObject tempInstance = PrefabUtility.InstantiatePrefab(prefabAsset) as GameObject;
+            // Add the component with Undo support
+            Undo.AddComponent(prefabAsset, componentType);
             
-            // Add the component
-            Component addedComponent = tempInstance.AddComponent(componentType);
-            if (addedComponent == null)
-            {
-                UnityEngine.Object.DestroyImmediate(tempInstance);
-                return $"Failed to add component of type '{componentType}' to prefab";
-            }
+            // Save the changes
+            EditorUtility.SetDirty(prefabAsset);
+            AssetDatabase.SaveAssets();
 
-            // Save the changes back to the prefab
-            PrefabUtility.SaveAsPrefabAsset(tempInstance, prefabPath);
-            
-            // Clean up
-            UnityEngine.Object.DestroyImmediate(tempInstance);
-            
-            AssetDatabase.Refresh();
             return $"Successfully added component of type '{componentType}' to prefab at {prefabPath}";
         }
 
@@ -431,7 +431,7 @@ namespace IndieBuff.Editor
                 prefabPath += ".prefab";
             }
 
-            // Load the prefab asset
+            // Load the prefab asset directly
             GameObject prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             if (prefabAsset == null)
             {
@@ -449,33 +449,20 @@ namespace IndieBuff.Editor
                 return $"Failed to find component type: {componentName}";
             }
 
-            // Create a temporary instance of the prefab
-            GameObject tempInstance = PrefabUtility.InstantiatePrefab(prefabAsset) as GameObject;
-            
-            // Find and remove the component
-            Component componentToRemove = tempInstance.GetComponent(componentType);
+            // Find the component
+            Component componentToRemove = prefabAsset.GetComponent(componentType);
             if (componentToRemove == null)
             {
-                UnityEngine.Object.DestroyImmediate(tempInstance);
-                return $"No component of type '{componentType}' found on prefab at {prefabPath}";
+                return $"No component of type '{componentType}' found on prefab";
             }
 
-            // Remove the component
-            UnityEngine.Object.DestroyImmediate(componentToRemove);
+            // Record the object state for undo and remove the component
+            Undo.DestroyObjectImmediate(componentToRemove);
+            
+            // Save the changes
+            EditorUtility.SetDirty(prefabAsset);
+            AssetDatabase.SaveAssets();
 
-            // Save the changes back to the prefab
-            GameObject savedPrefab = PrefabUtility.SaveAsPrefabAsset(tempInstance, prefabPath);
-            
-            // Clean up
-            UnityEngine.Object.DestroyImmediate(tempInstance);
-            
-            // Verify the component was actually removed
-            if (savedPrefab.GetComponent(componentType) != null)
-            {
-                return $"Failed to remove component of type '{componentType}' from prefab at {prefabPath}";
-            }
-            
-            AssetDatabase.Refresh();
             return $"Successfully removed component of type '{componentType}' from prefab at {prefabPath}";
         }
     }

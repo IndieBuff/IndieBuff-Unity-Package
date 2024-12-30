@@ -18,6 +18,7 @@ namespace IndieBuff.Editor
             }
 
             GameObject gameObject = new GameObject(gameObjectName);
+            Undo.RegisterCreatedObjectUndo(gameObject, "Create GameObject");
 
             return "New Gameobject created with name: " + gameObject.name;
         }
@@ -65,7 +66,8 @@ namespace IndieBuff.Editor
             }
 
             GameObject gameObjectPrimative = GameObject.CreatePrimitive(primitiveTypeEnum);
-
+            Undo.RegisterCreatedObjectUndo(gameObjectPrimative, "Create Primitive GameObject");
+            
             gameObjectPrimative.name = gameObjectName;
 
             return "New primative gameobject created with name: " + gameObjectPrimative.name;
@@ -91,6 +93,7 @@ namespace IndieBuff.Editor
             }
 
             GameObject duplicate = UnityEngine.Object.Instantiate(originalGameObject, originalGameObject.transform.position, Quaternion.identity);
+            Undo.RegisterCreatedObjectUndo(duplicate, "Duplicate GameObject");
 
             return "New duplicatedgameobject created with name: " + duplicate.name;
         }
@@ -113,7 +116,7 @@ namespace IndieBuff.Editor
                 return "Failed to delete gameobject at path: " + hierarchyPath;
             }
 
-            UnityEngine.Object.DestroyImmediate(gameObjectToDelete);
+            Undo.DestroyObjectImmediate(gameObjectToDelete);
             return "Deleted gameobject at path: " + hierarchyPath;
         }
 
@@ -154,7 +157,9 @@ namespace IndieBuff.Editor
                 return $"Component of type '{componentType}' already attached to gameobject of name {hierarchyPath}";
             }
 
-            originalGameObject.AddComponent(componentType);
+            Component newComponent = originalGameObject.AddComponent(componentType);
+            Undo.RegisterCreatedObjectUndo(newComponent, $"Add {componentType.Name} Component");
+
             return $"Component of type '{componentType}' attached to gameobject of name {hierarchyPath}";
         }
 
@@ -182,6 +187,11 @@ namespace IndieBuff.Editor
 
             if (componentType == null)
             {
+                componentType = Type.GetType("UnityEngine." + componentName + ", UnityEngine");
+            }
+
+            if (componentType == null)
+            {
                 return "Failed to find component type: " + componentName;
             }
 
@@ -191,7 +201,7 @@ namespace IndieBuff.Editor
                 return $"Component of type '{componentType}' not attached to gameobject of name {hierarchyPath}";
             }
 
-            UnityEngine.Object.DestroyImmediate(existingComponent);
+            Undo.DestroyObjectImmediate(existingComponent);
             return $"Component of type '{componentType}' removed from gameobject of name {hierarchyPath}";
         }
 
@@ -228,7 +238,7 @@ namespace IndieBuff.Editor
             }
 
 
-            childGameObject.transform.SetParent(parentGameObject.transform);
+            Undo.SetTransformParent(childGameObject.transform, parentGameObject.transform, $"Set Parent of {childGameObject.name}");
 
             return $"Assigned child gameobject with name '{hierarchyPath}' to parent with name '{parentHierarchyPath}'";
         }
@@ -238,8 +248,6 @@ namespace IndieBuff.Editor
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string tag = parameters.ContainsKey("tag") ? parameters["tag"] : null;
-
-
 
             GameObject originalGameObject = null;
 
@@ -260,6 +268,7 @@ namespace IndieBuff.Editor
                 UnityEditorInternal.InternalEditorUtility.AddTag(tag);
             }
 
+            Undo.RecordObject(originalGameObject, "Change GameObject Tag");
             originalGameObject.tag = tag;
 
             return $"Tag named'{tag}' attached to gameobject of name {hierarchyPath}";
@@ -288,11 +297,21 @@ namespace IndieBuff.Editor
                 return "Failed to add layer to gameobject with name: " + hierarchyPath;
             }
 
+            Undo.RecordObject(originalGameObject, "Change GameObject Layer");
+            originalGameObject.layer = LayerMask.NameToLayer(layer);
+
             return $"Layer named'{layer}' attached to gameobject of name {hierarchyPath}";
         }
 
         public static bool AddLayer(string layerName)
         {
+            // First check if the layer already exists
+            if (LayerMask.NameToLayer(layerName) != -1)
+            {
+                // Layer already exists, return true as it's available for use
+                return true;
+            }
+
             SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
             SerializedProperty layers = tagManager.FindProperty("layers");
 
