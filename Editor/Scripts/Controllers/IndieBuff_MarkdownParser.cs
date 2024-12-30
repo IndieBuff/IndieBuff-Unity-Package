@@ -14,7 +14,6 @@ namespace IndieBuff.Editor
     {
         private bool inCodeBlock;
         private bool inInlineCodeBlock;
-        private bool isLoading;
         private StringBuilder lineBuffer;
         private VisualElement messageContainer;
         private TextField currentMessageLabel;
@@ -27,15 +26,10 @@ namespace IndieBuff.Editor
 
         public StringBuilder fullMessage;
 
-        private IndieBuff_LoadingBar loadingBar;
-
-
-
         public IndieBuff_MarkdownParser(VisualElement container, TextField currentLabel)
         {
             inCodeBlock = false;
             inInlineCodeBlock = false;
-            isLoading = true;
             lineBuffer = new StringBuilder();
             fullMessage = new StringBuilder();
             syntaxHighlighter = new IndieBuff_SyntaxHighlighter();
@@ -95,13 +89,6 @@ namespace IndieBuff.Editor
 
         private async Task ProcessLine(string line)
         {
-            if (isLoading)
-            {
-                currentMessageLabel.value = "";
-                isLoading = false;
-                loadingBar.StopLoading();
-                messageContainer.parent.style.visibility = Visibility.Visible;
-            }
             await semaphore.WaitAsync();
             try
             {
@@ -253,11 +240,6 @@ namespace IndieBuff.Editor
             line = TransformHeaders(line);
             line = TransformInlineStyles(line);
             return line;
-        }
-
-        public void UseLoader(IndieBuff_LoadingBar loadingBar)
-        {
-            this.loadingBar = loadingBar;
         }
 
         private TextField CreateNewAIResponseLabel(string initialText = "", string styleClass = "")

@@ -107,10 +107,6 @@ namespace IndieBuff.Editor
             SetupGeometryCallbacks();
             SetupTopBarButtons();
 
-
-            // sendChatButton.clicked += async () => await SendMessageAsync();
-            // chatInputArea.RegisterCallback<KeyDownEvent>(OnChatInputKeyDown, TrickleDown.TrickleDown);
-
             InitializeConversation();
 
             aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
@@ -460,15 +456,22 @@ namespace IndieBuff.Editor
             var messageLabel = messageContainer.Q<TextField>();
 
             var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
-            parser.UseLoader(loadingBar);
 
             cts = new CancellationTokenSource();
+            bool isFirstChunk = true;
 
             try
             {
                 await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
                 {
                     parser.ParseChunk(chunk);
+                    if (isFirstChunk)
+                    {
+                        messageLabel.value = "";
+                        loadingBar.StopLoading();
+                        responseContainer.style.visibility = Visibility.Visible;
+                        isFirstChunk = false;
+                    }
                 }, cts.Token);
             }
             catch (Exception)
