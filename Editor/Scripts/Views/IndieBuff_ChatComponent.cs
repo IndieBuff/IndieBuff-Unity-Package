@@ -14,11 +14,7 @@ namespace IndieBuff.Editor
     public class IndieBuff_ChatComponent
     {
         private VisualElement root;
-
-        // chat widget
-        private TextField chatInputArea;
-        private Button sendChatButton;
-        private VisualElement chatWidget;
+        private IndieBuff_ChatWidgetComponent chatWidgetComponent;
 
         // response area
         private ScrollView responseArea;
@@ -39,8 +35,6 @@ namespace IndieBuff.Editor
 
 
         // placeholder
-        private VisualElement placeholderContainer;
-        private Label placeholderLabel;
 
         // response box
         private VisualTreeAsset AIResponseBoxAsset;
@@ -67,9 +61,6 @@ namespace IndieBuff.Editor
 
         public event Action OnLogoutSuccess;
 
-        public bool isStreamingMessage = false;
-
-
         private VisualElement bottombarContainer;
 
         // loading component
@@ -83,9 +74,9 @@ namespace IndieBuff.Editor
         public IndieBuff_ChatComponent(VisualElement root, VisualTreeAsset aiResponseAsset)
         {
             this.root = root;
-            chatWidget = root.Q<VisualElement>("ChatWidget");
-            chatInputArea = root.Q<TextField>("ChatInputArea");
-            sendChatButton = root.Q<Button>("SendChatButton");
+            //chatWidget = root.Q<VisualElement>("ChatWidget");
+            // chatInputArea = root.Q<TextField>("ChatInputArea");
+            // sendChatButton = root.Q<Button>("SendChatButton");
             responseArea = root.Q<ScrollView>("ReponseArea");
             chatHistoryPanel = root.Q<VisualElement>("ChatHistoryPanel");
             chatSettingsBar = root.Q<VisualElement>("ChatSettings");
@@ -99,10 +90,7 @@ namespace IndieBuff.Editor
 
             cts = new CancellationTokenSource();
 
-            placeholderContainer = root.Q<VisualElement>("PlaceholderContent");
-            placeholderLabel = placeholderContainer.Q<Label>("PlaceholderLabel");
 
-            placeholderContainer.style.display = DisplayStyle.Flex;
 
             SetupPopupContainer();
             SetupModelSelection();
@@ -114,17 +102,17 @@ namespace IndieBuff.Editor
 
             chatHistoryComponent = new IndieBuff_ChatHistoryComponent(chatHistoryPanel, OnChatHistoryClicked);
             chatSettingsComponent = new IndieBuff_ChatSettingsComponent(chatSettingsBar);
+            chatWidgetComponent = new IndieBuff_ChatWidgetComponent(root, SendMessageAsync);
             selectedContextViewer = new IndieBuff_SelectedContextViewer(userContextRoot);
             loadingBar = new IndieBuff_LoadingBar(loadingComponent);
 
 
-            SetupFocusCallbacks();
             SetupGeometryCallbacks();
             SetupTopBarButtons();
 
 
-            sendChatButton.clicked += async () => await SendMessageAsync();
-            chatInputArea.RegisterCallback<KeyDownEvent>(OnChatInputKeyDown);
+            // sendChatButton.clicked += async () => await SendMessageAsync();
+            // chatInputArea.RegisterCallback<KeyDownEvent>(OnChatInputKeyDown, TrickleDown.TrickleDown);
 
             InitializeConversation();
 
@@ -135,18 +123,6 @@ namespace IndieBuff.Editor
             IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
             {
                 aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
-            };
-
-            IndieBuff_UserInfo.Instance.onChatModeChanged += () =>
-            {
-                if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
-                {
-                    placeholderLabel.text = "Ask IndieBuff for help or code";
-                }
-                else
-                {
-                    placeholderLabel.text = "Tell IndieBuff what to do";
-                }
             };
         }
 
@@ -266,6 +242,7 @@ namespace IndieBuff.Editor
         {
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded -= onMessagesLoaded;
             chatHistoryComponent.Cleanup();
+            chatWidgetComponent.Cleanup();
         }
 
         private void InitializeConversation()
@@ -352,41 +329,6 @@ namespace IndieBuff.Editor
             }
         }
 
-        private void OnChatInputKeyDown(KeyDownEvent evt)
-        {
-            if (evt.keyCode == KeyCode.Return && !evt.shiftKey)
-            {
-                evt.PreventDefault();
-                evt.StopPropagation();
-
-                root.schedule.Execute(async () =>
-                {
-                    await SendMessageAsync();
-                });
-            }
-        }
-
-        private void SetupFocusCallbacks()
-        {
-            chatInputArea.RegisterCallback<FocusInEvent>(e =>
-            {
-                chatWidget.Q<VisualElement>("TextFieldRoot").AddToClassList("chat-highlight");
-                sendChatButton.AddToClassList("chat-button-highlight");
-                placeholderContainer.style.display = DisplayStyle.None;
-            });
-
-            chatInputArea.RegisterCallback<FocusOutEvent>(e =>
-            {
-                chatWidget.Q<VisualElement>("TextFieldRoot").RemoveFromClassList("chat-highlight");
-                sendChatButton.RemoveFromClassList("chat-button-highlight");
-                if (chatInputArea.value == string.Empty)
-                {
-                    placeholderContainer.style.display = DisplayStyle.Flex;
-                }
-
-            });
-        }
-
         private void SetupTopBarButtons()
         {
             newChatButton = root.Q<Button>("NewChatButton");
@@ -411,9 +353,12 @@ namespace IndieBuff.Editor
             }
         }
 
-        private async Task SendMessageAsync()
+        private async Task SendMessageAsync(VisualElement chatWidget)
         {
-            if (isStreamingMessage)
+            TextField chatInputArea = chatWidget.Q<TextField>("ChatInputArea");
+            Button sendChatButton = chatWidget.Q<Button>("SendChatButton");
+
+            if (IndieBuff_UserInfo.Instance.isStreamingMessage)
             {
                 cts.Cancel();
                 responseArea.RemoveAt(responseArea.childCount - 1);
@@ -428,7 +373,7 @@ namespace IndieBuff.Editor
             {
                 return;
             }
-            isStreamingMessage = true;
+            IndieBuff_UserInfo.Instance.isStreamingMessage = true;
             sendChatButton.Q<VisualElement>("SendChatIcon").style.display = DisplayStyle.None;
             sendChatButton.Q<VisualElement>("StopChatIcon").style.display = DisplayStyle.Flex;
 
@@ -437,7 +382,7 @@ namespace IndieBuff.Editor
             chatInputArea.value = string.Empty;
             await HandleAIResponse(userMessage);
 
-            isStreamingMessage = false;
+            IndieBuff_UserInfo.Instance.isStreamingMessage = false;
             sendChatButton.Q<VisualElement>("StopChatIcon").style.display = DisplayStyle.None;
             sendChatButton.Q<VisualElement>("SendChatIcon").style.display = DisplayStyle.Flex;
 
