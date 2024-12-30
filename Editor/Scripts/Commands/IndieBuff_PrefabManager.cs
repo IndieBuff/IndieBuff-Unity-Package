@@ -3,10 +3,6 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 using System;
-using UnityEditor.SceneManagement;
-using UnityEditor.Experimental.SceneManagement;
-using UnityEditor.SearchService;
-using UnityEngine.SceneManagement;
 
 namespace IndieBuff.Editor
 {
@@ -44,6 +40,7 @@ namespace IndieBuff.Editor
 
             // Create an empty GameObject to convert to prefab
             GameObject tempObject = new GameObject(Path.GetFileNameWithoutExtension(prefabPath));
+            Undo.IncrementCurrentGroup();
             Undo.RegisterCreatedObjectUndo(tempObject, "Create Prefab");
             
             // Create the prefab asset
@@ -126,6 +123,7 @@ namespace IndieBuff.Editor
 
             // Create an empty primitive GameObject to convert to prefab
             GameObject gameObjectPrimative = GameObject.CreatePrimitive(primitiveTypeEnum);
+            Undo.IncrementCurrentGroup();
             Undo.RegisterCreatedObjectUndo(gameObjectPrimative, "Create Primitive Prefab");
 
             string prefabName = Path.GetFileNameWithoutExtension(prefabPath);
@@ -184,6 +182,7 @@ namespace IndieBuff.Editor
 
             // Create an instance of the original prefab
             GameObject tempInstance = PrefabUtility.InstantiatePrefab(originalPrefab) as GameObject;
+            Undo.IncrementCurrentGroup();
             Undo.RegisterCreatedObjectUndo(tempInstance, "Create Prefab Variant");
             
             // Create the variant
@@ -240,6 +239,7 @@ namespace IndieBuff.Editor
 
             // Create an instance of the source prefab
             GameObject tempInstance = PrefabUtility.InstantiatePrefab(sourcePrefab) as GameObject;
+            Undo.IncrementCurrentGroup();
             Undo.RegisterCreatedObjectUndo(tempInstance, "Duplicate Prefab");
             
             // Save as new prefab
@@ -296,6 +296,7 @@ namespace IndieBuff.Editor
             // Create directory if it doesn't exist
             Directory.CreateDirectory(Path.GetDirectoryName(prefabPath));
 
+            Undo.IncrementCurrentGroup();
             // Record the original object state
             Undo.RegisterCompleteObjectUndo(sourceObject, "Convert To Prefab");
 
@@ -347,6 +348,7 @@ namespace IndieBuff.Editor
                 return $"Failed to instantiate prefab from {prefabPath}";
             }
 
+            Undo.IncrementCurrentGroup();
             // Register the creation for undo
             Undo.RegisterCreatedObjectUndo(instance, "Add Prefab To Scene");
 
@@ -399,6 +401,7 @@ namespace IndieBuff.Editor
                 return $"Component of type '{componentType}' already exists on prefab at {prefabPath}";
             }
 
+            Undo.IncrementCurrentGroup();
             // Add the component with Undo support
             Undo.AddComponent(prefabAsset, componentType);
             
@@ -456,6 +459,7 @@ namespace IndieBuff.Editor
                 return $"No component of type '{componentType}' found on prefab";
             }
 
+            Undo.IncrementCurrentGroup();
             // Record the object state for undo and remove the component
             Undo.DestroyObjectImmediate(componentToRemove);
             

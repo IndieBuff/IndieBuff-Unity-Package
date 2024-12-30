@@ -18,6 +18,7 @@ namespace IndieBuff.Editor
             }
 
             GameObject gameObject = new GameObject(gameObjectName);
+            Undo.IncrementCurrentGroup();
             Undo.RegisterCreatedObjectUndo(gameObject, "Create GameObject");
 
             return "New Gameobject created with name: " + gameObject.name;
@@ -66,6 +67,7 @@ namespace IndieBuff.Editor
             }
 
             GameObject gameObjectPrimative = GameObject.CreatePrimitive(primitiveTypeEnum);
+            Undo.IncrementCurrentGroup();
             Undo.RegisterCreatedObjectUndo(gameObjectPrimative, "Create Primitive GameObject");
             
             gameObjectPrimative.name = gameObjectName;
@@ -93,6 +95,7 @@ namespace IndieBuff.Editor
             }
 
             GameObject duplicate = UnityEngine.Object.Instantiate(originalGameObject, originalGameObject.transform.position, Quaternion.identity);
+            Undo.IncrementCurrentGroup();
             Undo.RegisterCreatedObjectUndo(duplicate, "Duplicate GameObject");
 
             return "New duplicatedgameobject created with name: " + duplicate.name;
@@ -116,6 +119,7 @@ namespace IndieBuff.Editor
                 return "Failed to delete gameobject at path: " + hierarchyPath;
             }
 
+            Undo.IncrementCurrentGroup();
             Undo.DestroyObjectImmediate(gameObjectToDelete);
             return "Deleted gameobject at path: " + hierarchyPath;
         }
@@ -158,6 +162,7 @@ namespace IndieBuff.Editor
             }
 
             Component newComponent = originalGameObject.AddComponent(componentType);
+            Undo.IncrementCurrentGroup();
             Undo.RegisterCreatedObjectUndo(newComponent, $"Add {componentType.Name} Component");
 
             return $"Component of type '{componentType}' attached to gameobject of name {hierarchyPath}";
@@ -201,6 +206,7 @@ namespace IndieBuff.Editor
                 return $"Component of type '{componentType}' not attached to gameobject of name {hierarchyPath}";
             }
 
+            Undo.IncrementCurrentGroup();
             Undo.DestroyObjectImmediate(existingComponent);
             return $"Component of type '{componentType}' removed from gameobject of name {hierarchyPath}";
         }
@@ -237,7 +243,7 @@ namespace IndieBuff.Editor
                 return "Failed to locate child gameobject with name: " + hierarchyPath;
             }
 
-
+            Undo.IncrementCurrentGroup();
             Undo.SetTransformParent(childGameObject.transform, parentGameObject.transform, $"Set Parent of {childGameObject.name}");
 
             return $"Assigned child gameobject with name '{hierarchyPath}' to parent with name '{parentHierarchyPath}'";
@@ -268,6 +274,7 @@ namespace IndieBuff.Editor
                 UnityEditorInternal.InternalEditorUtility.AddTag(tag);
             }
 
+            Undo.IncrementCurrentGroup();
             Undo.RecordObject(originalGameObject, "Change GameObject Tag");
             originalGameObject.tag = tag;
 
@@ -297,6 +304,7 @@ namespace IndieBuff.Editor
                 return "Failed to add layer to gameobject with name: " + hierarchyPath;
             }
 
+            Undo.IncrementCurrentGroup();
             Undo.RecordObject(originalGameObject, "Change GameObject Layer");
             originalGameObject.layer = LayerMask.NameToLayer(layer);
 

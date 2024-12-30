@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Collections;
+using UnityEditor.SceneManagement;
 
 namespace IndieBuff.Editor
 {
@@ -63,8 +64,12 @@ namespace IndieBuff.Editor
             Component existingComponent = originalGameObject.GetComponent(componentType);
             if (existingComponent == null)
             {
-                existingComponent = originalGameObject.AddComponent(componentType);
-
+                Undo.IncrementCurrentGroup();
+                existingComponent = Undo.AddComponent(originalGameObject, componentType);
+            }
+            else{
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(existingComponent, $"Set {propertyName} on {existingComponent.name}");
             }
 
             if (string.IsNullOrEmpty(propertyName) || string.IsNullOrEmpty(value))
@@ -179,6 +184,7 @@ namespace IndieBuff.Editor
                                             updatedArray.SetValue(newItem, existingArray.Length);
                                             prop.SetValue(existingComponent, updatedArray);
                                             EditorUtility.SetDirty(existingComponent);
+                                            EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
                                             return $"Added {value} to array in {hierarchyPath}";
                                         }
                                     }
@@ -193,6 +199,7 @@ namespace IndieBuff.Editor
                                         updatedArray.SetValue(convertedValue, existingArray.Length);
                                         prop.SetValue(existingComponent, updatedArray);
                                         EditorUtility.SetDirty(existingComponent);
+                                        EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
                                         return $"Added {value} to array in {hierarchyPath}";
                                     }
                                     catch
@@ -231,6 +238,7 @@ namespace IndieBuff.Editor
                                         currentList.Add(newItem);
                                         prop.SetValue(existingComponent, currentList);
                                         EditorUtility.SetDirty(existingComponent);
+                                        EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
                                         return $"Added {value} to list in {hierarchyPath}";
                                     }
                                 }
@@ -286,6 +294,7 @@ namespace IndieBuff.Editor
                                 }
                                 
                                 EditorUtility.SetDirty(existingComponent);
+                                EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
                                 return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
                             }
                             catch (Exception ex)
@@ -339,6 +348,8 @@ namespace IndieBuff.Editor
             }
 
             serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(existingComponent);
+            EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
 
             return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
         }
@@ -424,10 +435,17 @@ namespace IndieBuff.Editor
 
             Transform originalGameObjectTransform = originalGameObject.transform;
 
+            if (originalGameObject != null)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(originalGameObjectTransform, $"Set Transform2D on {originalGameObject.name}");
+            }
+
             originalGameObjectTransform.position = position;
             originalGameObjectTransform.localScale = scale;
 
             EditorUtility.SetDirty(originalGameObject);
+            EditorSceneManager.MarkSceneDirty(originalGameObject.scene);
 
             return $"Transform set with position '{position}' and scale '{scale}' to gameobject {hierarchyPath}";
         }
@@ -533,11 +551,18 @@ namespace IndieBuff.Editor
 
             Transform originalGameObjectTransform = originalGameObject.transform;
 
+            if (originalGameObjectTransform != null)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(originalGameObjectTransform, $"Set Transform3D on {originalGameObject.name}");
+            }
+
             originalGameObjectTransform.position = position;
             originalGameObjectTransform.localScale = scale;
             originalGameObjectTransform.localRotation = Quaternion.Euler(rotation);
 
-            EditorUtility.SetDirty(originalGameObject);
+            //EditorUtility.SetDirty(originalGameObject);
+            //EditorSceneManager.MarkSceneDirty(originalGameObject.scene);
 
             return $"Transform set with position '{position}' rotation '{rotation}' and scale '{scale}' to gameobject {hierarchyPath}";
         }
@@ -578,6 +603,12 @@ namespace IndieBuff.Editor
 
             SerializedObject serializedObject = new SerializedObject(scriptAsset);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
+
+            if (scriptAsset != null)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(scriptAsset, $"Modify {propertyName} on {scriptAsset.name}");
+            }
 
             try
             {

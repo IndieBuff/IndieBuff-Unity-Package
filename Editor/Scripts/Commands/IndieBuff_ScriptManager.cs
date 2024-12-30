@@ -37,8 +37,6 @@ namespace IndieBuff.Editor
             }
 
             File.WriteAllText(path, scriptContent);
-
-
             AssetDatabase.Refresh();
 
 
@@ -89,10 +87,9 @@ namespace IndieBuff.Editor
                 return $"Script {path} already attached to gameobject {hierarchyPath}";
             }
 
-            originalGameObject.AddComponent(script.GetClass());
-            EditorUtility.SetDirty(originalGameObject);
-
-
+            Undo.IncrementCurrentGroup();
+            Undo.AddComponent(originalGameObject, script.GetClass());
+            
             return $"Script {path} added to gameobject {hierarchyPath}";
 
         }
@@ -147,7 +144,11 @@ namespace IndieBuff.Editor
                 scriptInstance = component;
             }
 
+            Undo.IncrementCurrentGroup();
+            Undo.RegisterCompleteObjectUndo(scriptInstance, $"Set {fieldName} on {scriptInstance.name}");
+            
             SerializedObject serializedObject = new SerializedObject(scriptInstance);
+            serializedObject.Update();
             SerializedProperty field = serializedObject.FindProperty(fieldName);
             
             if (field == null)
