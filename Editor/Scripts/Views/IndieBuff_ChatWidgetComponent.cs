@@ -19,6 +19,9 @@ namespace IndieBuff.Editor
         private Label placeholderLabel;
         private Func<VisualElement, Task> onMessageSend;
 
+        private bool isProcessingSlashCommand = false;
+        private string currentSlashCommand = "";
+
         public IndieBuff_ChatWidgetComponent(VisualElement root, Func<VisualElement, Task> sendMessageAction)
         {
             rootParent = root;
@@ -39,6 +42,13 @@ namespace IndieBuff.Editor
             SetupFocusCallbacks();
 
             IndieBuff_UserInfo.Instance.onChatModeChanged += UpdatePlaceholderText;
+
+        }
+
+        private void OnChatInputChanged(ChangeEvent<string> evt)
+        {
+            string newValue = evt.newValue?.Trim();
+
 
         }
 
@@ -78,7 +88,6 @@ namespace IndieBuff.Editor
                 evt.StopPropagation();
             }
         }
-
 
         private void SetupFocusCallbacks()
         {

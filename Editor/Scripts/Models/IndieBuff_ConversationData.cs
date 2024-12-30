@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using SQLite;
 
 namespace IndieBuff.Editor
@@ -36,13 +35,4 @@ namespace IndieBuff.Editor
         public string content;
     }
 
-    [Serializable]
-    public enum ChatMode
-    {
-        Chat,
-        Command,
-        Prototype,
-        Debug,
-        Onboard,
-    }
 }
