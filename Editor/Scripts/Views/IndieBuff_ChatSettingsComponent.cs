@@ -35,7 +35,7 @@ namespace IndieBuff.Editor
             upgradeButton = chatSettingsBar.Q<Button>("UpgradeButton");
 
             chatModeButton.clicked += () => ChangeChatMode(ChatMode.Chat);
-            commandModeButton.clicked += () => ChangeChatMode(ChatMode.Command);
+            commandModeButton.clicked += () => ChangeChatMode(ChatMode.Prototype);
             upgradeButton.clicked += () =>
             {
                 Application.OpenURL(IndieBuff_EndpointData.GetFrontendBaseUrl() + "/pricing");
@@ -87,17 +87,13 @@ namespace IndieBuff.Editor
                     }
 
                     break;
-                case ChatMode.Command:
-                    commandModeButton.AddToClassList("mode-select-button-selected");
-                    chatModeButton.AddToClassList("mode-select-button-unselected");
-                    break;
+
             }
 
             IndieBuff_UserInfo.Instance.currentMode = mode;
         }
 
 
-        public bool IsCommandMode() => currentMode == ChatMode.Command;
         public bool IsChatMode() => currentMode == ChatMode.Chat;
     }
 }

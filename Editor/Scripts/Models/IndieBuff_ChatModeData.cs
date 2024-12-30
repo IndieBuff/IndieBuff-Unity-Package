@@ -7,10 +7,8 @@ namespace IndieBuff.Editor
     public enum ChatMode
     {
         Chat,
-        Command,
+        Script,
         Prototype,
-        Debug,
-        Onboard,
     }
 
     public static class IndieBuff_ChatModeCommands
@@ -18,10 +16,8 @@ namespace IndieBuff.Editor
         public static readonly Dictionary<string, ChatMode> CommandMappings = new Dictionary<string, ChatMode>(StringComparer.OrdinalIgnoreCase)
         {
             { "/chat", ChatMode.Chat },
-            { "/cmd", ChatMode.Command },
+            { "/script", ChatMode.Script },
             { "/prototype", ChatMode.Prototype },
-            { "/debug", ChatMode.Debug },
-            { "/onboard", ChatMode.Onboard }
         };
 
         public static bool TryGetChatMode(string command, out ChatMode mode)
