@@ -7,9 +7,6 @@ namespace IndieBuff.Editor
 {
     public class IndieBuff_ChatWidgetComponent
     {
-
-
-        // chat widget
         private TextField chatInputArea;
         private Button sendChatButton;
         private VisualElement chatWidget;
@@ -37,6 +34,7 @@ namespace IndieBuff.Editor
 
             sendChatButton.clicked += async () => await SendMessageAsync();
             chatInputArea.RegisterCallback<KeyDownEvent>(OnChatInputKeyDown, TrickleDown.TrickleDown);
+            chatInputArea.RegisterValueChangedCallback(OnChatInputChanged);
 
 
             SetupFocusCallbacks();
@@ -44,13 +42,41 @@ namespace IndieBuff.Editor
             IndieBuff_UserInfo.Instance.onChatModeChanged += UpdatePlaceholderText;
 
         }
-
         private void OnChatInputChanged(ChangeEvent<string> evt)
         {
             string newValue = evt.newValue?.Trim();
 
+            if (newValue?.StartsWith("/") == true)
+            {
+                string[] parts = newValue.Split(new[] { ' ' }, 2);
+                string command = parts[0];
 
+                if (IndieBuff_ChatModeCommands.TryGetChatMode(command, out ChatMode newMode))
+                {
+                    IndieBuff_UserInfo.Instance.currentMode = newMode;
+                    Debug.Log(IndieBuff_UserInfo.Instance.currentMode);
+                    RemoveSlashCommand();
+
+                    if (parts.Length > 1)
+                    {
+                        chatInputArea.value = parts[1];
+                    }
+                }
+            }
         }
+
+        private void RemoveSlashCommand()
+        {
+            isProcessingSlashCommand = false;
+            currentSlashCommand = "";
+
+            rootParent.schedule.Execute(() =>
+            {
+                chatInputArea.value = "";
+            });
+        }
+
+
 
         private void UpdatePlaceholderText()
         {
