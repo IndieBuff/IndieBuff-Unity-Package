@@ -33,9 +33,6 @@ namespace IndieBuff.Editor
         private VisualElement chatSettingsBar;
         private IndieBuff_ChatSettingsComponent chatSettingsComponent;
 
-
-        // placeholder
-
         // response box
         private VisualTreeAsset AIResponseBoxAsset;
 
@@ -242,7 +239,7 @@ namespace IndieBuff.Editor
         {
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded -= onMessagesLoaded;
             chatHistoryComponent.Cleanup();
-            chatWidgetComponent.Cleanup();
+            //chatWidgetComponent.Cleanup();
         }
 
         private void InitializeConversation()

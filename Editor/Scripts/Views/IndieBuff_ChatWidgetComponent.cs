@@ -38,18 +38,15 @@ namespace IndieBuff.Editor
 
             SetupFocusCallbacks();
 
-            IndieBuff_UserInfo.Instance.onChatModeChanged += () =>
-{
-    if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
-    {
-        placeholderLabel.text = "Ask IndieBuff for help or code";
-    }
-    else
-    {
-        placeholderLabel.text = "Tell IndieBuff what to do";
-    }
-};
+            IndieBuff_UserInfo.Instance.onChatModeChanged += UpdatePlaceholderText;
 
+        }
+
+        private void UpdatePlaceholderText()
+        {
+            placeholderLabel.text = IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat
+                ? "Ask IndieBuff for help or code"
+                : "Tell IndieBuff what to do";
         }
 
         private async Task SendMessageAsync()
