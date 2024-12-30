@@ -14,7 +14,6 @@ namespace IndieBuff.Editor
         public const string PendingParamsKey = "ScriptManager_PendingParams";
         public static bool domainReloadInProgress = false;
 
-
         public static string CreateScript(Dictionary<string, string> parameters)
         {
 
@@ -55,9 +54,6 @@ namespace IndieBuff.Editor
 
         public static string AddScriptToGameObject(Dictionary<string, string> parameters)
         {
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
@@ -65,11 +61,6 @@ namespace IndieBuff.Editor
 
 
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -86,10 +77,10 @@ namespace IndieBuff.Editor
             {
                 return $"Could not find script: '{scriptName}'";
             }
-            if (guids.Length > 1)
+            /*if (guids.Length > 1)
             {
                 return $"More then one script with the name: '{scriptName}'";
-            }
+            }*/
 
             string path = AssetDatabase.GUIDToAssetPath(guids[0]);
             MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(path);

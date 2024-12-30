@@ -244,12 +244,55 @@ namespace IndieBuff.Editor
 
                         else
                         {
-                            var convertedValue = Convert.ChangeType(value, propType);
-                            prop.SetValue(existingComponent, convertedValue);
+                            try
+                            {
+                                // Check if the property type inherits from UnityEngine.Object
+                                if (typeof(UnityEngine.Object).IsAssignableFrom(propType))
+                                {
+                                    UnityEngine.Object asset = null;
+                                    
+                                    // First try direct path
+                                    asset = AssetDatabase.LoadAssetAtPath(value, propType);
+                                    
+                                    // If direct path fails, try searching for the asset
+                                    if (asset == null)
+                                    {
+                                        // Extract the file name without extension
+                                        string fileName = System.IO.Path.GetFileNameWithoutExtension(value);
+                                        // Search for assets of the specific type with matching name
+                                        string[] guids = AssetDatabase.FindAssets($"t:{propType.Name} {fileName}");
+                                        
+                                        if (guids.Length > 0)
+                                        {
+                                            string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                                            asset = AssetDatabase.LoadAssetAtPath(assetPath, propType);
+                                        }
+                                    }
+
+                                    if (asset != null)
+                                    {
+                                        prop.SetValue(existingComponent, asset);
+                                    }
+                                    else
+                                    {
+                                        return $"Failed to load asset: {value}";
+                                    }
+                                }
+                                else
+                                {
+                                    // Handle non-UnityEngine.Object types as before
+                                    var convertedValue = Convert.ChangeType(value, propType);
+                                    prop.SetValue(existingComponent, convertedValue);
+                                }
+                                
+                                EditorUtility.SetDirty(existingComponent);
+                                return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
+                            }
+                            catch (Exception ex)
+                            {
+                                return $"Failed to set property via reflection: {ex.Message}";
+                            }
                         }
-                        
-                        EditorUtility.SetDirty(existingComponent);
-                        return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
                     }
                     
                     else

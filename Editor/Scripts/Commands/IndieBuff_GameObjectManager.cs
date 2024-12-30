@@ -70,22 +70,15 @@ namespace IndieBuff.Editor
 
             return "New primative gameobject created with name: " + gameObjectPrimative.name;
         }
+        
         public static string DuplicateGameObject(Dictionary<string, string> parameters)
         {
 
             string gameObjectName = parameters.ContainsKey("game_object_name") ? parameters["game_object_name"] : null;
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -105,19 +98,10 @@ namespace IndieBuff.Editor
         public static string DeleteGameObject(Dictionary<string, string> parameters)
         {
 
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
-
 
             GameObject gameObjectToDelete = null;
 
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                gameObjectToDelete = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (gameObjectToDelete == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -136,22 +120,11 @@ namespace IndieBuff.Editor
         public static string AddComponent(Dictionary<string, string> parameters)
         {
 
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string componentName = parameters.ContainsKey("component_type") ? parameters["component_type"] : null;
 
-
-
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -188,21 +161,12 @@ namespace IndieBuff.Editor
         public static string RemoveComponent(Dictionary<string, string> parameters)
         {
 
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string componentName = parameters.ContainsKey("component_type") ? parameters["component_type"] : null;
 
 
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -234,26 +198,12 @@ namespace IndieBuff.Editor
         public static string SetParent(Dictionary<string, string> parameters)
         {
 
-
-            string parentInstanceID = parameters.ContainsKey("parent_instance_id") && int.TryParse(parameters["parent_instance_id"], out int temp1)
-            ? parameters["parent_instance_id"]
-            : null;
-
             string parentHierarchyPath = parameters.ContainsKey("parent_hierarchy_path") ? parameters["parent_hierarchy_path"] : null;
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp2)
-            ? parameters["instance_id"]
-            : null;
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
 
             GameObject parentGameObject = null;
-
-            if (!string.IsNullOrEmpty(parentInstanceID))
-            {
-                parentGameObject = EditorUtility.InstanceIDToObject(int.Parse(parentInstanceID)) as GameObject;
-            }
 
             if (parentGameObject == null && !string.IsNullOrEmpty(parentHierarchyPath))
             {
@@ -265,13 +215,7 @@ namespace IndieBuff.Editor
                 return "Failed to locate parent gameobject with name: " + parentHierarchyPath;
             }
 
-
             GameObject childGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                childGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (childGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -291,11 +235,6 @@ namespace IndieBuff.Editor
 
         public static string SetGameObjectTag(Dictionary<string, string> parameters)
         {
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string tag = parameters.ContainsKey("tag") ? parameters["tag"] : null;
@@ -303,11 +242,6 @@ namespace IndieBuff.Editor
 
 
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -333,23 +267,11 @@ namespace IndieBuff.Editor
 
         public static string SetGameObjectLayer(Dictionary<string, string> parameters)
         {
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string layer = parameters.ContainsKey("layer") ? parameters["layer"] : null;
 
-
-
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
