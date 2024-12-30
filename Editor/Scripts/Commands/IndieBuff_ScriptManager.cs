@@ -9,14 +9,8 @@ namespace IndieBuff.Editor
 {
     public class ScriptManager : ICommandManager
     {
-
-        public const string WaitingToExecuteKey = "ScriptManager_WaitingToExecute";
-        public const string PendingParamsKey = "ScriptManager_PendingParams";
-        public static bool domainReloadInProgress = false;
-
         public static string CreateScript(Dictionary<string, string> parameters)
         {
-
             string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
             string scriptContent = parameters.ContainsKey("script_content") ? parameters["script_content"] : null;
 
