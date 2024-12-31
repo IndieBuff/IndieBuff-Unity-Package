@@ -160,7 +160,8 @@ namespace IndieBuff.Editor
             inInlineCodeBlock = !inInlineCodeBlock;
         }
 
-        private void EnableAllButtons()
+
+        public void FinishParsing()
         {
             Button insertCodeButton = messageContainer.parent.Q<Button>("ExecuteButton");
             insertCodeButton.style.display = DisplayStyle.Flex;
@@ -175,12 +176,6 @@ namespace IndieBuff.Editor
                       // TODO: Insert ALL code into project script
                   }
               };
-        }
-
-        public void FinishParsing()
-        {
-            EnableAllButtons();
-            currentMessageLabel.value += "\nHit <color=#CDB3FF>Execute All</color> to run the commands or run each manually.";
         }
 
         private async Task TypeTextAnimation(string text)
