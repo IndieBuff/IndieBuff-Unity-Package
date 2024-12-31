@@ -60,20 +60,29 @@ namespace IndieBuff.Editor
             {
                 rawCode += line + "\n";
 
-                if (line.StartsWith(">>>>>"))
+                if (shouldDiff)
                 {
-                    inReplaceBlock = false;
-                }
+                    if (line.StartsWith(">>>>>"))
+                    {
+                        inReplaceBlock = false;
+                    }
 
-                if (inReplaceBlock)
+                    if (inReplaceBlock)
+                    {
+                        replaceCode += line + "\n";
+                        currentMessageLabel.value += processedLine;
+                    }
+                    if (line.StartsWith("====="))
+                    {
+                        inReplaceBlock = true;
+                    }
+                }
+                else
                 {
                     replaceCode += line + "\n";
                     currentMessageLabel.value += processedLine;
                 }
-                if (line.StartsWith("====="))
-                {
-                    inReplaceBlock = true;
-                }
+
 
                 return;
             }
