@@ -245,6 +245,24 @@ public class TextBlockParser
         return filename;
     }
 
+    public List<(string filename, string original, string updated)> GetEdits(string content)
+    {
+        
+        // Get all blocks including
+        var allEdits = FindOriginalUpdateBlocks(
+            content,
+            FENCE,
+            null  // Replace with your valid filenames if needed
+        ).ToList();
+
+        // Return only file edits
+        return allEdits
+            .Where(edit => edit.filename != null)
+            .ToList();
+    }
+
+
+
     public List<(string path, string original, string updated)> ApplyEdits(
         List<(string path, string original, string updated)> edits, 
         string rootPath,
