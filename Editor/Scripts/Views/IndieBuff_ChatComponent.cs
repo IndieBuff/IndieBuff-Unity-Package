@@ -71,9 +71,6 @@ namespace IndieBuff.Editor
         public IndieBuff_ChatComponent(VisualElement root, VisualTreeAsset aiResponseAsset)
         {
             this.root = root;
-            //chatWidget = root.Q<VisualElement>("ChatWidget");
-            // chatInputArea = root.Q<TextField>("ChatInputArea");
-            // sendChatButton = root.Q<Button>("SendChatButton");
             responseArea = root.Q<ScrollView>("ReponseArea");
             chatHistoryPanel = root.Q<VisualElement>("ChatHistoryPanel");
             chatSettingsBar = root.Q<VisualElement>("ChatSettings");
@@ -87,13 +84,10 @@ namespace IndieBuff.Editor
 
             cts = new CancellationTokenSource();
 
-
-
             SetupPopupContainer();
             SetupModelSelection();
             SetupProfileSettings();
             SetupAddContext();
-
 
             AIResponseBoxAsset = aiResponseAsset;
 
