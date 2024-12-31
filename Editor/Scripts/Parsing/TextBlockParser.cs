@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Linq;
 using System.IO;
 using UnityEngine;
+using UnityEditor;
 
 public class TextBlockParser
 {
@@ -292,6 +293,8 @@ public class TextBlockParser
                 newContent = DoReplace(fullPath, content, original, updated, FENCE);
             }
 
+            Debug.Log(fullPath);
+
             // If the edit failed, and this is not a "create a new file" with an empty original
             if (string.IsNullOrEmpty(newContent) && !string.IsNullOrWhiteSpace(original))
             {
@@ -310,6 +313,12 @@ public class TextBlockParser
                 }
             }
 
+            if (!File.Exists(fullPath))
+            {
+                Debug.Log("Creating new file " + fullPath);
+                newContent = DoReplace(fullPath, "", original, updated, FENCE);
+            }
+
             updatedEdits.Add((path, original, updated));
 
             if (!string.IsNullOrEmpty(newContent))
@@ -317,6 +326,18 @@ public class TextBlockParser
                 if (!dryRun)
                 {
                     File.WriteAllText(fullPath, newContent);
+                    AssetDatabase.Refresh();
+                    
+                    // Convert the full path to an asset path (must start with "Assets/")
+                    string assetPath = fullPath;
+                    if (!assetPath.StartsWith("Assets/"))
+                    {
+                        assetPath = "Assets/" + path;
+                    }
+                    
+                    // Open the file in the editor
+                    var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(assetPath);
+                    AssetDatabase.OpenAsset(asset);
                 }
                 passed.Add(edit);
             }
@@ -383,11 +404,11 @@ public class TextBlockParser
         beforeText = StripQuotedWrapping(beforeText, fname, fence);
         afterText = StripQuotedWrapping(afterText, fname, fence);
 
-        // Check if it wants to make a new file
+        // For new file creation
         if (!File.Exists(fname) && string.IsNullOrWhiteSpace(beforeText))
         {
-            File.Create(fname).Dispose();
-            content = "";
+            Debug.Log("Creating new file " + fname);
+            return afterText;  // Just return the content to be written
         }
 
         if (content == null)
