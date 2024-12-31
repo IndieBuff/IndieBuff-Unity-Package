@@ -20,6 +20,7 @@ namespace IndieBuff.Editor
         public string lastUsedModel = "";
         private string _selectedModel = "Base Model";
         public bool isStreamingMessage = false;
+        public Action responseLoadingComplete;
 
         public string selectedModel
         {

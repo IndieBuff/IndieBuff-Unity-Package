@@ -22,6 +22,7 @@ namespace IndieBuff.Editor
                 await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
                 {
                     parser.ParseChunk(chunk);
+                    //IndieBuff_UserInfo.Instance.messageIsLoaded?.Invoke();
                 }, token);
 
             }

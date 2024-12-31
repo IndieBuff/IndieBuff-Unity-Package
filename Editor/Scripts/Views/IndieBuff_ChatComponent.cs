@@ -112,6 +112,12 @@ namespace IndieBuff.Editor
                 aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
             };
 
+            IndieBuff_UserInfo.Instance.responseLoadingComplete += () =>
+            {
+                loadingBar.StopLoading();
+            };
+
+
             IndieBuff_ConvoHandler.Instance.onConvoTitleChanged += () =>
             {
                 chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
@@ -464,7 +470,7 @@ namespace IndieBuff.Editor
                     if (isFirstChunk)
                     {
                         messageLabel.value = "";
-                        loadingBar.StopLoading();
+                        IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
                         responseContainer.style.visibility = Visibility.Visible;
                         isFirstChunk = false;
                     }
@@ -474,7 +480,7 @@ namespace IndieBuff.Editor
             {
                 responseContainer.style.visibility = Visibility.Visible;
                 messageLabel.value = "An error has occured. Please try again.";
-                loadingBar.StopLoading();
+                IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
             }
 
             if (cts.Token.IsCancellationRequested)
@@ -520,7 +526,7 @@ namespace IndieBuff.Editor
                     if (isFirstChunk)
                     {
                         messageLabel.value = "";
-                        loadingBar.StopLoading();
+                        IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
                         responseContainer.style.visibility = Visibility.Visible;
                         isFirstChunk = false;
                     }
@@ -532,7 +538,7 @@ namespace IndieBuff.Editor
             {
                 responseContainer.style.visibility = Visibility.Visible;
                 messageLabel.value = "An error has occured. Please try again.";
-                loadingBar.StopLoading();
+                IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
             }
 
             if (cts.Token.IsCancellationRequested)
