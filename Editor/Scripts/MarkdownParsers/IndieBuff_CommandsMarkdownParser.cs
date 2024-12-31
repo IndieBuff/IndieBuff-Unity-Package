@@ -36,6 +36,11 @@ namespace Indiebuff.Editor
             var commandData = IndieBuff_CommandParser.ParseCommandLine(line.Trim());
             if (commandData != null)
             {
+                if (commandData.MethodName == "Explain")
+                {
+                    currentMessageLabel.value += commandData.Parameters["explanation"];
+                    return;
+                }
                 parsedCommands.Add(commandData);
                 VisualElement commandContainer = CreateCommandElement(commandData);
                 messageContainer.Add(commandContainer);
@@ -186,7 +191,7 @@ namespace Indiebuff.Editor
         public string FinishParsing()
         {
             EnableAllButtons();
-            currentMessageLabel.value = "Hit 'Execute All' to run the commands or run each manually.";
+            currentMessageLabel.value += "\nHit <color=#CDB3FF>Execute All</color> to run the commands or run each manually.";
             return lineBuffer.ToString();
         }
 
