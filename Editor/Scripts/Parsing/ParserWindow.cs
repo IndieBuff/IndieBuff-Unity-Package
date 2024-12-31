@@ -8,7 +8,6 @@ public class ParserWindow : EditorWindow
 {
     private string inputText = "";
     private Vector2 scrollPosition;
-    private List<string> shellCommands = new List<string>();
     private string fence = "```"; // You can make this configurable if needed
 
     [MenuItem("Tools/Text Parser Window")]
@@ -21,21 +20,14 @@ public class ParserWindow : EditorWindow
     {
         var parser = new TextBlockParser();
         
-        // Get all blocks including shell commands
+        // Get all blocks including
         var allEdits = parser.FindOriginalUpdateBlocks(
             content,
             fence,
             null  // Replace with your valid filenames if needed
         ).ToList();
 
-        // Extract shell commands
-        shellCommands.AddRange(
-            allEdits
-                .Where(edit => edit.filename == null)
-                .Select(edit => edit.original)
-        );
-
-        // Return only file edits (excluding shell commands)
+        // Return only file edits
         return allEdits
             .Where(edit => edit.filename != null)
             .ToList();
@@ -59,7 +51,6 @@ public class ParserWindow : EditorWindow
 
             try
             {
-                shellCommands.Clear(); // Clear previous commands
                 var edits = GetEdits(inputText);
                 
                 var parser = new TextBlockParser();

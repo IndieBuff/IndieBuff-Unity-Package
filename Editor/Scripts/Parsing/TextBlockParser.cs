@@ -8,18 +8,16 @@ using UnityEditor;
 
 public class TextBlockParser
 {
-    private const string HEAD = @"^<<<<<<< ";
-    private const string DIVIDER = @"^=======";
-    private const string UPDATED = @"^>>>>>>> ";
+    private const string HEAD = @"^<{5,9}\s*";
+    private const string DIVIDER = @"^={5,9}\s*";
+    private const string UPDATED = @"^>{5,9}\s*";
     private const string DEFAULT_FENCE = "```";
 
     private const string FENCE = "```";
-    
-    private static readonly string[] SHELL_STARTS = new[]
-    {
-        "```bash", "```sh", "```shell", "```cmd", "```batch", "```powershell",
-        "```ps1", "```zsh", "```fish", "```ksh", "```csh", "```tcsh"
-    };
+
+    private readonly Regex headPattern = new Regex(HEAD);
+    private readonly Regex dividerPattern = new Regex(DIVIDER);
+    private readonly Regex updatedPattern = new Regex(UPDATED);
 
     public IEnumerable<(string filename, string original, string updated)> FindOriginalUpdateBlocks(
         string content, 
@@ -30,9 +28,7 @@ public class TextBlockParser
         int i = 0;
         string currentFilename = null;
 
-        var headPattern = new Regex(HEAD);
-        var dividerPattern = new Regex(DIVIDER);
-        var updatedPattern = new Regex(UPDATED);
+
 
         // Get filename from first line if it exists
         if (lines.Length > 0 && !lines[0].StartsWith(fence))
@@ -47,23 +43,6 @@ public class TextBlockParser
             bool nextIsEditblock = (i + 1 < lines.Length) && 
                                  headPattern.IsMatch(lines[i + 1].Trim());
 
-            if (SHELL_STARTS.Any(start => line.Trim().StartsWith(start)) && !nextIsEditblock)
-            {
-                var shellContent = new List<string>();
-                i++;
-                while (i < lines.Length && !lines[i].Trim().StartsWith("```"))
-                {
-                    shellContent.Add(lines[i]);
-                    i++;
-                }
-                if (i < lines.Length && lines[i].Trim().StartsWith("```"))
-                {
-                    i++; // Skip the closing ```
-                }
-
-                yield return (null, string.Join(Environment.NewLine, shellContent), null);
-                continue;
-            }
 
             if (headPattern.IsMatch(line.Trim()))
             {
@@ -180,7 +159,7 @@ public class TextBlockParser
         foreach (var line in reversedLines)
         {
             // check if line is <<<<<<< SEARCH or ```csharp skip it if so
-            if (line.StartsWith("<<<<<<< SEARCH") || line.StartsWith("```csharp"))
+            if (headPattern.IsMatch(line) || line.StartsWith("```csharp"))
             {
                 continue;
             }
