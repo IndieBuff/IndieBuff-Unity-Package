@@ -271,7 +271,7 @@ namespace IndieBuff.Editor
                     var responseContainer = CreateAIChatResponseBox("");
                     responseArea.Add(responseContainer);
 
-                    IResponseHandler responseHandler = handlerFactory.CreateHandler(message.ChatMode, responseContainer, message.AiModel);
+                    IResponseHandler responseHandler = handlerFactory.CreateHandler(message.ChatMode, responseContainer, IndieBuff_UserInfo.ShouldUseDiffFormat(message.AiModel));
                     responseHandler.HandleFullResponse(aiMessage);
                 }
             }
@@ -293,7 +293,9 @@ namespace IndieBuff.Editor
             await Task.Delay(50);
             responseArea.ScrollTo(responseContainer);
 
-            currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer, IndieBuff_UserInfo.Instance.selectedModel);
+
+
+            currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer, IndieBuff_UserInfo.ShouldUseDiffFormat(IndieBuff_UserInfo.Instance.selectedModel));
 
             cts = new CancellationTokenSource();
 

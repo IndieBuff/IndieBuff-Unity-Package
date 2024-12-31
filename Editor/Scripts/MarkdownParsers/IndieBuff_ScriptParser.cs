@@ -14,16 +14,16 @@ namespace IndieBuff.Editor
         private int typingDelayMs = 10;
         private bool inReplaceBlock;
         private string replaceCode = "";
-        private string aiModel;
+        private bool shouldDiff;
 
         private List<string> replaceCodeBlocks = new List<string>();
 
 
-        public ScriptParser(VisualElement responseContainer, string aiModel)
+        public ScriptParser(VisualElement responseContainer, bool shouldDiff)
              : base(responseContainer)
         {
             inReplaceBlock = false;
-            this.aiModel = aiModel;
+            this.shouldDiff = shouldDiff;
         }
 
         public override void ParseFullMessage(string message)
@@ -174,18 +174,7 @@ namespace IndieBuff.Editor
             string fullMessage = GetFullMessage();
 
 
-            if (aiModel == "gpt-4o-mini")
-            {
-                var wholeParser = new WholeFileParser();
-                var edits = wholeParser.GetEdits(fullMessage);
-
-                insertCodeButton.clicked += () =>
-                {
-
-                    wholeParser.ApplyEdits(edits);
-                };
-            }
-            else
+            if (shouldDiff)
             {
                 var diffParser = new DiffFileParser();
                 var edits = diffParser.GetEdits(GetFullMessage());
@@ -200,6 +189,20 @@ namespace IndieBuff.Editor
 
                     diffParser.ApplyEdits(edits, rootPath, absFilenames);
                 };
+
+
+            }
+            else
+            {
+                var wholeParser = new WholeFileParser();
+                var edits = wholeParser.GetEdits(fullMessage);
+
+                insertCodeButton.clicked += () =>
+                {
+
+                    wholeParser.ApplyEdits(edits);
+                };
+
             }
         }
 

@@ -94,6 +94,18 @@ namespace IndieBuff.Editor
             lastUsedModel = "";
             lastUsedMode = ChatMode.Chat;
         }
+
+        public static bool ShouldUseDiffFormat(string aiModel)
+        {
+            if (aiModel == "gpt-4o-mini")
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
     }
 
 }

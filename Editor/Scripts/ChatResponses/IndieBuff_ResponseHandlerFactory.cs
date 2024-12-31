@@ -12,7 +12,7 @@ namespace IndieBuff.Editor
 
         }
 
-        public IResponseHandler CreateHandler(ChatMode mode, VisualElement responseContainer, string aiModel)
+        public IResponseHandler CreateHandler(ChatMode mode, VisualElement responseContainer, bool shouldDiff)
         {
             return mode switch
             {
@@ -23,7 +23,7 @@ namespace IndieBuff.Editor
                     new PrototypeParser(responseContainer)
                 ),
                 ChatMode.Script => new ScriptResponseHandler(
-                    new ScriptParser(responseContainer, aiModel)
+                    new ScriptParser(responseContainer, shouldDiff)
                 ),
                 _ => throw new ArgumentException($"Unsupported chat mode: {mode}")
             };
