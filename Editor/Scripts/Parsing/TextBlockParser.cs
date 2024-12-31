@@ -278,8 +278,12 @@ public class TextBlockParser
         foreach (var edit in edits)
         {
             var (path, original, updated) = edit;
+            // if path starts with Assets/ then remove the Assets/
+            if (path.StartsWith("Assets/"))
+            {
+                path = path.Substring(7);
+            }
             string fullPath = Path.GetFullPath(Path.Combine(rootPath, path));
-            Debug.Log(fullPath);
             string newContent = null;
 
             if (File.Exists(fullPath))
@@ -291,9 +295,11 @@ public class TextBlockParser
             // If the edit failed, and this is not a "create a new file" with an empty original
             if (string.IsNullOrEmpty(newContent) && !string.IsNullOrWhiteSpace(original))
             {
+                Debug.Log("Failed to apply edit to " + fullPath);
                 // try patching any of the other files in the chat
                 foreach (string absPath in absFilenames)
                 {
+                    Debug.Log(absPath);
                     string content = File.ReadAllText(absPath);
                     newContent = DoReplace(absPath, content, original, updated, FENCE);
                     if (!string.IsNullOrEmpty(newContent))
@@ -310,8 +316,7 @@ public class TextBlockParser
             {
                 if (!dryRun)
                 {
-                    //File.WriteAllText(fullPath, newContent);
-                    File.WriteAllText("Assets/abc.cs", newContent);
+                    File.WriteAllText(fullPath, newContent);
                 }
                 passed.Add(edit);
             }
@@ -553,9 +558,7 @@ public class TextBlockParser
         for (int i = 0; i < wholeLines.Length - partLen + 1; i++)
         {
             if (wholeLines[i] == firstSearchLine)
-            {
-                Debug.Log($"\nChecking position {i} starting with: {firstSearchLine}");
-                
+            {                
                 // Check if all lines match at this position
                 bool allLinesMatch = true;
                 for (int j = 0; j < partLen; j++)
@@ -586,15 +589,6 @@ public class TextBlockParser
                     {
                         var fileLine = wholeLines[i + j];
                         var searchLine = partLines[j];
-                        
-                        Debug.Log($"\nLine {j}:");
-                        Debug.Log($"File   [{fileLine.Length}]: '{fileLine}'");
-                        Debug.Log($"Search [{searchLine.Length}]: '{searchLine}'");
-                        
-                        if (fileLine != searchLine)
-                        {
-                            Debug.Log($"^^^ Mismatch at line {j}");
-                        }
                     }
                 }
             }

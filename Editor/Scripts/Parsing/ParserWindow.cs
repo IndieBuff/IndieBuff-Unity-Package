@@ -64,8 +64,12 @@ public class ParserWindow : EditorWindow
                 
                 var parser = new TextBlockParser();
                 string rootPath = Application.dataPath;
-                List<string> absFilenames = new List<string>(); // You might want to populate this with relevant files
-                absFilenames.Add("Assets/abc.cs");
+                //print all the files in the edits list
+                List<string> absFilenames = new List<string>();
+                foreach (var edit in edits)
+                {
+                    absFilenames.Add(edit.filename);
+                }
                 
                 parser.ApplyEdits(edits, rootPath, absFilenames);
                 
