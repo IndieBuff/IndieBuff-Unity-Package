@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Indiebuff.Editor;
+using IndieBUff.Editor;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
@@ -64,9 +65,11 @@ namespace IndieBuff.Editor
         private ProgressBar loadingComponent;
         private IndieBuff_LoadingBar loadingBar;
 
-
         // cancel
         private CancellationTokenSource cts;
+
+        private ResponseHandlerFactory handlerFactory;
+        private IResponseHandler currentResponseHandler;
 
         public IndieBuff_ChatComponent(VisualElement root, VisualTreeAsset aiResponseAsset)
         {
@@ -83,6 +86,8 @@ namespace IndieBuff.Editor
             loadingComponent = root.Q<ProgressBar>("LoadingBar");
 
             cts = new CancellationTokenSource();
+
+            handlerFactory = new ResponseHandlerFactory();
 
             SetupPopupContainer();
             SetupModelSelection();
@@ -571,6 +576,8 @@ namespace IndieBuff.Editor
         private async Task HandleAIResponse(string userMessage)
         {
             loadingBar.StartLoading();
+            currentResponseHandler?.Cleanup();
+
             var responseContainer = CreateAIChatResponseBox("");
             responseArea.Add(responseContainer);
             responseContainer.style.visibility = Visibility.Hidden;
@@ -578,14 +585,20 @@ namespace IndieBuff.Editor
             await Task.Delay(50);
             responseArea.ScrollTo(responseContainer);
 
-            if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
-            {
-                await HandleStreamingAIResponse(userMessage, responseContainer);
-            }
-            else
-            {
-                await HandleAICommandResponse(userMessage, responseContainer);
-            }
+            currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer);
+
+            cts = new CancellationTokenSource();
+
+            await currentResponseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
+
+            // if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
+            // {
+            //     await HandleStreamingAIResponse(userMessage, responseContainer);
+            // }
+            // else
+            // {
+            //     await HandleAICommandResponse(userMessage, responseContainer);
+            // }
         }
 
         private async void OnLogoutClicked()

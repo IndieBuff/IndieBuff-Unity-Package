@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using IndieBUff.Editor;
@@ -14,7 +15,48 @@ namespace IndieBuff.Editor
             this.parser = parser;
         }
 
-        public abstract Task HandleResponse(string userMessage, VisualElement responseContainer, CancellationToken token);
+        public async Task HandleResponse(string userMessage, VisualElement responseContainer, CancellationToken token)
+        {
+            var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
+            var messageLabel = messageContainer.Q<TextField>();
+            bool isFirstChunk = true;
+            try
+            {
+
+                await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
+                {
+                    parser.ParseChunk(chunk);
+
+                    if (isFirstChunk)
+                    {
+                        messageLabel.value = "";
+                        IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
+                        responseContainer.style.visibility = Visibility.Visible;
+                        isFirstChunk = false;
+                    }
+                }, token);
+
+                await OnStreamComplete();
+
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                await HandleResponseMetadata(userMessage, parser);
+
+                await OnProcessingComplete();
+
+
+            }
+            catch (Exception)
+            {
+                HandleError(responseContainer);
+            }
+        }
+
+        protected virtual Task OnStreamComplete() => Task.CompletedTask;
+        protected virtual Task OnProcessingComplete() => Task.CompletedTask;
 
         public void HandleError(VisualElement responseContainer)
         {
