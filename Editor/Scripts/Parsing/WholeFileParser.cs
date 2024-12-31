@@ -33,7 +33,7 @@ public class WholeFileParser
                     // Ending an existing block
                     sawFilename = null;
                     edits.Add((currentFilename, filenameSource, newLines));
-                    
+
                     currentFilename = null;
                     filenameSource = null;
                     newLines = new List<string>();
@@ -47,8 +47,8 @@ public class WholeFileParser
                     currentFilename = ExtractFilename(lines[i - 1]);
 
                     // Handle case where GPT prepends bogus directory
-                    if (!string.IsNullOrEmpty(currentFilename) && 
-                        !chatFiles.Contains(currentFilename) && 
+                    if (!string.IsNullOrEmpty(currentFilename) &&
+                        !chatFiles.Contains(currentFilename) &&
                         chatFiles.Contains(Path.GetFileName(currentFilename)))
                     {
                         currentFilename = Path.GetFileName(currentFilename);
@@ -186,9 +186,9 @@ public class WholeFileParser
             return string.Join(Environment.NewLine, newLines);
         }
 
-        return string.Join(Environment.NewLine, 
+        return string.Join(Environment.NewLine,
             new[] { "```" }
             .Concat(newLines)
             .Concat(new[] { "```" }));
     }
-} 
+}

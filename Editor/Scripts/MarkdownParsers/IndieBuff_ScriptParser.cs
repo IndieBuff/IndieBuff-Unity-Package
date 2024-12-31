@@ -8,22 +8,19 @@ using UnityEngine.UIElements;
 
 namespace IndieBuff.Editor
 {
-    public class ScriptParser : BaseMarkdownParser
+    public abstract class ScriptParser : BaseMarkdownParser
     {
-        private int chunkSize = 20;
-        private int typingDelayMs = 10;
-        private bool inReplaceBlock;
-        private string replaceCode = "";
-        private bool shouldDiff;
-
-        private List<string> replaceCodeBlocks = new List<string>();
+        protected int chunkSize = 20;
+        protected int typingDelayMs = 10;
+        protected bool inReplaceBlock;
+        protected string replaceCode = "";
+        protected List<string> replaceCodeBlocks = new List<string>();
 
 
-        public ScriptParser(VisualElement responseContainer, bool shouldDiff)
+        public ScriptParser(VisualElement responseContainer)
              : base(responseContainer)
         {
             inReplaceBlock = false;
-            this.shouldDiff = shouldDiff;
         }
 
         public override void ParseFullMessage(string message)
@@ -36,6 +33,8 @@ namespace IndieBuff.Editor
             }
             FinishParsing();
         }
+
+        public abstract void HandleReplaceBlockToggle(string processedLine, string line);
 
         public override void ProcessLine(string line, bool fullMessage = false)
         {
@@ -60,30 +59,7 @@ namespace IndieBuff.Editor
             {
                 rawCode += line + "\n";
 
-                if (shouldDiff)
-                {
-                    if (line.StartsWith(">>>>>"))
-                    {
-                        inReplaceBlock = false;
-                    }
-
-                    if (inReplaceBlock)
-                    {
-                        replaceCode += line + "\n";
-                        currentMessageLabel.value += processedLine;
-                    }
-                    if (line.StartsWith("====="))
-                    {
-                        inReplaceBlock = true;
-                    }
-                }
-                else
-                {
-                    replaceCode += line + "\n";
-                    currentMessageLabel.value += processedLine;
-                }
-
-
+                HandleReplaceBlockToggle(processedLine, line);
                 return;
             }
 
@@ -131,11 +107,14 @@ namespace IndieBuff.Editor
             {
                 Debug.Log("INSERT CODE PLACEHOLDER: " + codeToInsert);
                 // TODO: Insert code into project script
+                InsertReplaceBlock(codeToInsert);
             };
 
             currentMessageLabel.Add(insertButton);
 
         }
+
+        public abstract void InsertReplaceBlock(string codeToInsert);
 
         public override void HandleCodeBlockToggle()
         {
@@ -172,48 +151,7 @@ namespace IndieBuff.Editor
         }
 
 
-        public void FinishParsing()
-        {
-            if (replaceCodeBlocks.Count == 0) return;
-            Button insertCodeButton = messageContainer.parent.Q<Button>("ExecuteButton");
-            insertCodeButton.style.display = DisplayStyle.Flex;
-            insertCodeButton.SetEnabled(true);
-            insertCodeButton.text = "Insert All Code";
-
-            string fullMessage = GetFullMessage();
-
-
-            if (shouldDiff)
-            {
-                var diffParser = new DiffFileParser();
-                var edits = diffParser.GetEdits(GetFullMessage());
-                string rootPath = Application.dataPath;
-                List<string> absFilenames = new List<string>();
-                foreach (var edit in edits)
-                {
-                    absFilenames.Add(edit.filename);
-                }
-                insertCodeButton.clicked += () =>
-                {
-
-                    diffParser.ApplyEdits(edits, rootPath, absFilenames);
-                };
-
-
-            }
-            else
-            {
-                var wholeParser = new WholeFileParser();
-                var edits = wholeParser.GetEdits(fullMessage);
-
-                insertCodeButton.clicked += () =>
-                {
-
-                    wholeParser.ApplyEdits(edits);
-                };
-
-            }
-        }
+        public abstract void FinishParsing();
 
         private async Task TypeTextAnimation(string text)
         {

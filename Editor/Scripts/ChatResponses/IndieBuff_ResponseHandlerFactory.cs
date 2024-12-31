@@ -23,7 +23,7 @@ namespace IndieBuff.Editor
                     new PrototypeParser(responseContainer)
                 ),
                 ChatMode.Script => new ScriptResponseHandler(
-                    new ScriptParser(responseContainer, shouldDiff)
+                    shouldDiff ? new DiffScriptParser(responseContainer) : new WholeScriptParser(responseContainer)
                 ),
                 _ => throw new ArgumentException($"Unsupported chat mode: {mode}")
             };
