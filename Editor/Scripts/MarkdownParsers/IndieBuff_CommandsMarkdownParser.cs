@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using IndieBuff.Editor;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Indiebuff.Editor
@@ -29,7 +27,7 @@ namespace Indiebuff.Editor
             FinishParsing();
         }
 
-        public override void ProcessLine(string line)
+        public override void ProcessLine(string line, bool fullMessage = false)
         {
             if (string.IsNullOrEmpty(line) || !char.IsLetterOrDigit(line[0]))
             {

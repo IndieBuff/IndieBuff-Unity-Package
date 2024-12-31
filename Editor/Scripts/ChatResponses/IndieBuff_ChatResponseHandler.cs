@@ -38,7 +38,7 @@ namespace IndieBuff.Editor
                 return;
             }
 
-            await HandleResponseMetadata(userMessage, parser);
+            //await HandleResponseMetadata(userMessage, parser);
         }
     }
 

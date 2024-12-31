@@ -505,15 +505,23 @@ namespace IndieBuff.Editor
             var messageLabel = messageContainer.Q<TextField>();
 
             var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
-            parser.UseLoader(loadingBar);
 
             cts = new CancellationTokenSource();
+            bool isFirstChunk = true;
             try
             {
 
                 await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
                 {
-                    parser.ParseCommandChunk(chunk);
+                    parser.ParseChunk(chunk);
+
+                    if (isFirstChunk)
+                    {
+                        messageLabel.value = "";
+                        loadingBar.StopLoading();
+                        responseContainer.style.visibility = Visibility.Visible;
+                        isFirstChunk = false;
+                    }
 
                 }, cts.Token);
                 string metadata = parser.FinishParsing();

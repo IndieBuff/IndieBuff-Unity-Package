@@ -19,11 +19,11 @@ namespace IndieBuff.Editor
             var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
             foreach (var line in lines)
             {
-                ProcessLine(line);
+                ProcessLine(line, true);
             }
         }
 
-        public override async void ProcessLine(string line)
+        public override async void ProcessLine(string line, bool fullMessage = false)
         {
             if (line.StartsWith("```"))
             {
@@ -49,27 +49,29 @@ namespace IndieBuff.Editor
                 return;
             }
 
-            await TypeTextAnimation(processedLine);
+            if (!fullMessage)
+            {
+                await TypeTextAnimation(processedLine);
+            }
+            else
+            {
+                currentMessageLabel.value += processedLine;
+            }
+
         }
 
         private async Task TypeTextAnimation(string text)
         {
-            string originalContent = currentMessageLabel.value;
+            TextField targetLabel = currentMessageLabel;
+            string originalContent = targetLabel.value;
 
             for (int i = 0; i < text.Length; i += chunkSize)
             {
-                await Task.Delay(typingDelayMs);
                 int charactersToTake = Math.Min(chunkSize, text.Length - i);
-                string partialText = text.Substring(0, i + charactersToTake);
-
-                EditorApplication.delayCall += () =>
-                {
-                    if (currentMessageLabel != null)
-                    {
-                        currentMessageLabel.value = originalContent + partialText;
-                    }
-                };
+                targetLabel.value = originalContent + text.Substring(0, i + charactersToTake);
+                await Task.Delay(typingDelayMs);
             }
+
         }
 
     }

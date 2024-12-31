@@ -52,7 +52,7 @@ namespace IndieBuff.Editor
             return fullMessage.ToString();
         }
 
-        public abstract void ProcessLine(string line);
+        public abstract void ProcessLine(string line, bool fullMessage = false);
 
         protected void HandleCodeBlockToggle()
         {

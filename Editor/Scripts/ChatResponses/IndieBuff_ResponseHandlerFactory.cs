@@ -11,10 +11,8 @@ namespace IndieBuff.Editor
 
         public IResponseHandler CreateHandler(ChatMode mode)
         {
-            return mode switch
-            {
+            return null;
 
-            }
         }
     }
 }

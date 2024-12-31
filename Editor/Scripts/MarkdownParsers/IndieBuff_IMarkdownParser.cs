@@ -7,6 +7,6 @@ namespace IndieBuff.Editor
         void ParseChunk(string chunk);
         void ParseFullMessage(string message);
         string GetFullMessage();
-        void ProcessLine(string line);
+        void ProcessLine(string line, bool fullMessage = false);
     }
 }
