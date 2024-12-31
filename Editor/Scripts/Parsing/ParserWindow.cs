@@ -73,7 +73,9 @@ public class ParserWindow : EditorWindow
             }
             catch (ArgumentException e)
             {
-                EditorUtility.DisplayDialog("Error", e.Message, "OK");
+                // print the stack trace
+                Debug.Log(e.StackTrace);
+                //EditorUtility.DisplayDialog("Error", e.Message, "OK");
             }
         }
     }

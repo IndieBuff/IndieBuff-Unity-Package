@@ -33,6 +33,12 @@ public class TextBlockParser
         var dividerPattern = new Regex(DIVIDER);
         var updatedPattern = new Regex(UPDATED);
 
+        // Get filename from first line if it exists
+        if (lines.Length > 0 && !lines[0].StartsWith(fence))
+        {
+            currentFilename = StripFilename(lines[0], fence);
+        }
+
         while (i < lines.Length)
         {
             string line = lines[i];
@@ -66,7 +72,11 @@ public class TextBlockParser
                 try
                 {
                     result = ProcessBlock(lines, ref i, fence, validFilenames, currentFilename, dividerPattern, updatedPattern);
-                    currentFilename = result.filename;
+                    if (string.IsNullOrEmpty(result.filename))
+                    {
+                        Debug.Log(currentFilename);
+                        result.filename = currentFilename;
+                    }
                 }
                 catch (ArgumentException e)
                 {
@@ -168,6 +178,12 @@ public class TextBlockParser
         var filenames = new List<string>();
         foreach (var line in reversedLines)
         {
+            // check if line is <<<<<<< SEARCH or ```csharp skip it if so
+            if (line.StartsWith("<<<<<<< SEARCH") || line.StartsWith("```csharp"))
+            {
+                continue;
+            }
+
             // If we find a filename, add it
             string filename = StripFilename(line, fence);
             if (!string.IsNullOrEmpty(filename))
@@ -263,6 +279,7 @@ public class TextBlockParser
         {
             var (path, original, updated) = edit;
             string fullPath = Path.GetFullPath(Path.Combine(rootPath, path));
+            Debug.Log(fullPath);
             string newContent = null;
 
             if (File.Exists(fullPath))
@@ -320,8 +337,8 @@ public class TextBlockParser
 
         foreach (var edit in failed)
         {
-            /*HERE
-            (path, original, updated) = edit;
+
+            var (path, original, updated) = edit;
             string fullPath = Path.GetFullPath(Path.Combine(rootPath, path));
             string content = File.ReadAllText(fullPath);
 
@@ -332,7 +349,7 @@ public class TextBlockParser
             if (!string.IsNullOrEmpty(didYouMean))
             {
                 errorMessage += $"Did you mean to match some of these actual lines from {path}?\n\n";
-                errorMessage += $"{fence[0]}\n{didYouMean}\n{fence}\n\n";
+                errorMessage += $"{FENCE}\n{didYouMean}\n{FENCE}\n\n";
             }
 
             if (content.Contains(updated) && !string.IsNullOrEmpty(updated))
@@ -340,7 +357,7 @@ public class TextBlockParser
                 errorMessage += $"Are you sure you need this SEARCH/REPLACE block?\n";
                 errorMessage += $"The REPLACE lines are already in {path}!\n\n";
             }
-            */
+            
         }
 
         errorMessage += "The SEARCH section must exactly match an existing block of lines including all white space, comments, indentation, docstrings, etc\n";
@@ -432,6 +449,15 @@ public class TextBlockParser
         var (partPrepped, partLines) = Prep(part);
         var (replacePrepped, replaceLines) = Prep(replace);
 
+        //join the lines into a string for each
+        string wholeString = string.Join(Environment.NewLine, wholeLines);
+        string partString = string.Join(Environment.NewLine, partLines);
+        string replaceString = string.Join(Environment.NewLine, replaceLines);
+
+        //Debug.Log(wholeString);
+        //Debug.Log(partString);
+        //Debug.Log(replaceString);
+
         // Try perfect match or whitespace-only differences
         string result = PerfectOrWhitespace(wholeLines, partLines, replaceLines);
         if (!string.IsNullOrEmpty(result))
@@ -511,23 +537,66 @@ public class TextBlockParser
 
     private string PerfectReplace(string[] wholeLines, string[] partLines, string[] replaceLines)
     {
+        // Trim any empty lines from the end of the search block
+        partLines = partLines.Reverse()
+                            .SkipWhile(string.IsNullOrWhiteSpace)
+                            .Reverse()
+                            .ToArray();
+        
         int partLen = partLines.Length;
 
+        // Instead of looking for Update(), look for the first line of our search block
+        if (partLines.Length == 0) return null;
+        string firstSearchLine = partLines[0];
+
+        // Find all potential match positions
         for (int i = 0; i < wholeLines.Length - partLen + 1; i++)
         {
-            if (Enumerable.SequenceEqual(
-                wholeLines.Skip(i).Take(partLen),
-                partLines))
+            if (wholeLines[i] == firstSearchLine)
             {
-                var result = wholeLines.Take(i)
-                    .Concat(new[] { "<<<<<<< SEARCH" })
-                    .Concat(partLines)
-                    .Concat(new[] { "=======" })
-                    .Concat(replaceLines)
-                    .Concat(new[] { ">>>>>>> REPLACE" })
-                    .Concat(wholeLines.Skip(i + partLen));
-                    
-                return string.Join(Environment.NewLine, result);
+                Debug.Log($"\nChecking position {i} starting with: {firstSearchLine}");
+                
+                // Check if all lines match at this position
+                bool allLinesMatch = true;
+                for (int j = 0; j < partLen; j++)
+                {
+                    if (wholeLines[i + j] != partLines[j])
+                    {
+                        allLinesMatch = false;
+                        break;
+                    }
+                }
+
+                if (allLinesMatch)
+                {
+                    var result = wholeLines.Take(i)
+                        .Concat(new[] { "<<<<<<< SEARCH" })
+                        .Concat(partLines)
+                        .Concat(new[] { "=======" })
+                        .Concat(replaceLines)
+                        .Concat(new[] { ">>>>>>> REPLACE" })
+                        .Concat(wholeLines.Skip(i + partLen));
+                        
+                    return string.Join(Environment.NewLine, result);
+                }
+                else
+                {
+                    Debug.Log("Sequences don't match at this position. Comparing line by line:");
+                    for (int j = 0; j < partLen; j++)
+                    {
+                        var fileLine = wholeLines[i + j];
+                        var searchLine = partLines[j];
+                        
+                        Debug.Log($"\nLine {j}:");
+                        Debug.Log($"File   [{fileLine.Length}]: '{fileLine}'");
+                        Debug.Log($"Search [{searchLine.Length}]: '{searchLine}'");
+                        
+                        if (fileLine != searchLine)
+                        {
+                            Debug.Log($"^^^ Mismatch at line {j}");
+                        }
+                    }
+                }
             }
         }
 
@@ -617,5 +686,62 @@ public class TextBlockParser
         }
 
         return add.First();
+    }
+
+    private string FindSimilarLines(string searchLines, string contentLines, double threshold = 0.6)
+    {
+        string[] searchLinesArray = searchLines.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        string[] contentLinesArray = contentLines.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+
+        double bestRatio = 0;
+        string[] bestMatch = null;
+        int bestMatchI = 0;
+
+        for (int i = 0; i <= contentLinesArray.Length - searchLinesArray.Length; i++)
+        {
+            string[] chunk = contentLinesArray.Skip(i).Take(searchLinesArray.Length).ToArray();
+            double ratio = CalculateSequenceMatchRatio(searchLinesArray, chunk);
+            if (ratio > bestRatio)
+            {
+                bestRatio = ratio;
+                bestMatch = chunk;
+                bestMatchI = i;
+            }
+        }
+
+        if (bestRatio < threshold)
+        {
+            return "";
+        }
+
+        if (bestMatch[0] == searchLinesArray[0] && bestMatch[bestMatch.Length - 1] == searchLinesArray[searchLinesArray.Length - 1])
+        {
+            return string.Join(Environment.NewLine, bestMatch);
+        }
+
+        const int N = 5;
+        int bestMatchEnd = Math.Min(contentLinesArray.Length, bestMatchI + searchLinesArray.Length + N);
+        bestMatchI = Math.Max(0, bestMatchI - N);
+
+        string[] best = contentLinesArray.Skip(bestMatchI).Take(bestMatchEnd - bestMatchI).ToArray();
+        return string.Join(Environment.NewLine, best);
+    }
+
+    private double CalculateSequenceMatchRatio(string[] a, string[] b)
+    {
+        if (a.Length == 0 || b.Length == 0) return 0.0;
+
+        int matches = 0;
+        int totalLength = Math.Max(a.Length, b.Length);
+
+        for (int i = 0; i < Math.Min(a.Length, b.Length); i++)
+        {
+            if (a[i] == b[i])
+            {
+                matches++;
+            }
+        }
+
+        return (double)matches / totalLength;
     }
 } 
