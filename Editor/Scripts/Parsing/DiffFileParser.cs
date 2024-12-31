@@ -11,7 +11,6 @@ public class DiffFileParser
     private const string HEAD = @"^<{5,9}\s*";
     private const string DIVIDER = @"^={5,9}\s*";
     private const string UPDATED = @"^>{5,9}\s*";
-    private const string DEFAULT_FENCE = "```";
 
     private const string FENCE = "```";
 
@@ -21,7 +20,7 @@ public class DiffFileParser
 
     public IEnumerable<(string filename, string original, string updated)> FindOriginalUpdateBlocks(
         string content, 
-        string fence = DEFAULT_FENCE, 
+        string fence = FENCE, 
         HashSet<string> validFilenames = null)
     {
         string[] lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
@@ -252,7 +251,7 @@ public class DiffFileParser
         var allEdits = FindOriginalUpdateBlocks(
             content,
             FENCE,
-            null  // Replace with your valid filenames if needed
+            null 
         ).ToList();
 
         // Return only file edits
@@ -423,7 +422,7 @@ public class DiffFileParser
         }
     }
 
-    private string StripQuotedWrapping(string res, string fname = null, string fence = DEFAULT_FENCE)
+    private string StripQuotedWrapping(string res, string fname = null, string fence = FENCE)
     {
         if (string.IsNullOrEmpty(res))
         {
@@ -470,16 +469,7 @@ public class DiffFileParser
         var (wholePrepped, wholeLines) = Prep(whole);
         var (partPrepped, partLines) = Prep(part);
         var (replacePrepped, replaceLines) = Prep(replace);
-
-        //join the lines into a string for each
-        string wholeString = string.Join(Environment.NewLine, wholeLines);
-        string partString = string.Join(Environment.NewLine, partLines);
-        string replaceString = string.Join(Environment.NewLine, replaceLines);
-
-        //Debug.Log(wholeString);
-        //Debug.Log(partString);
-        //Debug.Log(replaceString);
-
+        
         // Try perfect match or whitespace-only differences
         string result = PerfectOrWhitespace(wholeLines, partLines, replaceLines);
         if (!string.IsNullOrEmpty(result))

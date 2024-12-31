@@ -7,9 +7,9 @@ using UnityEditor;
 
 public class WholeFileParser
 {
-    private const string DEFAULT_FENCE = "```";
-    private readonly string fence;
-    private readonly string rootPath;
+    private const string FENCE = "```";
+    private static readonly string ROOT_PATH = Path.GetFullPath(Path.Combine(Application.dataPath));
+
 
     public class FileEdit
     {
@@ -25,11 +25,6 @@ public class WholeFileParser
         }
     }
 
-    public WholeFileParser(string rootPath, string fence = DEFAULT_FENCE)
-    {
-        this.rootPath = rootPath;
-        this.fence = fence;
-    }
 
     public List<FileEdit> GetEdits(string content, string mode = "update")
     {
@@ -47,7 +42,7 @@ public class WholeFileParser
             string line = lines[i];
 
             // Handle fence markers
-            if (line.StartsWith(fence))
+            if (line.StartsWith(FENCE))
             {
                 if (currentFilename != null)
                 {
@@ -90,7 +85,7 @@ public class WholeFileParser
                     }
                     else
                     {
-                        throw new ArgumentException($"No filename provided before {fence} in file listing");
+                        throw new ArgumentException($"No filename provided before {FENCE} in file listing");
                     }
                 }
             }
@@ -100,6 +95,7 @@ public class WholeFileParser
             }
             else
             {
+                Debug.Log(line);
                 // Look for filenames in regular text
                 foreach (string word in line.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                 {
@@ -190,11 +186,6 @@ public class WholeFileParser
             File.WriteAllText(fullPath, blockContent);
             AssetDatabase.Refresh();
 
-            if (!fullPath.StartsWith("Assets/"))
-            {
-                fullPath = "Assets/" + fullPath;
-            }
-
             EditorUtility.OpenWithDefaultApp(fullPath);
         }
     }
@@ -205,7 +196,7 @@ public class WholeFileParser
         {
             relativePath = relativePath.Substring(7);
         }
-        return Path.GetFullPath(Path.Combine(rootPath, relativePath));
+        return Path.GetFullPath(Path.Combine(ROOT_PATH, relativePath));
     }
 
     private List<string> GetInChatRelativeFiles()

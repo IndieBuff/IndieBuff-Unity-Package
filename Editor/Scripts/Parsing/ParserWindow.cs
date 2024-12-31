@@ -32,8 +32,8 @@ public class ParserWindow : EditorWindow
                 return;
             }
 
-            startExecute();
-            //ExecuteWholeFileParser();
+            //startExecute();
+            ExecuteWholeFileParser();
 
         }
     }
@@ -68,18 +68,12 @@ public class ParserWindow : EditorWindow
 
     private void ExecuteWholeFileParser()
     {
-        if (string.IsNullOrEmpty(inputText))
-        {
-            Debug.LogError("No input text provided");
-            return;
-        }
-
         try
         {
             // Initialize parser with project's Assets folder path
             //string rootPath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             string rootPath = Path.GetFullPath(Path.Combine(Application.dataPath));
-            var parser = new WholeFileParser(rootPath);
+            var parser = new WholeFileParser();
             
             // Get the edits from the input text
             var edits = parser.GetEdits(inputText);
@@ -89,9 +83,9 @@ public class ParserWindow : EditorWindow
             
             Debug.Log($"Successfully processed {edits.Count} file edits");
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Debug.LogError($"Error processing file edits: {ex.Message}");
+            Debug.Log(e.StackTrace);
         }
     }
     
