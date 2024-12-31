@@ -13,6 +13,17 @@ namespace IndieBuff.Editor
 
         }
 
+        protected override async Task OnStreamComplete()
+        {
+            var scriptParser = parser as ScriptParser;
+            if (scriptParser != null)
+            {
+                scriptParser.FinishParsing();
+            }
+
+            await Task.CompletedTask;
+        }
+
     }
 
 }

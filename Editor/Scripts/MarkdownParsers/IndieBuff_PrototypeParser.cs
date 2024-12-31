@@ -188,11 +188,10 @@ namespace Indiebuff.Editor
 
         }
 
-        public string FinishParsing()
+        public void FinishParsing()
         {
             EnableAllButtons();
             currentMessageLabel.value += "\nHit <color=#CDB3FF>Execute All</color> to run the commands or run each manually.";
-            return lineBuffer.ToString();
         }
 
     }

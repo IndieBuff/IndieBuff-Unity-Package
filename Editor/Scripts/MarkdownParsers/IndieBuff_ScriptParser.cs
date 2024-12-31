@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Search;
@@ -14,6 +15,9 @@ namespace IndieBuff.Editor
         private bool inReplaceBlock;
         private string replaceCode = "";
 
+        private List<string> replaceCodeBlocks = new List<string>();
+
+
         public ScriptParser(VisualElement responseContainer)
              : base(responseContainer)
         {
@@ -28,6 +32,7 @@ namespace IndieBuff.Editor
             {
                 ProcessLine(line, true);
             }
+            FinishParsing();
         }
 
         public override void ProcessLine(string line, bool fullMessage = false)
@@ -109,6 +114,8 @@ namespace IndieBuff.Editor
             insertButtonIcon.AddToClassList("insert-button-icon");
             insertButton.Add(insertButtonIcon);
 
+            replaceCodeBlocks.Add(codeToInsert);
+
             insertButton.clickable.clicked += () =>
             {
                 Debug.Log("INSERT CODE PLACEHOLDER: " + codeToInsert);
@@ -153,9 +160,27 @@ namespace IndieBuff.Editor
             inInlineCodeBlock = !inInlineCodeBlock;
         }
 
-        public override string TransformCodeBlock(string line)
+        private void EnableAllButtons()
         {
-            return syntaxHighlighter.HighlightLine(line) + "\n";
+            Button insertCodeButton = messageContainer.parent.Q<Button>("ExecuteButton");
+            insertCodeButton.style.display = DisplayStyle.Flex;
+            insertCodeButton.SetEnabled(true);
+            insertCodeButton.text = "Insert All Code";
+
+            insertCodeButton.clicked += () =>
+              {
+                  foreach (string codeBlock in replaceCodeBlocks)
+                  {
+                      Debug.Log("INSERT CODE PLACEHOLDER: " + codeBlock);
+                      // TODO: Insert ALL code into project script
+                  }
+              };
+        }
+
+        public void FinishParsing()
+        {
+            EnableAllButtons();
+            currentMessageLabel.value += "\nHit <color=#CDB3FF>Execute All</color> to run the commands or run each manually.";
         }
 
         private async Task TypeTextAnimation(string text)
