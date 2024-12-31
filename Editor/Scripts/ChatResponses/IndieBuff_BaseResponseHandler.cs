@@ -44,7 +44,7 @@ namespace IndieBuff.Editor
             await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
         }
 
-        protected async Task HandleResponseMetadata(string userMessage, ChatParser parser)
+        protected async Task HandleResponseMetadata(string userMessage, IMarkdownParser parser)
         {
             int splitIndex = parser.GetFullMessage().LastIndexOf('\n');
             string aiMessage;

@@ -1,4 +1,7 @@
+using System;
+using Indiebuff.Editor;
 using IndieBUff.Editor;
+using UnityEngine.UIElements;
 
 namespace IndieBuff.Editor
 {
@@ -9,9 +12,18 @@ namespace IndieBuff.Editor
 
         }
 
-        public IResponseHandler CreateHandler(ChatMode mode)
+        public IResponseHandler CreateHandler(ChatMode mode, VisualElement responseContainer)
         {
-            return null;
+            return mode switch
+            {
+                ChatMode.Chat => new ChatResponseHandler(
+                    new ChatParser(responseContainer)
+                ),
+                ChatMode.Prototype => new PrototypeResponseHandler(
+                    new PrototypeParser(responseContainer)
+                ),
+                _ => throw new ArgumentException($"Unsupported chat mode: {mode}")
+            };
 
         }
     }

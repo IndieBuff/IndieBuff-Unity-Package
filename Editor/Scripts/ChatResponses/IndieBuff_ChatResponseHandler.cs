@@ -19,13 +19,10 @@ namespace IndieBuff.Editor
 
                 var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
                 var messageLabel = messageContainer.Q<TextField>();
-
-                // var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
-
-                // await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
-                // {
-                //     parser.ParseChunk(chunk);
-                // }, token);
+                await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
+                {
+                    parser.ParseChunk(chunk);
+                }, token);
 
             }
             catch (Exception)
@@ -38,7 +35,7 @@ namespace IndieBuff.Editor
                 return;
             }
 
-            //await HandleResponseMetadata(userMessage, parser);
+            await HandleResponseMetadata(userMessage, parser);
         }
     }
 
