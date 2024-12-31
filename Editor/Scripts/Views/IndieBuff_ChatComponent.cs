@@ -267,10 +267,11 @@ namespace IndieBuff.Editor
                 else if (message.Role == "assistant")
                 {
                     var aiMessage = message.Content;
+
                     var responseContainer = CreateAIChatResponseBox("");
                     responseArea.Add(responseContainer);
 
-                    IResponseHandler responseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer);
+                    IResponseHandler responseHandler = handlerFactory.CreateHandler(message.ChatMode, responseContainer);
                     responseHandler.HandleFullResponse(aiMessage);
                 }
             }

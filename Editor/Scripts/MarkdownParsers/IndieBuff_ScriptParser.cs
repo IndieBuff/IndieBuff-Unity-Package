@@ -35,19 +35,11 @@ namespace IndieBuff.Editor
             if (line.StartsWith("```"))
             {
                 HandleCodeBlockToggle();
-                if (inCodeBlock)
-                {
-                    replaceCode = "";
-                }
                 return;
             }
             else if (!inCodeBlock && (line.Equals("`csharp") || line.Equals("`")))
             {
                 HandleInlineCodeBlockToggle();
-                if (inInlineCodeBlock)
-                {
-                    replaceCode = "";
-                }
                 return;
             }
 
@@ -93,8 +85,7 @@ namespace IndieBuff.Editor
 
         public override void AddCopyButtonToCurrentMessage()
         {
-            Debug.Log("TESTING INSIDE SCRIPT PARSER");
-            string codeToCopy = rawCode;
+            string codeToCopy = replaceCode;
             var copyButton = new Button();
             copyButton.AddToClassList("copy-button");
             copyButton.tooltip = "Copy code";
@@ -103,11 +94,63 @@ namespace IndieBuff.Editor
             copyButtonIcon.AddToClassList("copy-button-icon");
             copyButton.Add(copyButtonIcon);
 
-            copyButton.clickable.clicked += () =>
-            {
-                Debug.Log("hello");
-            };
+            copyButton.clickable.clicked += () => EditorGUIUtility.systemCopyBuffer = codeToCopy;
             currentMessageLabel.Add(copyButton);
+        }
+
+        public void AddInsertCodeButtonToCurrentMessage()
+        {
+            string codeToInsert = rawCode;
+            var insertButton = new Button();
+            insertButton.AddToClassList("insert-button");
+            insertButton.tooltip = "Inserts generated code into project script";
+
+            var insertButtonIcon = new VisualElement();
+            insertButtonIcon.AddToClassList("insert-button-icon");
+            insertButton.Add(insertButtonIcon);
+
+            insertButton.clickable.clicked += () =>
+            {
+                Debug.Log("INSERT CODE PLACEHOLDER: " + codeToInsert);
+                // TODO: Insert code into project script
+            };
+
+            currentMessageLabel.Add(insertButton);
+
+        }
+
+        public override void HandleCodeBlockToggle()
+        {
+            if (inCodeBlock)
+            {
+                AddCopyButtonToCurrentMessage();
+                AddInsertCodeButtonToCurrentMessage();
+                currentMessageLabel = null;
+                rawCode = "";
+                replaceCode = "";
+            }
+            else
+            {
+                currentMessageLabel = CreateNewAIResponseLabel("", "code-block");
+            }
+            inCodeBlock = !inCodeBlock;
+        }
+
+        public override void HandleInlineCodeBlockToggle()
+        {
+            if (inInlineCodeBlock)
+            {
+                AddCopyButtonToCurrentMessage();
+                AddInsertCodeButtonToCurrentMessage();
+                currentMessageLabel = null;
+                rawCode = "";
+                replaceCode = "";
+            }
+            else
+            {
+                currentMessageLabel = CreateNewAIResponseLabel("", "code-block");
+            }
+            inInlineCodeBlock = !inInlineCodeBlock;
         }
 
         public override string TransformCodeBlock(string line)

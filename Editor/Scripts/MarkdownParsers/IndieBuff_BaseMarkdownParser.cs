@@ -88,7 +88,6 @@ namespace IndieBuff.Editor
 
         public virtual void AddCopyButtonToCurrentMessage()
         {
-            Debug.Log("TESTING INSIDE BASE");
             string codeToCopy = rawCode;
             var copyButton = new Button();
             copyButton.AddToClassList("copy-button");
