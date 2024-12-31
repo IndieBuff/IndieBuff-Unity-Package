@@ -520,10 +520,14 @@ public class TextBlockParser
                 partLines))
             {
                 var result = wholeLines.Take(i)
+                    .Concat(new[] { "<<<<<<< SEARCH" })
+                    .Concat(partLines)
+                    .Concat(new[] { "=======" })
                     .Concat(replaceLines)
+                    .Concat(new[] { ">>>>>>> REPLACE" })
                     .Concat(wholeLines.Skip(i + partLen));
                     
-                return string.Join("", result);
+                return string.Join(Environment.NewLine, result);
             }
         }
 
@@ -566,10 +570,14 @@ public class TextBlockParser
                 !string.IsNullOrWhiteSpace(rline) ? addLeading + rline : rline).ToArray();
             
             var result = wholeLines.Take(i)
+                .Concat(new[] { "<<<<<<< SEARCH" })
+                .Concat(wholeLines.Skip(i).Take(numPartLines))
+                .Concat(new[] { "=======" })
                 .Concat(replaceLines)
+                .Concat(new[] { ">>>>>>> REPLACE" })
                 .Concat(wholeLines.Skip(i + numPartLines));
             
-            return string.Join("", result);
+            return string.Join(Environment.NewLine, result);
         }
 
         return null;
