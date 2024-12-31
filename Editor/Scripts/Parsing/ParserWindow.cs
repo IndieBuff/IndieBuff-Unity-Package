@@ -3,6 +3,7 @@ using UnityEditor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 public class ParserWindow : EditorWindow
 {
@@ -32,6 +33,7 @@ public class ParserWindow : EditorWindow
             }
 
             startExecute();
+            //ExecuteWholeFileParser();
 
         }
     }
@@ -40,7 +42,7 @@ public class ParserWindow : EditorWindow
     {
         try
         {
-            var parser = new TextBlockParser();
+            var parser = new DiffFileParser();
 
             var edits = parser.GetEdits(inputText);
             
@@ -63,4 +65,34 @@ public class ParserWindow : EditorWindow
             //EditorUtility.DisplayDialog("Error", e.Message, "OK");
         }
     }
+
+    private void ExecuteWholeFileParser()
+    {
+        if (string.IsNullOrEmpty(inputText))
+        {
+            Debug.LogError("No input text provided");
+            return;
+        }
+
+        try
+        {
+            // Initialize parser with project's Assets folder path
+            //string rootPath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string rootPath = Path.GetFullPath(Path.Combine(Application.dataPath));
+            var parser = new WholeFileParser(rootPath);
+            
+            // Get the edits from the input text
+            var edits = parser.GetEdits(inputText);
+            
+            // Apply the edits
+            parser.ApplyEdits(edits);
+            
+            Debug.Log($"Successfully processed {edits.Count} file edits");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error processing file edits: {ex.Message}");
+        }
+    }
+    
 } 

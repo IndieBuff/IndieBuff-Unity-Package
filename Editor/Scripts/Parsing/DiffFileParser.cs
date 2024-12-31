@@ -6,7 +6,7 @@ using System.IO;
 using UnityEngine;
 using UnityEditor;
 
-public class TextBlockParser
+public class DiffFileParser
 {
     private const string HEAD = @"^<{5,9}\s*";
     private const string DIVIDER = @"^={5,9}\s*";
@@ -333,8 +333,7 @@ public class TextBlockParser
                     }
                     
                     // Open the file in the editor
-                    var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(assetPath);
-                    AssetDatabase.OpenAsset(asset);
+                    EditorUtility.OpenWithDefaultApp(assetPath);
                 }
                 passed.Add(edit);
             }
