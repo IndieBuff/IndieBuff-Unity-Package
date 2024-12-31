@@ -20,13 +20,14 @@ namespace IndieBuff.Editor
 
         public Action onConversationsLoaded;
         public Action onMessagesLoaded;
+        public Action onConvoTitleChanged;
 
         private int _currentConvoId;
         private bool _isInitialized = false;
 
         public int currentConvoId
         {
-            get => SessionState.GetInt(CurrentConvoIdKey, -1);
+            get => _currentConvoId;
             set
             {
                 if (_currentConvoId != value)
@@ -37,10 +38,20 @@ namespace IndieBuff.Editor
             }
         }
 
+        private string _currentConvoTitle;
+
         public string currentConvoTitle
         {
-            get => SessionState.GetString(CurrentConvoTitleKey, "New Chat");
-            set => SessionState.SetString(CurrentConvoTitleKey, value);
+            get => _currentConvoTitle;
+            set
+            {
+                if (_currentConvoTitle != value)
+                {
+                    _currentConvoTitle = value;
+                    SessionState.SetString(CurrentConvoTitleKey, value);
+                }
+
+            }
         }
 
 
@@ -66,6 +77,7 @@ namespace IndieBuff.Editor
             await db.InitializeDatabaseAsync();
 
             _currentConvoId = SessionState.GetInt(CurrentConvoIdKey, -1);
+            _currentConvoTitle = SessionState.GetString(CurrentConvoTitleKey, "New Chat");
 
             await LoadConversations();
 
@@ -95,7 +107,7 @@ namespace IndieBuff.Editor
 
         private async Task LoadCurrentConversation()
         {
-            if (currentConvoId == -1)
+            if (_currentConvoId == -1)
             {
                 currentMessages = new List<IndieBuff_MessageData>();
                 onMessagesLoaded?.Invoke();
@@ -156,11 +168,12 @@ namespace IndieBuff.Editor
                 if (_currentConvoId == -1)
                 {
                     string title = GenerateDefaultTitle(content);
-                    currentConvoId = await CreateNewConversation(title, aiModel);
-                    currentConvoTitle = title;
+                    _currentConvoId = await CreateNewConversation(title, aiModel);
+                    _currentConvoTitle = title;
+                    onConvoTitleChanged?.Invoke();
                 }
 
-                if (currentConvoId != -1)
+                if (_currentConvoId != -1)
                 {
                     await db.AddMessage(_currentConvoId, role, content, chatMode, aiModel);
                     currentMessages.Add(new IndieBuff_MessageData
@@ -208,10 +221,13 @@ namespace IndieBuff.Editor
 
         public void ClearConversation()
         {
-            SessionState.SetInt(CurrentConvoIdKey, -1);
+
             currentMessages.Clear();
             _currentConvoId = -1;
+            _currentConvoTitle = "New Chat";
+            SessionState.SetInt(CurrentConvoIdKey, -1);
             SessionState.SetString(CurrentConvoTitleKey, "New Chat");
+            onConvoTitleChanged?.Invoke();
         }
 
     }

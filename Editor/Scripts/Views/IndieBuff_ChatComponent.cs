@@ -111,6 +111,11 @@ namespace IndieBuff.Editor
             {
                 aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
             };
+
+            IndieBuff_ConvoHandler.Instance.onConvoTitleChanged += () =>
+            {
+                chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
+            };
         }
 
         private void SetupPopupContainer()
@@ -287,7 +292,6 @@ namespace IndieBuff.Editor
         {
             IndieBuff_ConvoHandler.Instance.ClearConversation();
             IndieBuff_UserInfo.Instance.NewConversation();
-            chatName.text = "New Chat";
             responseArea.Clear();
         }
 
@@ -387,8 +391,6 @@ namespace IndieBuff.Editor
             await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
 
             await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
-            chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
-
         }
 
         private void AddUserMessageToResponseArea(string message)
