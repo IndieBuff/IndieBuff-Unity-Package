@@ -23,7 +23,7 @@ namespace IndieBuff.Editor
             }
         }
 
-        public override async void ProcessLine(string line, bool fullMessage = false)
+        public override void ProcessLine(string line, bool fullMessage = false)
         {
             if (line.StartsWith("```"))
             {
@@ -51,7 +51,8 @@ namespace IndieBuff.Editor
 
             if (!fullMessage)
             {
-                await TypeTextAnimation(processedLine);
+                //await TypeTextAnimation(processedLine);
+                currentMessageLabel.value += processedLine;
             }
             else
             {

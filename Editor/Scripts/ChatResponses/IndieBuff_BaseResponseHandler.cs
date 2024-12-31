@@ -55,6 +55,11 @@ namespace IndieBuff.Editor
             }
         }
 
+        public void HandleFullResponse(string aiMessage)
+        {
+            parser.ParseFullMessage(aiMessage);
+        }
+
         protected virtual Task OnStreamComplete() => Task.CompletedTask;
         protected virtual Task OnProcessingComplete() => Task.CompletedTask;
 

@@ -271,18 +271,9 @@ namespace IndieBuff.Editor
                     responseArea.Add(responseContainer);
 
                     var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
-                    var messageLabel = messageContainer.Q<TextField>();
 
-                    if (message.ChatMode == ChatMode.Prototype)
-                    {
-                        var parser = new PrototypeParser(responseContainer);
-                        parser.ParseFullMessage(aiMessage);
-                    }
-                    else
-                    {
-                        var parser = new ChatParser(responseContainer);
-                        parser.ParseFullMessage(aiMessage);
-                    }
+                    IResponseHandler responseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer);
+                    responseHandler.HandleFullResponse(aiMessage);
 
                     TrimMessageEndings(messageContainer);
                 }
@@ -291,6 +282,25 @@ namespace IndieBuff.Editor
             chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
             await Task.Delay(100);
             ScrollToBottom();
+        }
+
+        private async Task HandleAIResponse(string userMessage)
+        {
+            loadingBar.StartLoading();
+            currentResponseHandler?.Cleanup();
+
+            var responseContainer = CreateAIChatResponseBox("");
+            responseArea.Add(responseContainer);
+            responseContainer.style.visibility = Visibility.Hidden;
+
+            await Task.Delay(50);
+            responseArea.ScrollTo(responseContainer);
+
+            currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer);
+
+            cts = new CancellationTokenSource();
+
+            await currentResponseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
         }
 
         private async void onMessagesLoaded()
@@ -390,20 +400,6 @@ namespace IndieBuff.Editor
 
         }
 
-        private async Task HandleChatDatabase(string userMessage, string aiMessage, string summaryMessage = "")
-        {
-            IndieBuff_UserInfo.Instance.lastUsedMode = IndieBuff_UserInfo.Instance.currentMode;
-            IndieBuff_UserInfo.Instance.lastUsedModel = IndieBuff_UserInfo.Instance.selectedModel;
-            if (!string.IsNullOrWhiteSpace(summaryMessage))
-            {
-                await IndieBuff_ConvoHandler.Instance.AddMessage("summary", summaryMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
-            }
-            await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
-            await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
-
-            await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
-        }
-
         private void AddUserMessageToResponseArea(string message)
         {
             var messageContainer = new VisualElement();
@@ -454,149 +450,6 @@ namespace IndieBuff.Editor
             }
 
             return aiMessageContainer;
-        }
-
-        private async Task HandleStreamingAIResponse(string userMessage, VisualElement responseContainer)
-        {
-
-            var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
-            var messageLabel = messageContainer.Q<TextField>();
-
-            var parser = new ChatParser(responseContainer);
-
-            cts = new CancellationTokenSource();
-            bool isFirstChunk = true;
-
-            try
-            {
-                await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
-                {
-                    parser.ParseChunk(chunk);
-                    if (isFirstChunk)
-                    {
-                        messageLabel.value = "";
-                        IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
-                        responseContainer.style.visibility = Visibility.Visible;
-                        isFirstChunk = false;
-                    }
-                }, cts.Token);
-            }
-            catch (Exception)
-            {
-                responseContainer.style.visibility = Visibility.Visible;
-                messageLabel.value = "An error has occured. Please try again.";
-                IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
-            }
-
-            if (cts.Token.IsCancellationRequested)
-            {
-                return;
-            }
-
-            int splitIndex = parser.GetFullMessage().LastIndexOf('\n');
-            string aiMessage;
-            string summaryMessage;
-
-            if (splitIndex != -1)
-            {
-                aiMessage = parser.GetFullMessage().Substring(0, splitIndex);
-                string jsonInput = parser.GetFullMessage().Substring(splitIndex + 1).Trim();
-                var parsedJson = JsonUtility.FromJson<IndieBuff_SummaryResponse>(jsonInput);
-                summaryMessage = parsedJson.content;
-            }
-            else
-            {
-                aiMessage = parser.GetFullMessage();
-                summaryMessage = "";
-            }
-
-            await HandleChatDatabase(userMessage, aiMessage, summaryMessage);
-        }
-        private async Task HandleAICommandResponse(string userMessage, VisualElement responseContainer)
-        {
-            var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
-            var messageLabel = messageContainer.Q<TextField>();
-
-            var parser = new PrototypeParser(responseContainer);
-
-            cts = new CancellationTokenSource();
-            bool isFirstChunk = true;
-            try
-            {
-
-                await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
-                {
-                    parser.ParseChunk(chunk);
-
-                    if (isFirstChunk)
-                    {
-                        messageLabel.value = "";
-                        IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
-                        responseContainer.style.visibility = Visibility.Visible;
-                        isFirstChunk = false;
-                    }
-
-                }, cts.Token);
-                string metadata = parser.FinishParsing();
-            }
-            catch (Exception)
-            {
-                responseContainer.style.visibility = Visibility.Visible;
-                messageLabel.value = "An error has occured. Please try again.";
-                IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
-            }
-
-            if (cts.Token.IsCancellationRequested)
-            {
-                return;
-            }
-
-            int splitIndex = parser.GetFullMessage().LastIndexOf('\n');
-            string aiMessage;
-            string summaryMessage;
-
-            if (splitIndex != -1)
-            {
-                aiMessage = parser.GetFullMessage().Substring(0, splitIndex);
-                string jsonInput = parser.GetFullMessage().Substring(splitIndex + 1).Trim();
-                var parsedJson = JsonUtility.FromJson<IndieBuff_SummaryResponse>(jsonInput);
-                summaryMessage = parsedJson.content;
-            }
-            else
-            {
-                aiMessage = parser.GetFullMessage();
-                summaryMessage = "";
-            }
-
-            await HandleChatDatabase(userMessage, aiMessage, summaryMessage);
-        }
-
-        private async Task HandleAIResponse(string userMessage)
-        {
-            loadingBar.StartLoading();
-            currentResponseHandler?.Cleanup();
-
-            var responseContainer = CreateAIChatResponseBox("");
-            responseArea.Add(responseContainer);
-            responseContainer.style.visibility = Visibility.Hidden;
-
-            await Task.Delay(50);
-            responseArea.ScrollTo(responseContainer);
-
-            currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer);
-
-            cts = new CancellationTokenSource();
-
-            await currentResponseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
-
-            // if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat)
-            // {
-            //     await HandleStreamingAIResponse(userMessage, responseContainer);
-            // }
-            // else
-            // {
-            //     await HandleAICommandResponse(userMessage, responseContainer);
-            // }
         }
 
         private async void OnLogoutClicked()
