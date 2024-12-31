@@ -8,54 +8,28 @@ using UnityEngine.UIElements;
 
 namespace Indiebuff.Editor
 {
-    public class IndieBuff_CommandsMarkdownParser
+    public class IndieBuff_CommandsMarkdownParser : BaseMarkdownParser
     {
-        private bool isLoading;
-        private StringBuilder lineBuffer;
-        private VisualElement messageContainer;
-        private TextField currentMessageLabel;
         private List<IndieBuff_CommandData> parsedCommands = new List<IndieBuff_CommandData>();
         private List<Button> commandButtons = new List<Button>();
-        private IndieBuff_SyntaxHighlighter syntaxHighlighter;
-        private IndieBuff_LoadingBar loadingBar;
 
         public IndieBuff_CommandsMarkdownParser(VisualElement container, TextField currentLabel)
+            : base(container, currentLabel)
         {
-            isLoading = true;
-            lineBuffer = new StringBuilder();
-            syntaxHighlighter = new IndieBuff_SyntaxHighlighter();
 
-            messageContainer = container;
-            currentMessageLabel = currentLabel;
         }
 
-        public void ParseCommandChunk(string chunk)
-        {
-            foreach (char c in chunk)
-            {
-                if (c == '\n')
-                {
-                    ProcessLine(lineBuffer.ToString());
-                    lineBuffer.Clear();
-                }
-                else
-                {
-                    lineBuffer.Append(c);
-                }
-            }
-        }
-
-        public void ParseFullMessage(string message)
+        public override void ParseFullMessage(string message)
         {
             var lines = message.Split(new[] { '\n' }, StringSplitOptions.None);
             foreach (var line in lines)
             {
-                ProcessLineFromFullMessage(line);
+                ProcessLine(line);
             }
             FinishParsing();
         }
 
-        private void ProcessLineFromFullMessage(string line)
+        public override void ProcessLine(string line)
         {
             if (string.IsNullOrEmpty(line) || !char.IsLetterOrDigit(line[0]))
             {
@@ -135,58 +109,6 @@ namespace Indiebuff.Editor
 
         }
 
-        private TextField CreateNewAIResponseLabel(string initialText = "", string styleClass = "")
-        {
-            var label = new TextField
-            {
-                value = initialText,
-                isReadOnly = true,
-                multiline = true,
-            };
-            label.AddToClassList("message-text");
-            if (styleClass != "")
-            {
-                label.AddToClassList(styleClass);
-            }
-
-            var textInput = label.Q(className: "unity-text-element");
-            if (textInput is TextElement textElement)
-            {
-                textElement.enableRichText = true;
-            }
-
-            messageContainer.Add(label);
-            return label;
-        }
-
-        private string TransformCodeBlock(string line)
-        {
-            return syntaxHighlighter.HighlightLine(line) + "\n";
-        }
-
-        private void ProcessLine(string line)
-        {
-            if (string.IsNullOrEmpty(line) || !char.IsLetterOrDigit(line[0]))
-            {
-                return;
-            }
-            if (isLoading)
-            {
-                currentMessageLabel.value = "Loading Commands...";
-                isLoading = false;
-                loadingBar.StopLoading();
-                messageContainer.parent.style.visibility = Visibility.Visible;
-            }
-
-            var commandData = IndieBuff_CommandParser.ParseCommandLine(line.Trim());
-            if (commandData != null)
-            {
-                parsedCommands.Add(commandData);
-                VisualElement commandContainer = CreateCommandElement(commandData);
-                messageContainer.Add(commandContainer);
-            }
-        }
-
         private VisualElement CreateCommandElementError()
         {
             VisualElement parentContainer = new VisualElement();
@@ -241,11 +163,6 @@ namespace Indiebuff.Editor
             parentContainer.Add(foldout);
 
             return parentContainer;
-        }
-
-        public void UseLoader(IndieBuff_LoadingBar loadingBar)
-        {
-            this.loadingBar = loadingBar;
         }
 
         private void EnableAllButtons()
