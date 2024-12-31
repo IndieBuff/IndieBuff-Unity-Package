@@ -264,12 +264,12 @@ namespace IndieBuff.Editor
 
                     if (message.ChatMode == ChatMode.Prototype)
                     {
-                        var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
+                        var parser = new PrototypeParser(responseContainer);
                         parser.ParseFullMessage(aiMessage);
                     }
                     else
                     {
-                        var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
+                        var parser = new ChatParser(responseContainer);
                         parser.ParseFullMessage(aiMessage);
                     }
 
@@ -451,7 +451,7 @@ namespace IndieBuff.Editor
             var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
             var messageLabel = messageContainer.Q<TextField>();
 
-            var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
+            var parser = new ChatParser(responseContainer);
 
             cts = new CancellationTokenSource();
             bool isFirstChunk = true;
@@ -506,7 +506,7 @@ namespace IndieBuff.Editor
             var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
             var messageLabel = messageContainer.Q<TextField>();
 
-            var parser = new IndieBuff_CommandsMarkdownParser(messageContainer, messageLabel);
+            var parser = new PrototypeParser(responseContainer);
 
             cts = new CancellationTokenSource();
             bool isFirstChunk = true;

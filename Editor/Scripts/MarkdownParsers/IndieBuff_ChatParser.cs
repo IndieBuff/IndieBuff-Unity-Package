@@ -5,13 +5,13 @@ using UnityEngine.UIElements;
 
 namespace IndieBuff.Editor
 {
-    public class IndieBuff_MarkdownParser : BaseMarkdownParser
+    public class ChatParser : BaseMarkdownParser
     {
         private int chunkSize = 20;
         private int typingDelayMs = 10;
 
-        public IndieBuff_MarkdownParser(VisualElement container, TextField currentLabel)
-             : base(container, currentLabel) { }
+        public ChatParser(VisualElement responseContainer)
+             : base(responseContainer) { }
 
         public override void ParseFullMessage(string message)
         {

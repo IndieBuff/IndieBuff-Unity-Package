@@ -6,13 +6,13 @@ using UnityEngine.UIElements;
 
 namespace Indiebuff.Editor
 {
-    public class IndieBuff_CommandsMarkdownParser : BaseMarkdownParser
+    public class PrototypeParser : BaseMarkdownParser
     {
         private List<IndieBuff_CommandData> parsedCommands = new List<IndieBuff_CommandData>();
         private List<Button> commandButtons = new List<Button>();
 
-        public IndieBuff_CommandsMarkdownParser(VisualElement container, TextField currentLabel)
-            : base(container, currentLabel)
+        public PrototypeParser(VisualElement responseContainer)
+            : base(responseContainer)
         {
 
         }

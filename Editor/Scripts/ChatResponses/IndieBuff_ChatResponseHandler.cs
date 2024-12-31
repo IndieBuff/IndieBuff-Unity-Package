@@ -7,7 +7,7 @@ namespace IndieBuff.Editor
 {
     public class ChatResponseHandler : BaseResponseHandler
     {
-        public ChatResponseHandler() : base()
+        public ChatResponseHandler(ChatParser parser) : base(parser)
         {
 
         }
@@ -20,12 +20,12 @@ namespace IndieBuff.Editor
                 var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
                 var messageLabel = messageContainer.Q<TextField>();
 
-                var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
+                // var parser = new IndieBuff_MarkdownParser(messageContainer, messageLabel);
 
-                await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
-                {
-                    parser.ParseChunk(chunk);
-                }, token);
+                // await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
+                // {
+                //     parser.ParseChunk(chunk);
+                // }, token);
 
             }
             catch (Exception)

@@ -17,15 +17,16 @@ namespace IndieBuff.Editor
         protected IndieBuff_SyntaxHighlighter syntaxHighlighter;
         protected string rawCode = "";
 
-        protected BaseMarkdownParser(VisualElement container, TextField currentLabel)
+        protected BaseMarkdownParser(VisualElement responseContainer)
         {
             inCodeBlock = false;
             inInlineCodeBlock = false;
             lineBuffer = new StringBuilder();
             fullMessage = new StringBuilder();
             syntaxHighlighter = new IndieBuff_SyntaxHighlighter();
-            messageContainer = container;
-            currentMessageLabel = currentLabel;
+
+            messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
+            currentMessageLabel = messageContainer.Q<TextField>();
         }
 
         public void ParseChunk(string chunk)

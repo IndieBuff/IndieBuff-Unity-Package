@@ -8,10 +8,10 @@ namespace IndieBuff.Editor
 {
     public abstract class BaseResponseHandler : IResponseHandler
     {
-        //protected readonly IMarkdownParser parser;
-        protected BaseResponseHandler()
+        protected readonly IMarkdownParser parser;
+        protected BaseResponseHandler(IMarkdownParser parser)
         {
-
+            this.parser = parser;
         }
 
         public abstract Task HandleResponse(string userMessage, VisualElement responseContainer, CancellationToken token);
@@ -42,10 +42,9 @@ namespace IndieBuff.Editor
             await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, IndieBuff_UserInfo.Instance.lastUsedMode, IndieBuff_UserInfo.Instance.lastUsedModel);
 
             await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
-            //chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
         }
 
-        protected async Task HandleResponseMetadata(string userMessage, IndieBuff_MarkdownParser parser)
+        protected async Task HandleResponseMetadata(string userMessage, ChatParser parser)
         {
             int splitIndex = parser.GetFullMessage().LastIndexOf('\n');
             string aiMessage;
