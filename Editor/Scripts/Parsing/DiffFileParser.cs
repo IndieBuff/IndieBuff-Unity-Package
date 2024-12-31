@@ -53,7 +53,6 @@ public class DiffFileParser
                     result = ProcessBlock(lines, ref i, fence, validFilenames, currentFilename, dividerPattern, updatedPattern);
                     if (string.IsNullOrEmpty(result.filename))
                     {
-                        Debug.Log(currentFilename);
                         result.filename = currentFilename;
                     }
                 }

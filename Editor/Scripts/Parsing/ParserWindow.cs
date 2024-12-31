@@ -32,8 +32,8 @@ public class ParserWindow : EditorWindow
                 return;
             }
 
-            //startExecute();
-            ExecuteWholeFileParser();
+            startExecute();
+            //ExecuteWholeFileParser();
 
         }
     }
@@ -52,6 +52,7 @@ public class ParserWindow : EditorWindow
             foreach (var edit in edits)
             {
                 absFilenames.Add(edit.filename);
+                //Debug.Log(edit.updated);
             }
             
             parser.ApplyEdits(edits, rootPath, absFilenames);
@@ -70,11 +71,7 @@ public class ParserWindow : EditorWindow
     {
         try
         {
-            // Initialize parser with project's Assets folder path
-            //string rootPath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string rootPath = Path.GetFullPath(Path.Combine(Application.dataPath));
             var parser = new WholeFileParser();
-            
             // Get the edits from the input text
             var edits = parser.GetEdits(inputText);
             

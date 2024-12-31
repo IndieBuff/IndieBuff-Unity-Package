@@ -10,27 +10,11 @@ public class WholeFileParser
     private const string FENCE = "```";
     private static readonly string ROOT_PATH = Path.GetFullPath(Path.Combine(Application.dataPath));
 
-
-    public class FileEdit
-    {
-        public string Filename { get; set; }
-        public string FilenameSource { get; set; }  // "block", "saw", or "chat"
-        public List<string> NewLines { get; set; }
-
-        public FileEdit(string filename, string source, List<string> lines)
-        {
-            Filename = filename;
-            FilenameSource = source;
-            NewLines = lines;
-        }
-    }
-
-
-    public List<FileEdit> GetEdits(string content, string mode = "update")
+    public List<(string filename, string source, List<string> lines)> GetEdits(string content, string mode = "update")
     {
         var chatFiles = GetInChatRelativeFiles();
         var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        var edits = new List<FileEdit>();
+        var edits = new List<(string filename, string source, List<string> lines)>();
 
         string sawFilename = null;
         string currentFilename = null;
@@ -48,7 +32,7 @@ public class WholeFileParser
                 {
                     // Ending an existing block
                     sawFilename = null;
-                    edits.Add(new FileEdit(currentFilename, filenameSource, newLines));
+                    edits.Add((currentFilename, filenameSource, newLines));
                     
                     currentFilename = null;
                     filenameSource = null;
@@ -95,7 +79,6 @@ public class WholeFileParser
             }
             else
             {
-                Debug.Log(line);
                 // Look for filenames in regular text
                 foreach (string word in line.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                 {
@@ -115,26 +98,24 @@ public class WholeFileParser
         // Handle any remaining edit
         if (currentFilename != null)
         {
-            edits.Add(new FileEdit(currentFilename, filenameSource, newLines));
+            edits.Add((currentFilename, filenameSource, newLines));
         }
 
-        // Refine edits based on filename source priority
         return RefineEdits(edits);
     }
 
-    private List<FileEdit> RefineEdits(List<FileEdit> edits)
+    private List<(string filename, string source, List<string> lines)> RefineEdits(List<(string filename, string source, List<string> lines)> edits)
     {
         var seen = new HashSet<string>();
-        var refined = new List<FileEdit>();
+        var refined = new List<(string filename, string source, List<string> lines)>();
 
-        // Process from most reliable filename source to least reliable
         foreach (string source in new[] { "block", "saw", "chat" })
         {
-            foreach (var edit in edits.Where(e => e.FilenameSource == source))
+            foreach (var edit in edits.Where(e => e.source == source))
             {
-                if (!seen.Contains(edit.Filename))
+                if (!seen.Contains(edit.filename))
                 {
-                    seen.Add(edit.Filename);
+                    seen.Add(edit.filename);
                     refined.Add(edit);
                 }
             }
@@ -161,26 +142,15 @@ public class WholeFileParser
         return filename;
     }
 
-    public void ApplyEdits(List<FileEdit> edits)
+    public void ApplyEdits(List<(string filename, string source, List<string> lines)> edits)
     {
-        foreach (var edit in edits)
+        foreach (var (filename, _, lines) in edits)
         {
-            string fullPath = GetAbsolutePath(edit.Filename);
-            
-            // Convert to asset path first
-            /*if (!fullPath.StartsWith("Assets/"))
-            {
-                fullPath = "Assets/" + edit.Filename;
-            }
-
-            if (!fullPath.EndsWith(edit.Filename))
-            {
-                fullPath = fullPath + "/" + edit.Filename;
-            }*/
+            string fullPath = GetAbsolutePath(filename);
 
             // apply the changes
             string existingContent = File.Exists(fullPath) ? File.ReadAllText(fullPath) : "";
-            string newContent = string.Join(Environment.NewLine, edit.NewLines);
+            string newContent = string.Join(Environment.NewLine, lines);
             string blockContent = $"<<<<<<< SEARCH\n{existingContent}\n=======\n{newContent}\n>>>>>>> REPLACE";
 
             File.WriteAllText(fullPath, blockContent);
