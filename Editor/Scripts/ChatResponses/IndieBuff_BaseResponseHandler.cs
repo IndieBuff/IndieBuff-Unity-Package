@@ -65,6 +65,7 @@ namespace IndieBuff.Editor
 
             responseContainer.style.visibility = Visibility.Visible;
             messageLabel.value = "An error has occured. Please try again.";
+            IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
         }
 
         public virtual void Cleanup()

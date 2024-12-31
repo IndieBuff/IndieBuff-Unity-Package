@@ -569,8 +569,6 @@ namespace IndieBuff.Editor
             }
 
             await HandleChatDatabase(userMessage, aiMessage, summaryMessage);
-
-
         }
 
         private async Task HandleAIResponse(string userMessage)
