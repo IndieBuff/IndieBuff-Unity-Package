@@ -62,21 +62,14 @@ public class ParserWindow : EditorWindow
                 shellCommands.Clear(); // Clear previous commands
                 var edits = GetEdits(inputText);
                 
-                // Debug output
-                Debug.Log($"Found {edits.Count} file edits");
-                Debug.Log($"Found {shellCommands.Count} shell commands");
+                var parser = new TextBlockParser();
+                string rootPath = Application.dataPath;
+                List<string> absFilenames = new List<string>(); // You might want to populate this with relevant files
+                absFilenames.Add("Assets/abc.cs");
                 
-                foreach (var edit in edits)
-                {
-                    Debug.Log($"File: {edit.filename}");
-                    Debug.Log($"Original: {edit.original}");
-                    Debug.Log($"Updated: {edit.updated}");
-                }
-
-                foreach (var cmd in shellCommands)
-                {
-                    Debug.Log($"Shell command: {cmd}");
-                }
+                parser.ApplyEdits(edits, rootPath, absFilenames);
+                
+                Debug.Log($"Successfully applied {edits.Count} edits");
             }
             catch (ArgumentException e)
             {

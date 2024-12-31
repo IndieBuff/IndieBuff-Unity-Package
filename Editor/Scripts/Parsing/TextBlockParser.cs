@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.IO;
+using UnityEngine;
 
 public class TextBlockParser
 {
@@ -10,6 +11,8 @@ public class TextBlockParser
     private const string DIVIDER = @"^=======";
     private const string UPDATED = @"^>>>>>>> ";
     private const string DEFAULT_FENCE = "```";
+
+    private const string FENCE = "```";
     
     private static readonly string[] SHELL_STARTS = new[]
     {
@@ -244,5 +247,367 @@ public class TextBlockParser
 
         // Return cleaned filename
         return filename;
+    }
+
+    public List<(string path, string original, string updated)> ApplyEdits(
+        List<(string path, string original, string updated)> edits, 
+        string rootPath,
+        List<string> absFilenames,
+        bool dryRun = false)
+    {
+        var failed = new List<(string, string, string)>();
+        var passed = new List<(string, string, string)>();
+        var updatedEdits = new List<(string, string, string)>();
+
+        foreach (var edit in edits)
+        {
+            var (path, original, updated) = edit;
+            string fullPath = Path.GetFullPath(Path.Combine(rootPath, path));
+            string newContent = null;
+
+            if (File.Exists(fullPath))
+            {
+                string content = File.ReadAllText(fullPath);
+                newContent = DoReplace(fullPath, content, original, updated, FENCE);
+            }
+
+            // If the edit failed, and this is not a "create a new file" with an empty original
+            if (string.IsNullOrEmpty(newContent) && !string.IsNullOrWhiteSpace(original))
+            {
+                // try patching any of the other files in the chat
+                foreach (string absPath in absFilenames)
+                {
+                    string content = File.ReadAllText(absPath);
+                    newContent = DoReplace(absPath, content, original, updated, FENCE);
+                    if (!string.IsNullOrEmpty(newContent))
+                    {
+                        path = Path.GetRelativePath(rootPath, absPath);
+                        break;
+                    }
+                }
+            }
+
+            updatedEdits.Add((path, original, updated));
+
+            if (!string.IsNullOrEmpty(newContent))
+            {
+                if (!dryRun)
+                {
+                    //File.WriteAllText(fullPath, newContent);
+                    File.WriteAllText("Assets/abc.cs", newContent);
+                }
+                passed.Add(edit);
+            }
+            else
+            {
+                failed.Add(edit);
+            }
+        }
+
+        if (dryRun)
+        {
+            return updatedEdits;
+        }
+
+        if (failed.Count == 0)
+        {
+            return null;
+        }
+
+        // Generate error message for failed edits
+        string blocks = failed.Count == 1 ? "block" : "blocks";
+        string errorMessage = $"# {failed.Count} SEARCH/REPLACE {blocks} failed to match!\n";
+
+        foreach (var edit in failed)
+        {
+            /*HERE
+            (path, original, updated) = edit;
+            string fullPath = Path.GetFullPath(Path.Combine(rootPath, path));
+            string content = File.ReadAllText(fullPath);
+
+            errorMessage += $"\n## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in {path}\n";
+            errorMessage += $"<<<<<<< SEARCH\n{original}=======\n{updated}>>>>>>> REPLACE\n\n";
+
+            string didYouMean = FindSimilarLines(original, content);
+            if (!string.IsNullOrEmpty(didYouMean))
+            {
+                errorMessage += $"Did you mean to match some of these actual lines from {path}?\n\n";
+                errorMessage += $"{fence[0]}\n{didYouMean}\n{fence}\n\n";
+            }
+
+            if (content.Contains(updated) && !string.IsNullOrEmpty(updated))
+            {
+                errorMessage += $"Are you sure you need this SEARCH/REPLACE block?\n";
+                errorMessage += $"The REPLACE lines are already in {path}!\n\n";
+            }
+            */
+        }
+
+        errorMessage += "The SEARCH section must exactly match an existing block of lines including all white space, comments, indentation, docstrings, etc\n";
+
+        if (passed.Count > 0)
+        {
+            string pblocks = passed.Count == 1 ? "block" : "blocks";
+            errorMessage += $"\n# The other {passed.Count} SEARCH/REPLACE {pblocks} were applied successfully.\n";
+            errorMessage += "Don't re-send them.\n";
+            errorMessage += $"Just reply with fixed versions of the {blocks} above that failed to match.\n";
+        }
+
+        throw new ArgumentException(errorMessage);
+    }
+
+    private string DoReplace(string fname, string content, string beforeText, string afterText, string fence = null)
+    {
+        beforeText = StripQuotedWrapping(beforeText, fname, fence);
+        afterText = StripQuotedWrapping(afterText, fname, fence);
+
+        // Check if it wants to make a new file
+        if (!File.Exists(fname) && string.IsNullOrWhiteSpace(beforeText))
+        {
+            File.Create(fname).Dispose();
+            content = "";
+        }
+
+        if (content == null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(beforeText))
+        {
+            // append to existing file, or start a new file
+            return content + afterText;
+        }
+        else
+        {
+            return ReplaceMostSimilarChunk(content, beforeText, afterText);
+        }
+    }
+
+    private string StripQuotedWrapping(string res, string fname = null, string fence = DEFAULT_FENCE)
+    {
+        if (string.IsNullOrEmpty(res))
+        {
+            return res;
+        }
+
+        // Split into lines
+        string[] lines = res.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        
+        if (lines.Length == 0)
+        {
+            return res;
+        }
+
+        // Remove filename line if present
+        if (!string.IsNullOrEmpty(fname) && lines[0].Trim().EndsWith(Path.GetFileName(fname)))
+        {
+            lines = lines.Skip(1).ToArray();
+        }
+
+        // Remove fence lines if present
+        if (lines.Length >= 2 && 
+            lines[0].StartsWith(fence[0]) && 
+            lines[lines.Length - 1].StartsWith(fence[1]))
+        {
+            lines = lines.Skip(1).Take(lines.Length - 2).ToArray();
+        }
+
+        // Join lines back together
+        res = string.Join(Environment.NewLine, lines);
+        
+        // Ensure trailing newline
+        if (!string.IsNullOrEmpty(res) && !res.EndsWith(Environment.NewLine))
+        {
+            res += Environment.NewLine;
+        }
+
+        return res;
+    }
+
+    private string ReplaceMostSimilarChunk(string whole, string part, string replace)
+    {
+        // Prep the strings
+        var (wholePrepped, wholeLines) = Prep(whole);
+        var (partPrepped, partLines) = Prep(part);
+        var (replacePrepped, replaceLines) = Prep(replace);
+
+        // Try perfect match or whitespace-only differences
+        string result = PerfectOrWhitespace(wholeLines, partLines, replaceLines);
+        if (!string.IsNullOrEmpty(result))
+        {
+            return result;
+        }
+
+        // Drop leading empty line, GPT sometimes adds them spuriously (issue #25)
+        if (partLines.Length > 2 && string.IsNullOrWhiteSpace(partLines[0]))
+        {
+            string[] skipBlankLinePartLines = partLines.Skip(1).ToArray();
+            result = PerfectOrWhitespace(wholeLines, skipBlankLinePartLines, replaceLines);
+            if (!string.IsNullOrEmpty(result))
+            {
+                return result;
+            }
+        }
+
+        // Try to handle when it elides code with ...
+        try
+        {
+            //HERE result = TryDotDotDots(whole, part, replace);
+            if (!string.IsNullOrEmpty(result))
+            {
+                return result;
+            }
+        }
+        catch (ArgumentException)
+        {
+            // Ignore and continue
+        }
+
+        return null;
+    }
+
+    private (string text, string[] lines) Prep(string content)
+    {
+        if (!string.IsNullOrEmpty(content) && !content.EndsWith("\n"))
+        {
+            content += "\n";
+        }
+        
+        string[] lines = content.Split(
+            new[] { "\r\n", "\r", "\n" },
+            StringSplitOptions.None
+        );
+        
+        return (content, lines);
+    }
+
+    private string PerfectOrWhitespace(string[] wholeLines, string[] partLines, string[] replaceLines)
+    {
+        // Try for a perfect match
+        string result = PerfectReplace(wholeLines, partLines, replaceLines);
+        if (!string.IsNullOrEmpty(result))
+        {
+            Debug.Log("PerfectReplace succeeded");
+            return result;
+        }
+        else{
+            Debug.Log("PerfectReplace failed");
+        }
+
+        // Try being flexible about leading whitespace
+        result = ReplacePartWithMissingLeadingWhitespace(wholeLines, partLines, replaceLines);
+        if (!string.IsNullOrEmpty(result))
+        {
+            Debug.Log("ReplacePartWithMissingLeadingWhitespace succeeded");
+            return result;
+        }
+        else{
+            Debug.Log("ReplacePartWithMissingLeadingWhitespace failed");
+        }
+
+        return null;
+    }
+
+    private string PerfectReplace(string[] wholeLines, string[] partLines, string[] replaceLines)
+    {
+        int partLen = partLines.Length;
+
+        for (int i = 0; i < wholeLines.Length - partLen + 1; i++)
+        {
+            if (Enumerable.SequenceEqual(
+                wholeLines.Skip(i).Take(partLen),
+                partLines))
+            {
+                var result = wholeLines.Take(i)
+                    .Concat(replaceLines)
+                    .Concat(wholeLines.Skip(i + partLen));
+                    
+                return string.Join("", result);
+            }
+        }
+
+        return null;
+    }
+
+    private string ReplacePartWithMissingLeadingWhitespace(string[] wholeLines, string[] partLines, string[] replaceLines)
+    {
+        // Calculate leading whitespace lengths for non-empty lines
+        var leading = partLines.Where(p => !string.IsNullOrWhiteSpace(p))
+            .Select(p => p.Length - p.TrimStart().Length)
+            .Concat(replaceLines.Where(p => !string.IsNullOrWhiteSpace(p))
+            .Select(p => p.Length - p.TrimStart().Length))
+            .ToList();
+
+        // If we have consistent leading whitespace, remove it
+        if (leading.Any() && leading.Min() > 0)
+        {
+            int numLeading = leading.Min();
+            partLines = partLines.Select(p => !string.IsNullOrWhiteSpace(p) ? p.Substring(numLeading) : p).ToArray();
+            replaceLines = replaceLines.Select(p => !string.IsNullOrWhiteSpace(p) ? p.Substring(numLeading) : p).ToArray();
+        }
+
+        // Try to find an exact match not including the leading whitespace
+        int numPartLines = partLines.Length;
+
+        for (int i = 0; i < wholeLines.Length - numPartLines + 1; i++)
+        {
+            string addLeading = MatchButForLeadingWhitespace(
+                wholeLines.Skip(i).Take(numPartLines).ToArray(), 
+                partLines
+            );
+
+            if (addLeading == null)
+            {
+                continue;
+            }
+
+            replaceLines = replaceLines.Select(rline => 
+                !string.IsNullOrWhiteSpace(rline) ? addLeading + rline : rline).ToArray();
+            
+            var result = wholeLines.Take(i)
+                .Concat(replaceLines)
+                .Concat(wholeLines.Skip(i + numPartLines));
+            
+            return string.Join("", result);
+        }
+
+        return null;
+    }
+
+    private string MatchButForLeadingWhitespace(string[] wholeLines, string[] partLines)
+    {
+        int num = wholeLines.Length;
+
+        // does the non-whitespace all agree?
+        for (int i = 0; i < num; i++)
+        {
+            if (wholeLines[i].TrimStart() != partLines[i].TrimStart())
+            {
+                return null;
+            }
+        }
+
+        // are they all offset the same?
+        var add = new HashSet<string>();
+        for (int i = 0; i < num; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(wholeLines[i]))
+            {
+                int wholeLen = wholeLines[i].Length;
+                int partLen = partLines[i].Length;
+                if (wholeLen >= partLen)
+                {
+                    add.Add(wholeLines[i].Substring(0, wholeLen - partLen));
+                }
+            }
+        }
+
+        if (add.Count != 1)
+        {
+            return null;
+        }
+
+        return add.First();
     }
 } 
