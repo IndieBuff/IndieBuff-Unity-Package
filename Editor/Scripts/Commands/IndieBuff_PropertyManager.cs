@@ -561,9 +561,6 @@ namespace IndieBuff.Editor
             originalGameObjectTransform.localScale = scale;
             originalGameObjectTransform.localRotation = Quaternion.Euler(rotation);
 
-            //EditorUtility.SetDirty(originalGameObject);
-            //EditorSceneManager.MarkSceneDirty(originalGameObject.scene);
-
             return $"Transform set with position '{position}' rotation '{rotation}' and scale '{scale}' to gameobject {hierarchyPath}";
         }
 

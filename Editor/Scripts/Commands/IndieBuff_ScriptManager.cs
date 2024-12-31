@@ -91,14 +91,81 @@ namespace IndieBuff.Editor
             Undo.AddComponent(originalGameObject, script.GetClass());
             
             return $"Script {path} added to gameobject {hierarchyPath}";
+        }
 
+        public static string AddScriptToPrefab(Dictionary<string, string> parameters)
+        {
+            string prefabPath = parameters.ContainsKey("prefab_path") ? parameters["prefab_path"] : null;
+            string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
+
+            if (string.IsNullOrEmpty(prefabPath) || string.IsNullOrEmpty(scriptName))
+            {
+                return "Failed to add script - prefab path or script name is missing";
+            }
+
+            // Ensure path starts with Assets/
+            if (!prefabPath.StartsWith("Assets/", System.StringComparison.OrdinalIgnoreCase))
+            {
+                prefabPath = Path.Combine("Assets/", prefabPath);
+            }
+
+            // Ensure path ends with .prefab
+            if (!prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase))
+            {
+                prefabPath += ".prefab";
+            }
+
+            // Load the prefab asset
+            GameObject prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefabAsset == null)
+            {
+                return $"Failed to load prefab at path: {prefabPath}";
+            }
+
+            // Find the script
+            string[] guids = AssetDatabase.FindAssets($"t:Script {scriptName}");
+            if (guids.Length == 0)
+            {
+                return $"Could not find script: '{scriptName}'";
+            }
+
+            string scriptPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+            MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(scriptPath);
+            if (script == null)
+            {
+                return $"Could not load script at path: {scriptPath}";
+            }
+
+            // Get the script's type
+            System.Type scriptType = script.GetClass();
+            if (scriptType == null)
+            {
+                return $"Could not get type from script: {scriptName}";
+            }
+
+            // Check if script is already attached
+            if (prefabAsset.GetComponent(scriptType) != null)
+            {
+                return $"Script '{scriptName}' is already attached to prefab at {prefabPath}";
+            }
+
+            Undo.IncrementCurrentGroup();
+            // Add the component with Undo support
+            Undo.AddComponent(prefabAsset, scriptType);
+            
+            // Save the changes
+            EditorUtility.SetDirty(prefabAsset);
+            AssetDatabase.SaveAssets();
+
+            return $"Successfully added script '{scriptName}' to prefab at {prefabPath}";
         }
 
         public static string SetScriptField(Dictionary<string, string> parameters)
         {
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
-            string assetPath = parameters.ContainsKey("script_path") ? parameters["script_path"] : null;
+            string path = parameters.ContainsKey("path") ? parameters["path"] : null;
+            string prefabPath = parameters.ContainsKey("prefab_path") ? parameters["prefab_path"] : null;
 
             string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
             string fieldName = parameters.ContainsKey("field_name") ? parameters["field_name"] : null;
@@ -108,14 +175,67 @@ namespace IndieBuff.Editor
             UnityEngine.Object targetObject = null;
             
 
+            // find object in scene hierarchy
             if (targetObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
                 targetObject = GameObject.Find(hierarchyPath);
             }
 
-            if (targetObject == null && !string.IsNullOrEmpty(assetPath))
+            // find object in case ai outputs path
+            if (targetObject == null && !string.IsNullOrEmpty(path))
             {
-                string fullPath = assetPath.StartsWith("Assets/") ? assetPath : "Assets/" + assetPath;
+                targetObject = GameObject.Find(path);
+            }
+
+            // find object in in case path is a prefab
+            if (targetObject == null && !string.IsNullOrEmpty(path))
+            {
+                targetObject = GameObject.Find(Path.GetFileNameWithoutExtension(path));
+            }
+
+            // find object in prefabs
+            if (targetObject == null && !string.IsNullOrEmpty(path))
+            {
+                string assetName = Path.GetFileNameWithoutExtension(path);
+                string[] guids = AssetDatabase.FindAssets($"{assetName} t:Prefab");
+                
+                if (guids.Length > 0)
+                {
+                    string foundPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    targetObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(foundPath);
+                }
+            }
+
+            // find object in case prefab path is a prefab
+            if (targetObject == null && !string.IsNullOrEmpty(prefabPath))
+            {
+                targetObject = GameObject.Find(Path.GetFileNameWithoutExtension(prefabPath));
+            }
+
+            // find object in prefabs
+            if (targetObject == null && !string.IsNullOrEmpty(prefabPath))
+            {
+                string assetName = Path.GetFileNameWithoutExtension(prefabPath);
+                string[] guids = AssetDatabase.FindAssets($"{assetName} t:Prefab");
+                
+                if (guids.Length > 0)
+                {
+                    string foundPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    targetObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(foundPath);
+                }
+            }
+
+            // find object in case asset path is a script
+            if (targetObject == null && !string.IsNullOrEmpty(path))
+            {
+                
+                targetObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+            }
+
+            // find object in case asset path is a script
+            if (targetObject == null && !string.IsNullOrEmpty(path))
+            {
+                string fullPath = path.StartsWith("Assets/") ? path : "Assets/" + path;
                 targetObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(fullPath);
             }
 
@@ -176,6 +296,20 @@ namespace IndieBuff.Editor
                         var referencedGO = GameObject.Find(fieldValue);
                         if (referencedGO != null)
                             field.objectReferenceValue = referencedGO;
+                        else{
+                            prefabPath = fieldValue;
+                            if (!prefabPath.StartsWith("Assets/"))
+                            {
+                                prefabPath = "Assets/" + prefabPath;
+                            }
+                            if (!prefabPath.EndsWith(".prefab"))
+                            {
+                                prefabPath += ".prefab";
+                            }
+                            referencedGO = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                            if (referencedGO != null)
+                                field.objectReferenceValue = referencedGO;
+                        }
                         break;
                     case "asset":
                         string refPath = fieldValue.StartsWith("Assets/") ? fieldValue : "Assets/" + fieldValue;
@@ -214,7 +348,7 @@ namespace IndieBuff.Editor
                 serializedObject.ApplyModifiedProperties();
 
 
-                if (!string.IsNullOrEmpty(assetPath))
+                if (!string.IsNullOrEmpty(path))
                 {
                     EditorUtility.SetDirty(scriptInstance);
                     AssetDatabase.SaveAssets();

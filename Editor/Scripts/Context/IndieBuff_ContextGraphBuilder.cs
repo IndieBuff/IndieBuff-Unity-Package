@@ -147,7 +147,8 @@ namespace IndieBuff.Editor
                     ["type"] = obj.GetType().Name,
                     ["name"] = obj.name,
                     ["instance_id"] = obj.GetInstanceID(),
-                    ["properties"] = GetSerializedProperties(obj)
+                    ["properties"] = GetSerializedProperties(obj),
+                    ["assetPath"] = AssetDatabase.GetAssetPath(obj)
                 };
 
                 if (obj is ScriptableObject scriptableObj)

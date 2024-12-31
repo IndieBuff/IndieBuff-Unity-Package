@@ -34,10 +34,6 @@ namespace IndieBuff.Editor
 
             try
             {
-                // Create backup of original file
-                string backupPath = fullPath + ".backup";
-                File.Copy(fullPath, backupPath, true);
-
                 // Read original content
                 string content = File.ReadAllText(fullPath);
                 
@@ -81,7 +77,7 @@ namespace IndieBuff.Editor
                 var match = matches[i];
                 
                 // Create the diff block
-                var diffBlock = $"\n<<<<<<< ORIGINAL\n{match.Value}\n=======\n{replacement}\n>>>>>>> UPDATED\n";
+                var diffBlock = $"\n<<<<<<< SEARCH\n{match.Value}\n=======\n{replacement}\n>>>>>>> REPLACE\n";
                 
                 // Replace the original text with the diff block
                 content = content.Remove(match.Index, match.Length).Insert(match.Index, diffBlock);
@@ -112,8 +108,8 @@ namespace IndieBuff.Editor
                 string modifiedContent = File.ReadAllText(fullPath);
                 
                 // Check if there are any remaining merge markers
-                if (modifiedContent.Contains("<<<<<<< ORIGINAL") || 
-                    modifiedContent.Contains(">>>>>>> UPDATED"))
+                if (modifiedContent.Contains("<<<<<<< SEARCH") || 
+                    modifiedContent.Contains(">>>>>>> REPLACE"))
                 {
                     return "Please resolve all merge blocks before finalizing changes";
                 }
