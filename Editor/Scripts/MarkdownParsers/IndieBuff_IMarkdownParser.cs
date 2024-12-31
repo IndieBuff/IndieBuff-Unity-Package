@@ -8,5 +8,6 @@ namespace IndieBuff.Editor
         void ParseFullMessage(string message);
         string GetFullMessage();
         void ProcessLine(string line, bool fullMessage = false);
+        void TrimMessageEndings();
     }
 }

@@ -270,12 +270,8 @@ namespace IndieBuff.Editor
                     var responseContainer = CreateAIChatResponseBox("");
                     responseArea.Add(responseContainer);
 
-                    var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
-
                     IResponseHandler responseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer);
                     responseHandler.HandleFullResponse(aiMessage);
-
-                    TrimMessageEndings(messageContainer);
                 }
             }
 

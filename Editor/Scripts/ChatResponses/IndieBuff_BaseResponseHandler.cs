@@ -47,6 +47,8 @@ namespace IndieBuff.Editor
 
                 await OnProcessingComplete();
 
+                parser.TrimMessageEndings();
+
 
             }
             catch (Exception)
@@ -58,6 +60,7 @@ namespace IndieBuff.Editor
         public void HandleFullResponse(string aiMessage)
         {
             parser.ParseFullMessage(aiMessage);
+            parser.TrimMessageEndings();
         }
 
         protected virtual Task OnStreamComplete() => Task.CompletedTask;

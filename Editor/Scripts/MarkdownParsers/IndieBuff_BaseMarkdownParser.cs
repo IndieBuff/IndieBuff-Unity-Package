@@ -189,6 +189,18 @@ namespace IndieBuff.Editor
             return $"<b>{sizeTag}{headerText}</b></size>";
         }
 
-
+        public void TrimMessageEndings()
+        {
+            foreach (var child in messageContainer.Children())
+            {
+                if (child is TextField msgLabel)
+                {
+                    if (msgLabel.value.EndsWith("\n"))
+                    {
+                        msgLabel.value = msgLabel.value.Substring(0, msgLabel.value.Length - 1);
+                    }
+                }
+            }
+        }
     }
 }
