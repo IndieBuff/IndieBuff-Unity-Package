@@ -9,5 +9,10 @@ namespace IndieBuff.Editor
         string GetFullMessage();
         void ProcessLine(string line, bool fullMessage = false);
         void TrimMessageEndings();
+        void HandleCodeBlockToggle();
+        void HandleInlineCodeBlockToggle();
+        void AddCopyButtonToCurrentMessage();
+        string TransformCodeBlock(string line);
+
     }
 }

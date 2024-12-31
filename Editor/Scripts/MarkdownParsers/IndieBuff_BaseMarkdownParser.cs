@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace IndieBuff.Editor
@@ -55,7 +56,7 @@ namespace IndieBuff.Editor
 
         public abstract void ProcessLine(string line, bool fullMessage = false);
 
-        protected void HandleCodeBlockToggle()
+        public virtual void HandleCodeBlockToggle()
         {
             if (inCodeBlock)
             {
@@ -70,7 +71,7 @@ namespace IndieBuff.Editor
             inCodeBlock = !inCodeBlock;
         }
 
-        protected void HandleInlineCodeBlockToggle()
+        public virtual void HandleInlineCodeBlockToggle()
         {
             if (inInlineCodeBlock)
             {
@@ -85,8 +86,9 @@ namespace IndieBuff.Editor
             inInlineCodeBlock = !inInlineCodeBlock;
         }
 
-        protected void AddCopyButtonToCurrentMessage()
+        public virtual void AddCopyButtonToCurrentMessage()
         {
+            Debug.Log("TESTING INSIDE BASE");
             string codeToCopy = rawCode;
             var copyButton = new Button();
             copyButton.AddToClassList("copy-button");
@@ -130,7 +132,7 @@ namespace IndieBuff.Editor
             return label;
         }
 
-        protected string TransformCodeBlock(string line)
+        public virtual string TransformCodeBlock(string line)
         {
             return syntaxHighlighter.HighlightLine(line) + "\n";
         }
