@@ -163,6 +163,7 @@ namespace IndieBuff.Editor
 
         public void FinishParsing()
         {
+            if (replaceCodeBlocks.Count == 0) return;
             Button insertCodeButton = messageContainer.parent.Q<Button>("ExecuteButton");
             insertCodeButton.style.display = DisplayStyle.Flex;
             insertCodeButton.SetEnabled(true);

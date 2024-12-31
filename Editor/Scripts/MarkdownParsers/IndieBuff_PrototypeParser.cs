@@ -168,8 +168,9 @@ namespace Indiebuff.Editor
             return parentContainer;
         }
 
-        private void EnableAllButtons()
+        public void FinishParsing()
         {
+            if (commandButtons.Count == 0) return;
             foreach (Button button in commandButtons)
             {
                 button.SetEnabled(true);
@@ -184,13 +185,6 @@ namespace Indiebuff.Editor
               {
                   IndieBuff_CommandParser.ExecuteAllCommands(parsedCommands);
               };
-
-
-        }
-
-        public void FinishParsing()
-        {
-            EnableAllButtons();
             currentMessageLabel.value += "\nHit <color=#CDB3FF>Execute All</color> to run the commands or run each manually.";
         }
 
