@@ -18,6 +18,8 @@ namespace IndieBuff.Editor
             }
 
             GameObject gameObject = new GameObject(gameObjectName);
+            Undo.IncrementCurrentGroup();
+            Undo.RegisterCreatedObjectUndo(gameObject, "Create GameObject");
 
             return "New Gameobject created with name: " + gameObject.name;
         }
@@ -65,27 +67,22 @@ namespace IndieBuff.Editor
             }
 
             GameObject gameObjectPrimative = GameObject.CreatePrimitive(primitiveTypeEnum);
-
+            Undo.IncrementCurrentGroup();
+            Undo.RegisterCreatedObjectUndo(gameObjectPrimative, "Create Primitive GameObject");
+            
             gameObjectPrimative.name = gameObjectName;
 
             return "New primative gameobject created with name: " + gameObjectPrimative.name;
         }
+        
         public static string DuplicateGameObject(Dictionary<string, string> parameters)
         {
 
             string gameObjectName = parameters.ContainsKey("game_object_name") ? parameters["game_object_name"] : null;
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -98,6 +95,8 @@ namespace IndieBuff.Editor
             }
 
             GameObject duplicate = UnityEngine.Object.Instantiate(originalGameObject, originalGameObject.transform.position, Quaternion.identity);
+            Undo.IncrementCurrentGroup();
+            Undo.RegisterCreatedObjectUndo(duplicate, "Duplicate GameObject");
 
             return "New duplicatedgameobject created with name: " + duplicate.name;
         }
@@ -105,19 +104,10 @@ namespace IndieBuff.Editor
         public static string DeleteGameObject(Dictionary<string, string> parameters)
         {
 
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
-
 
             GameObject gameObjectToDelete = null;
 
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                gameObjectToDelete = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (gameObjectToDelete == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -129,29 +119,19 @@ namespace IndieBuff.Editor
                 return "Failed to delete gameobject at path: " + hierarchyPath;
             }
 
-            UnityEngine.Object.DestroyImmediate(gameObjectToDelete);
+            Undo.IncrementCurrentGroup();
+            Undo.DestroyObjectImmediate(gameObjectToDelete);
             return "Deleted gameobject at path: " + hierarchyPath;
         }
 
         public static string AddComponent(Dictionary<string, string> parameters)
         {
 
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string componentName = parameters.ContainsKey("component_type") ? parameters["component_type"] : null;
 
-
-
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -181,16 +161,15 @@ namespace IndieBuff.Editor
                 return $"Component of type '{componentType}' already attached to gameobject of name {hierarchyPath}";
             }
 
-            originalGameObject.AddComponent(componentType);
+            Component newComponent = originalGameObject.AddComponent(componentType);
+            Undo.IncrementCurrentGroup();
+            Undo.RegisterCreatedObjectUndo(newComponent, $"Add {componentType.Name} Component");
+
             return $"Component of type '{componentType}' attached to gameobject of name {hierarchyPath}";
         }
 
         public static string RemoveComponent(Dictionary<string, string> parameters)
         {
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
@@ -198,11 +177,6 @@ namespace IndieBuff.Editor
 
 
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -218,6 +192,11 @@ namespace IndieBuff.Editor
 
             if (componentType == null)
             {
+                componentType = Type.GetType("UnityEngine." + componentName + ", UnityEngine");
+            }
+
+            if (componentType == null)
+            {
                 return "Failed to find component type: " + componentName;
             }
 
@@ -227,33 +206,20 @@ namespace IndieBuff.Editor
                 return $"Component of type '{componentType}' not attached to gameobject of name {hierarchyPath}";
             }
 
-            UnityEngine.Object.DestroyImmediate(existingComponent);
+            Undo.IncrementCurrentGroup();
+            Undo.DestroyObjectImmediate(existingComponent);
             return $"Component of type '{componentType}' removed from gameobject of name {hierarchyPath}";
         }
 
         public static string SetParent(Dictionary<string, string> parameters)
         {
 
-
-            string parentInstanceID = parameters.ContainsKey("parent_instance_id") && int.TryParse(parameters["parent_instance_id"], out int temp1)
-            ? parameters["parent_instance_id"]
-            : null;
-
             string parentHierarchyPath = parameters.ContainsKey("parent_hierarchy_path") ? parameters["parent_hierarchy_path"] : null;
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp2)
-            ? parameters["instance_id"]
-            : null;
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
 
             GameObject parentGameObject = null;
-
-            if (!string.IsNullOrEmpty(parentInstanceID))
-            {
-                parentGameObject = EditorUtility.InstanceIDToObject(int.Parse(parentInstanceID)) as GameObject;
-            }
 
             if (parentGameObject == null && !string.IsNullOrEmpty(parentHierarchyPath))
             {
@@ -265,13 +231,7 @@ namespace IndieBuff.Editor
                 return "Failed to locate parent gameobject with name: " + parentHierarchyPath;
             }
 
-
             GameObject childGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                childGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (childGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -283,31 +243,19 @@ namespace IndieBuff.Editor
                 return "Failed to locate child gameobject with name: " + hierarchyPath;
             }
 
-
-            childGameObject.transform.SetParent(parentGameObject.transform);
+            Undo.IncrementCurrentGroup();
+            Undo.SetTransformParent(childGameObject.transform, parentGameObject.transform, $"Set Parent of {childGameObject.name}");
 
             return $"Assigned child gameobject with name '{hierarchyPath}' to parent with name '{parentHierarchyPath}'";
         }
 
         public static string SetGameObjectTag(Dictionary<string, string> parameters)
         {
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string tag = parameters.ContainsKey("tag") ? parameters["tag"] : null;
 
-
-
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -326,6 +274,8 @@ namespace IndieBuff.Editor
                 UnityEditorInternal.InternalEditorUtility.AddTag(tag);
             }
 
+            Undo.IncrementCurrentGroup();
+            Undo.RecordObject(originalGameObject, "Change GameObject Tag");
             originalGameObject.tag = tag;
 
             return $"Tag named'{tag}' attached to gameobject of name {hierarchyPath}";
@@ -333,23 +283,11 @@ namespace IndieBuff.Editor
 
         public static string SetGameObjectLayer(Dictionary<string, string> parameters)
         {
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string layer = parameters.ContainsKey("layer") ? parameters["layer"] : null;
 
-
-
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -366,11 +304,22 @@ namespace IndieBuff.Editor
                 return "Failed to add layer to gameobject with name: " + hierarchyPath;
             }
 
+            Undo.IncrementCurrentGroup();
+            Undo.RecordObject(originalGameObject, "Change GameObject Layer");
+            originalGameObject.layer = LayerMask.NameToLayer(layer);
+
             return $"Layer named'{layer}' attached to gameobject of name {hierarchyPath}";
         }
 
         public static bool AddLayer(string layerName)
         {
+            // First check if the layer already exists
+            if (LayerMask.NameToLayer(layerName) != -1)
+            {
+                // Layer already exists, return true as it's available for use
+                return true;
+            }
+
             SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
             SerializedProperty layers = tagManager.FindProperty("layers");
 

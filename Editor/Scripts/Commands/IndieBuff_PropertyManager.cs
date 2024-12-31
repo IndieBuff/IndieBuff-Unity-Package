@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Collections;
+using UnityEditor.SceneManagement;
 
 namespace IndieBuff.Editor
 {
@@ -63,8 +64,12 @@ namespace IndieBuff.Editor
             Component existingComponent = originalGameObject.GetComponent(componentType);
             if (existingComponent == null)
             {
-                existingComponent = originalGameObject.AddComponent(componentType);
-
+                Undo.IncrementCurrentGroup();
+                existingComponent = Undo.AddComponent(originalGameObject, componentType);
+            }
+            else{
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(existingComponent, $"Set {propertyName} on {existingComponent.name}");
             }
 
             if (string.IsNullOrEmpty(propertyName) || string.IsNullOrEmpty(value))
@@ -179,6 +184,7 @@ namespace IndieBuff.Editor
                                             updatedArray.SetValue(newItem, existingArray.Length);
                                             prop.SetValue(existingComponent, updatedArray);
                                             EditorUtility.SetDirty(existingComponent);
+                                            EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
                                             return $"Added {value} to array in {hierarchyPath}";
                                         }
                                     }
@@ -193,6 +199,7 @@ namespace IndieBuff.Editor
                                         updatedArray.SetValue(convertedValue, existingArray.Length);
                                         prop.SetValue(existingComponent, updatedArray);
                                         EditorUtility.SetDirty(existingComponent);
+                                        EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
                                         return $"Added {value} to array in {hierarchyPath}";
                                     }
                                     catch
@@ -231,6 +238,7 @@ namespace IndieBuff.Editor
                                         currentList.Add(newItem);
                                         prop.SetValue(existingComponent, currentList);
                                         EditorUtility.SetDirty(existingComponent);
+                                        EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
                                         return $"Added {value} to list in {hierarchyPath}";
                                     }
                                 }
@@ -244,12 +252,56 @@ namespace IndieBuff.Editor
 
                         else
                         {
-                            var convertedValue = Convert.ChangeType(value, propType);
-                            prop.SetValue(existingComponent, convertedValue);
+                            try
+                            {
+                                // Check if the property type inherits from UnityEngine.Object
+                                if (typeof(UnityEngine.Object).IsAssignableFrom(propType))
+                                {
+                                    UnityEngine.Object asset = null;
+                                    
+                                    // First try direct path
+                                    asset = AssetDatabase.LoadAssetAtPath(value, propType);
+                                    
+                                    // If direct path fails, try searching for the asset
+                                    if (asset == null)
+                                    {
+                                        // Extract the file name without extension
+                                        string fileName = System.IO.Path.GetFileNameWithoutExtension(value);
+                                        // Search for assets of the specific type with matching name
+                                        string[] guids = AssetDatabase.FindAssets($"t:{propType.Name} {fileName}");
+                                        
+                                        if (guids.Length > 0)
+                                        {
+                                            string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                                            asset = AssetDatabase.LoadAssetAtPath(assetPath, propType);
+                                        }
+                                    }
+
+                                    if (asset != null)
+                                    {
+                                        prop.SetValue(existingComponent, asset);
+                                    }
+                                    else
+                                    {
+                                        return $"Failed to load asset: {value}";
+                                    }
+                                }
+                                else
+                                {
+                                    // Handle non-UnityEngine.Object types as before
+                                    var convertedValue = Convert.ChangeType(value, propType);
+                                    prop.SetValue(existingComponent, convertedValue);
+                                }
+                                
+                                EditorUtility.SetDirty(existingComponent);
+                                EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
+                                return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
+                            }
+                            catch (Exception ex)
+                            {
+                                return $"Failed to set property via reflection: {ex.Message}";
+                            }
                         }
-                        
-                        EditorUtility.SetDirty(existingComponent);
-                        return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
                     }
                     
                     else
@@ -296,6 +348,8 @@ namespace IndieBuff.Editor
             }
 
             serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(existingComponent);
+            EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
 
             return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
         }
@@ -381,10 +435,17 @@ namespace IndieBuff.Editor
 
             Transform originalGameObjectTransform = originalGameObject.transform;
 
+            if (originalGameObject != null)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(originalGameObjectTransform, $"Set Transform2D on {originalGameObject.name}");
+            }
+
             originalGameObjectTransform.position = position;
             originalGameObjectTransform.localScale = scale;
 
             EditorUtility.SetDirty(originalGameObject);
+            EditorSceneManager.MarkSceneDirty(originalGameObject.scene);
 
             return $"Transform set with position '{position}' and scale '{scale}' to gameobject {hierarchyPath}";
         }
@@ -490,11 +551,15 @@ namespace IndieBuff.Editor
 
             Transform originalGameObjectTransform = originalGameObject.transform;
 
+            if (originalGameObjectTransform != null)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(originalGameObjectTransform, $"Set Transform3D on {originalGameObject.name}");
+            }
+
             originalGameObjectTransform.position = position;
             originalGameObjectTransform.localScale = scale;
             originalGameObjectTransform.localRotation = Quaternion.Euler(rotation);
-
-            EditorUtility.SetDirty(originalGameObject);
 
             return $"Transform set with position '{position}' rotation '{rotation}' and scale '{scale}' to gameobject {hierarchyPath}";
         }
@@ -535,6 +600,12 @@ namespace IndieBuff.Editor
 
             SerializedObject serializedObject = new SerializedObject(scriptAsset);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
+
+            if (scriptAsset != null)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.RecordObject(scriptAsset, $"Modify {propertyName} on {scriptAsset.name}");
+            }
 
             try
             {
