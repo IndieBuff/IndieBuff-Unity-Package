@@ -14,14 +14,16 @@ namespace IndieBuff.Editor
         private int typingDelayMs = 10;
         private bool inReplaceBlock;
         private string replaceCode = "";
+        private string aiModel;
 
         private List<string> replaceCodeBlocks = new List<string>();
 
 
-        public ScriptParser(VisualElement responseContainer)
+        public ScriptParser(VisualElement responseContainer, string aiModel)
              : base(responseContainer)
         {
             inReplaceBlock = false;
+            this.aiModel = aiModel;
         }
 
         public override void ParseFullMessage(string message)
@@ -169,14 +171,36 @@ namespace IndieBuff.Editor
             insertCodeButton.SetEnabled(true);
             insertCodeButton.text = "Insert All Code";
 
-            insertCodeButton.clicked += () =>
-              {
-                  foreach (string codeBlock in replaceCodeBlocks)
-                  {
-                      Debug.Log("INSERT CODE PLACEHOLDER: " + codeBlock);
-                      // TODO: Insert ALL code into project script
-                  }
-              };
+            string fullMessage = GetFullMessage();
+
+
+            if (aiModel == "gpt-4o-mini")
+            {
+                var wholeParser = new WholeFileParser();
+                var edits = wholeParser.GetEdits(fullMessage);
+
+                insertCodeButton.clicked += () =>
+                {
+
+                    wholeParser.ApplyEdits(edits);
+                };
+            }
+            else
+            {
+                var diffParser = new DiffFileParser();
+                var edits = diffParser.GetEdits(GetFullMessage());
+                string rootPath = Application.dataPath;
+                List<string> absFilenames = new List<string>();
+                foreach (var edit in edits)
+                {
+                    absFilenames.Add(edit.filename);
+                }
+                insertCodeButton.clicked += () =>
+                {
+
+                    diffParser.ApplyEdits(edits, rootPath, absFilenames);
+                };
+            }
         }
 
         private async Task TypeTextAnimation(string text)
