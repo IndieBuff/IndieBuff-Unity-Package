@@ -6,9 +6,13 @@ namespace IndieBuff.Editor
 {
     public class DiffScriptParser : ScriptParser
     {
+        private List<(string filename, string original, string updated)> edits;
+        private DiffFileParser parser;
         public DiffScriptParser(VisualElement responseContainer)
      : base(responseContainer)
         {
+            edits = new List<(string filename, string original, string updated)>();
+            parser = new DiffFileParser();
 
         }
 
@@ -22,8 +26,7 @@ namespace IndieBuff.Editor
 
             string fullMessage = GetFullMessage();
 
-            var diffParser = new DiffFileParser();
-            var edits = diffParser.GetEdits(GetFullMessage());
+            edits = parser.GetEdits(GetFullMessage());
             string rootPath = Application.dataPath;
             List<string> absFilenames = new List<string>();
             foreach (var edit in edits)
@@ -32,7 +35,7 @@ namespace IndieBuff.Editor
             }
             insertCodeButton.clicked += () =>
             {
-                diffParser.ApplyEdits(edits, rootPath, absFilenames);
+                parser.ApplyEdits(edits, rootPath, absFilenames);
             };
         }
 
@@ -54,8 +57,15 @@ namespace IndieBuff.Editor
             }
         }
 
-        public override void InsertReplaceBlock(string codeToInsert)
+        public override void InsertReplaceBlock(int index)
         {
+            if (index >= edits.Count) return;
+            var filteredEdits = new List<(string filename, string original, string updated)> { edits[index] };
+            var filteredAbsFilenames = new List<string> { edits[index].filename };
+
+
+            string rootPath = Application.dataPath;
+            parser.ApplyEdits(filteredEdits, rootPath, filteredAbsFilenames);
 
         }
 

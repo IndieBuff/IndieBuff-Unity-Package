@@ -95,7 +95,7 @@ namespace IndieBuff.Editor
             {
                 role = message.Role,
                 content = message.Content,
-                cmd = "hello"
+                cmd = message.ChatMode,
             }).ToList();
             requestData.history = messageHistory;
             var jsonPayload = JsonUtility.ToJson(requestData);
@@ -161,7 +161,7 @@ namespace IndieBuff.Editor
         {
             public string role;
             public string content;
-            public string cmd;
+            public ChatMode cmd;
         }
 
     }

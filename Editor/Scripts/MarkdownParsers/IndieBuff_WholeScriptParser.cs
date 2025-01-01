@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -6,12 +7,13 @@ namespace IndieBuff.Editor
     public class WholeScriptParser : ScriptParser
     {
         private WholeFileParser parser;
+        private List<(string filename, string source, List<string> lines)> edits;
 
         public WholeScriptParser(VisualElement responseContainer)
      : base(responseContainer)
         {
+            edits = new List<(string filename, string source, List<string> lines)>();
             parser = new WholeFileParser();
-
         }
 
         public override void FinishParsing()
@@ -24,7 +26,7 @@ namespace IndieBuff.Editor
 
             string fullMessage = GetFullMessage();
 
-            var edits = parser.GetEdits(fullMessage);
+            edits = parser.GetEdits(fullMessage);
 
             insertCodeButton.clicked += () =>
             {
@@ -39,9 +41,11 @@ namespace IndieBuff.Editor
         }
 
 
-        public override void InsertReplaceBlock(string codeToInsert)
+        public override void InsertReplaceBlock(int index)
         {
-
+            if (index >= edits.Count) return;
+            var filteredEdits = new List<(string filename, string source, List<string> lines)> { edits[index] };
+            parser.ApplyEdits(filteredEdits);
         }
 
     }

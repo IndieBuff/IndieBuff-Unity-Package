@@ -15,12 +15,14 @@ namespace IndieBuff.Editor
         protected bool inReplaceBlock;
         protected string replaceCode = "";
         protected List<string> replaceCodeBlocks = new List<string>();
+        protected int numReplaceBlocks;
 
 
         public ScriptParser(VisualElement responseContainer)
              : base(responseContainer)
         {
             inReplaceBlock = false;
+            numReplaceBlocks = 0;
         }
 
         public override void ParseFullMessage(string message)
@@ -96,6 +98,7 @@ namespace IndieBuff.Editor
             var insertButton = new Button();
             insertButton.AddToClassList("insert-button");
             insertButton.tooltip = "Inserts generated code into project script";
+            int index = numReplaceBlocks - 1;
 
             var insertButtonIcon = new VisualElement();
             insertButtonIcon.AddToClassList("insert-button-icon");
@@ -105,21 +108,21 @@ namespace IndieBuff.Editor
 
             insertButton.clickable.clicked += () =>
             {
-                Debug.Log("INSERT CODE PLACEHOLDER: " + codeToInsert);
                 // TODO: Insert code into project script
-                InsertReplaceBlock(codeToInsert);
+                InsertReplaceBlock(index);
             };
 
             currentMessageLabel.Add(insertButton);
 
         }
 
-        public abstract void InsertReplaceBlock(string codeToInsert);
+        public abstract void InsertReplaceBlock(int editIndex);
 
         public override void HandleCodeBlockToggle()
         {
             if (inCodeBlock)
             {
+                numReplaceBlocks++;
                 AddCopyButtonToCurrentMessage();
                 AddInsertCodeButtonToCurrentMessage();
                 currentMessageLabel = null;
