@@ -264,5 +264,64 @@ namespace IndieBuff.Editor
 
             return $"Text set for: {hierarchyPath}";
         }
+
+        public static string SetImage(Dictionary<string, string> parameters)
+        {
+            string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
+            string imagePath = parameters.ContainsKey("image") ? parameters["image"] : null;
+            string imageType = parameters.ContainsKey("image_type") ? parameters["image_type"] : "Simple";
+
+            GameObject element = GameObject.Find(hierarchyPath);
+            if (element == null)
+            {
+                return $"Element not found: {hierarchyPath}";
+            }
+
+            Image imageComponent = element.GetComponent<Image>();
+            if (imageComponent == null)
+            {
+                return $"No Image component found on: {hierarchyPath}";
+            }
+
+            Undo.RecordObject(imageComponent, "Modify Image");
+
+            // Set the sprite if a path is provided
+            if (!string.IsNullOrEmpty(imagePath))
+            {
+                Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(imagePath);
+                if (sprite == null)
+                {
+                    // Try to find the sprite by name if direct path fails
+                    string[] guids = AssetDatabase.FindAssets($"t:Sprite {System.IO.Path.GetFileNameWithoutExtension(imagePath)}");
+                    if (guids.Length > 0)
+                    {
+                        string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                        sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+                    }
+                }
+
+                if (sprite != null)
+                {
+                    imageComponent.sprite = sprite;
+                }
+                else
+                {
+                    return $"Failed to load sprite at path: {imagePath}";
+                }
+            }
+
+            // Set image type
+            if (!string.IsNullOrEmpty(imageType))
+            {
+                if (System.Enum.TryParse<Image.Type>(imageType, true, out Image.Type type))
+                {
+                    imageComponent.type = type;
+                }
+            }
+
+            EditorUtility.SetDirty(element);
+
+            return $"Image modified for: {hierarchyPath}";
+        }
     }
 }
