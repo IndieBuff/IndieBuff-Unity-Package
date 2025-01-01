@@ -10,6 +10,84 @@ namespace IndieBuff.Editor
 
     public class UIManager : ICommandManager
     {
+
+        public static string SetRectTransform(Dictionary<string, string> parameters)
+        {
+            string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
+            string sizeDelta = parameters.ContainsKey("size_delta") ? parameters["size_delta"] : null;
+            string pivot = parameters.ContainsKey("pivot") ? parameters["pivot"] : null;
+            string anchoredMin = parameters.ContainsKey("anchored_min") ? parameters["anchored_min"] : null;
+            string anchoredMax = parameters.ContainsKey("anchored_max") ? parameters["anchored_max"] : null;
+            string anchoredPosition = parameters.ContainsKey("anchored_position") ? parameters["anchored_position"] : null;
+
+            GameObject element = GameObject.Find(hierarchyPath);
+            if (element == null)
+            {
+                return $"Element not found: {hierarchyPath}";
+            }
+
+            RectTransform rectTransform = element.GetComponent<RectTransform>();
+            if (rectTransform == null)
+            {
+                return $"RectTransform component not found on: {hierarchyPath}";
+            }
+
+            Undo.RecordObject(rectTransform, "Modify RectTransform");
+
+            // Handle size delta
+            if (!string.IsNullOrEmpty(sizeDelta))
+            {
+                string[] values = sizeDelta.Split(',');
+                if (values.Length == 2 && float.TryParse(values[0], out float x) && float.TryParse(values[1], out float y))
+                {
+                    rectTransform.sizeDelta = new Vector2(x, y);
+                }
+            }
+
+            // Handle pivot
+            if (!string.IsNullOrEmpty(pivot))
+            {
+                string[] values = pivot.Split(',');
+                if (values.Length == 2 && float.TryParse(values[0], out float x) && float.TryParse(values[1], out float y))
+                {
+                    rectTransform.pivot = new Vector2(x, y);
+                }
+            }
+
+            // Handle anchored min
+            if (!string.IsNullOrEmpty(anchoredMin))
+            {
+                string[] values = anchoredMin.Split(',');
+                if (values.Length == 2 && float.TryParse(values[0], out float x) && float.TryParse(values[1], out float y))
+                {
+                    rectTransform.anchorMin = new Vector2(x, y);
+                }
+            }
+
+            // Handle anchored max
+            if (!string.IsNullOrEmpty(anchoredMax))
+            {
+                string[] values = anchoredMax.Split(',');
+                if (values.Length == 2 && float.TryParse(values[0], out float x) && float.TryParse(values[1], out float y))
+                {
+                    rectTransform.anchorMax = new Vector2(x, y);
+                }
+            }
+
+            // Handle anchored position
+            if (!string.IsNullOrEmpty(anchoredPosition))
+            {
+                string[] values = anchoredPosition.Split(',');
+                if (values.Length == 2 && float.TryParse(values[0], out float x) && float.TryParse(values[1], out float y))
+                {
+                    rectTransform.anchoredPosition = new Vector2(x, y);
+                }
+            }
+
+            EditorUtility.SetDirty(element);
+            return $"RectTransform modified for: {hierarchyPath}";
+        }
+
         public static string CreateUIElement(Dictionary<string, string> parameters)
         {
             string elementName = parameters.ContainsKey("element_name") ? parameters["element_name"] : "New UI Element";
