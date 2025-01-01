@@ -81,9 +81,7 @@ namespace IndieBuff.Editor
 
         private void UpdatePlaceholderText()
         {
-            placeholderLabel.text = IndieBuff_UserInfo.Instance.currentMode == ChatMode.Chat
-                ? "Ask IndieBuff for help or code"
-                : "Tell IndieBuff what to do";
+            placeholderLabel.text = IndieBuff_ChatModeCommands.GetPlaceholderString(IndieBuff_UserInfo.Instance.currentMode);
         }
 
         private async Task SendMessageAsync()

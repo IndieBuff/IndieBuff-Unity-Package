@@ -35,6 +35,17 @@ namespace IndieBuff.Editor
         {
             return CommandMappings.FirstOrDefault(x => x.Value == mode).Key;
         }
+
+        public static string GetPlaceholderString(ChatMode mode)
+        {
+            return mode switch
+            {
+                ChatMode.Chat => "Ask IndieBuff any Unity question",
+                ChatMode.Script => "Have IndieBuff write code for you",
+                ChatMode.Prototype => "Tell IndieBuff what to make",
+                _ => throw new ArgumentException($"Unsupported chat mode: {mode}")
+            };
+        }
     }
 
 }
