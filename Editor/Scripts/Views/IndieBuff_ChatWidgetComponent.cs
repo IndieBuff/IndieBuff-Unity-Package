@@ -54,6 +54,7 @@ namespace IndieBuff.Editor
 
                         if (IndieBuff_ChatModeCommands.TryGetChatMode(command, out ChatMode newMode))
                         {
+                            if (IndieBuff_UserInfo.Instance.currentUser.currentPlan == "personal" && newMode != ChatMode.Chat) return;
                             IndieBuff_UserInfo.Instance.currentMode = newMode;
                             Debug.Log(IndieBuff_UserInfo.Instance.currentMode);
                             RemoveSlashCommand();

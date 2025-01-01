@@ -17,10 +17,12 @@ namespace IndieBuff.Editor
         private VisualTreeAsset modeSelectAsset;
         private List<string> availableModes;
         private string currentSelectedMode;
+        private Dictionary<string, VisualElement> modeToIconMapping;
 
         public IndieBuff_ChatModeSelectComponent()
         {
             availableModes = new List<string>();
+            modeToIconMapping = new Dictionary<string, VisualElement>();
         }
 
         public void Initialize()
@@ -50,6 +52,18 @@ namespace IndieBuff.Editor
             modeSelectContainer = root.Q<VisualElement>("AIModelSelectionContainer");
 
             SetupModeSelectionUI();
+
+            IndieBuff_UserInfo.Instance.onChatModeChanged += OnChatModeChanged;
+        }
+
+        private void OnChatModeChanged()
+        {
+            string newMode = IndieBuff_ChatModeCommands.GetChatModeCommand(IndieBuff_UserInfo.Instance.currentMode);
+
+            if (!string.IsNullOrEmpty(newMode))
+            {
+                UpdateSelection(newMode);
+            }
         }
 
         private void SetupModeSelectionUI()
@@ -75,7 +89,7 @@ namespace IndieBuff.Editor
                     chatModeInfo.Add(lockIcon);
                     lockIcon.style.display = DisplayStyle.Flex;
                     chatModeSelectionButton.SetEnabled(false);
-                    chatModeSelectionButton.tooltip = "Upgrade to unlock all models!";
+                    chatModeSelectionButton.tooltip = "Upgrade to unlock chat modes!";
                 }
 
 
@@ -91,11 +105,14 @@ namespace IndieBuff.Editor
                 chatModeSelectionButton.Add(chatModeSelectedIcon);
                 chatModeSelectedIcon.style.visibility = Visibility.Hidden;
 
+                modeToIconMapping[mode] = chatModeSelectedIcon;
+
                 if (!isLockedMode)
                 {
                     chatModeSelectionButton.clicked += () =>
                     {
-                        UpdateSelection(mode, chatModeSelectedIcon);
+                        UpdateSelection(mode);
+                        IndieBuff_UserInfo.Instance.currentMode = IndieBuff_ChatModeCommands.CommandMappings[mode];
                     };
                 }
 
@@ -104,25 +121,26 @@ namespace IndieBuff.Editor
 
                 if (currentSelectedMode == null && IndieBuff_ChatModeCommands.CommandMappings[mode] == IndieBuff_UserInfo.Instance.currentMode)
                 {
-                    UpdateSelection(mode, chatModeSelectedIcon);
+                    UpdateSelection(mode);
                 }
             }
         }
 
-        private void UpdateSelection(string mode, VisualElement selectedIcon)
+        private void UpdateSelection(string mode)
         {
             currentSelectedMode = mode;
 
-            var allSelectedIcons = modeSelectContainer.Query<VisualElement>(className: "ai-model-selected-icon").ToList();
-            foreach (var icon in allSelectedIcons)
+            foreach (var iconPair in modeToIconMapping)
             {
-                icon.style.visibility = Visibility.Hidden;
-                icon.parent.RemoveFromClassList("selected");
+                iconPair.Value.style.visibility = Visibility.Hidden;
+                iconPair.Value.parent.RemoveFromClassList("selected");
             }
 
-            IndieBuff_UserInfo.Instance.currentMode = IndieBuff_ChatModeCommands.CommandMappings[mode];
-            selectedIcon.style.visibility = Visibility.Visible;
-            selectedIcon.parent.AddToClassList("selected");
+            if (modeToIconMapping.TryGetValue(mode, out var selectedIcon))
+            {
+                selectedIcon.style.visibility = Visibility.Visible;
+                selectedIcon.parent.AddToClassList("selected");
+            }
         }
 
         public VisualElement GetRoot()
