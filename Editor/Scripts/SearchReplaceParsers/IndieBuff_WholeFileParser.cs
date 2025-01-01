@@ -151,12 +151,16 @@ public class WholeFileParser
             // apply the changes
             string existingContent = File.Exists(fullPath) ? File.ReadAllText(fullPath) : "";
             string newContent = string.Join(Environment.NewLine, lines);
-            string blockContent = $"<<<<<<< SEARCH\n{existingContent}\n=======\n{newContent}\n>>>>>>> REPLACE";
+            string blockContent = "";
 
             if (!File.Exists(fullPath))
             {
                 Debug.Log("Creating new file " + fullPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+                blockContent = newContent;
+            }
+            else{
+                blockContent = $"<<<<<<< SEARCH\n{existingContent}\n=======\n{newContent}\n>>>>>>> REPLACE";
             }
 
             File.WriteAllText(fullPath, blockContent);
