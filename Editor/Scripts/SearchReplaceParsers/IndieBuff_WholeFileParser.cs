@@ -153,6 +153,12 @@ public class WholeFileParser
             string newContent = string.Join(Environment.NewLine, lines);
             string blockContent = $"<<<<<<< SEARCH\n{existingContent}\n=======\n{newContent}\n>>>>>>> REPLACE";
 
+            if (!File.Exists(fullPath))
+            {
+                Debug.Log("Creating new file " + fullPath);
+                Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            }
+
             File.WriteAllText(fullPath, blockContent);
             AssetDatabase.Refresh();
 

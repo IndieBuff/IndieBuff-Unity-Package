@@ -19,8 +19,8 @@ public class DiffFileParser
     private readonly Regex updatedPattern = new Regex(UPDATED);
 
     public IEnumerable<(string filename, string original, string updated)> FindOriginalUpdateBlocks(
-        string content, 
-        string fence = FENCE, 
+        string content,
+        string fence = FENCE,
         HashSet<string> validFilenames = null)
     {
         string[] lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
@@ -39,7 +39,7 @@ public class DiffFileParser
         {
             string line = lines[i];
 
-            bool nextIsEditblock = (i + 1 < lines.Length) && 
+            bool nextIsEditblock = (i + 1 < lines.Length) &&
                                  headPattern.IsMatch(lines[i + 1].Trim());
 
 
@@ -47,7 +47,7 @@ public class DiffFileParser
             {
                 (string filename, string original, string updated) result;
                 string processed = string.Empty;
-                
+
                 try
                 {
                     result = ProcessBlock(lines, ref i, fence, validFilenames, currentFilename, dividerPattern, updatedPattern);
@@ -70,10 +70,10 @@ public class DiffFileParser
     }
 
     private (string filename, string original, string updated) ProcessBlock(
-        string[] lines, 
-        ref int i, 
-        string fence, 
-        HashSet<string> validFilenames, 
+        string[] lines,
+        ref int i,
+        string fence,
+        HashSet<string> validFilenames,
         string currentFilename,
         Regex dividerPattern,
         Regex updatedPattern)
@@ -82,15 +82,15 @@ public class DiffFileParser
         if (i + 1 < lines.Length && dividerPattern.IsMatch(lines[i + 1].Trim()))
         {
             filename = FindFilename(
-                lines.Skip(Math.Max(0, i - 3)).Take(3).ToArray(), 
-                fence, 
+                lines.Skip(Math.Max(0, i - 3)).Take(3).ToArray(),
+                fence,
                 null);
         }
         else
         {
             filename = FindFilename(
-                lines.Skip(Math.Max(0, i - 3)).Take(3).ToArray(), 
-                fence, 
+                lines.Skip(Math.Max(0, i - 3)).Take(3).ToArray(),
+                fence,
                 validFilenames);
         }
 
@@ -121,16 +121,16 @@ public class DiffFileParser
 
         var updatedText = new List<string>();
         i++;
-        while (i < lines.Length && 
-               !updatedPattern.IsMatch(lines[i].Trim()) && 
+        while (i < lines.Length &&
+               !updatedPattern.IsMatch(lines[i].Trim()) &&
                !dividerPattern.IsMatch(lines[i].Trim()))
         {
             updatedText.Add(lines[i]);
             i++;
         }
 
-        if (i >= lines.Length || 
-            (!updatedPattern.IsMatch(lines[i].Trim()) && 
+        if (i >= lines.Length ||
+            (!updatedPattern.IsMatch(lines[i].Trim()) &&
              !dividerPattern.IsMatch(lines[i].Trim())))
         {
             throw new ArgumentException("Expected '>>>>>>>' or '======='");
@@ -152,7 +152,7 @@ public class DiffFileParser
 
         // Go back through the 3 preceding lines
         var reversedLines = lines.Reverse().Take(3).ToList();
-        
+
         var filenames = new List<string>();
         foreach (var line in reversedLines)
         {
@@ -245,12 +245,12 @@ public class DiffFileParser
 
     public List<(string filename, string original, string updated)> GetEdits(string content)
     {
-        
+
         // Get all blocks including
         var allEdits = FindOriginalUpdateBlocks(
             content,
             FENCE,
-            null 
+            null
         ).ToList();
 
         // Return only file edits
@@ -262,7 +262,7 @@ public class DiffFileParser
 
 
     public List<(string path, string original, string updated)> ApplyEdits(
-        List<(string path, string original, string updated)> edits, 
+        List<(string path, string original, string updated)> edits,
         string rootPath,
         List<string> absFilenames,
         bool dryRun = false)
@@ -311,6 +311,7 @@ public class DiffFileParser
             if (!File.Exists(fullPath))
             {
                 Debug.Log("Creating new file " + fullPath);
+                Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
                 newContent = DoReplace(fullPath, "", original, updated, FENCE);
             }
 
@@ -322,14 +323,12 @@ public class DiffFileParser
                 {
                     File.WriteAllText(fullPath, newContent);
                     AssetDatabase.Refresh();
-                    
                     // Convert the full path to an asset path (must start with "Assets/")
                     string assetPath = fullPath;
                     if (!assetPath.StartsWith("Assets/"))
                     {
                         assetPath = "Assets/" + path;
                     }
-                    
                     // Open the file in the editor
                     EditorUtility.OpenWithDefaultApp(assetPath);
                 }
@@ -377,7 +376,7 @@ public class DiffFileParser
                 errorMessage += $"Are you sure you need this SEARCH/REPLACE block?\n";
                 errorMessage += $"The REPLACE lines are already in {path}!\n\n";
             }
-            
+
         }
 
         errorMessage += "The SEARCH section must exactly match an existing block of lines including all white space, comments, indentation, docstrings, etc\n";
@@ -430,7 +429,7 @@ public class DiffFileParser
 
         // Split into lines
         string[] lines = res.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        
+
         if (lines.Length == 0)
         {
             return res;
@@ -443,8 +442,8 @@ public class DiffFileParser
         }
 
         // Remove fence lines if present
-        if (lines.Length >= 2 && 
-            lines[0].StartsWith(fence[0]) && 
+        if (lines.Length >= 2 &&
+            lines[0].StartsWith(fence[0]) &&
             lines[lines.Length - 1].StartsWith(fence[1]))
         {
             lines = lines.Skip(1).Take(lines.Length - 2).ToArray();
@@ -452,7 +451,7 @@ public class DiffFileParser
 
         // Join lines back together
         res = string.Join(Environment.NewLine, lines);
-        
+
         // Ensure trailing newline
         if (!string.IsNullOrEmpty(res) && !res.EndsWith(Environment.NewLine))
         {
@@ -468,7 +467,7 @@ public class DiffFileParser
         var (wholePrepped, wholeLines) = Prep(whole);
         var (partPrepped, partLines) = Prep(part);
         var (replacePrepped, replaceLines) = Prep(replace);
-        
+
         // Try perfect match or whitespace-only differences
         string result = PerfectOrWhitespace(wholeLines, partLines, replaceLines);
         if (!string.IsNullOrEmpty(result))
@@ -510,12 +509,12 @@ public class DiffFileParser
         {
             content += "\n";
         }
-        
+
         string[] lines = content.Split(
             new[] { "\r\n", "\r", "\n" },
             StringSplitOptions.None
         );
-        
+
         return (content, lines);
     }
 
@@ -528,7 +527,8 @@ public class DiffFileParser
             Debug.Log("PerfectReplace succeeded");
             return result;
         }
-        else{
+        else
+        {
             Debug.Log("PerfectReplace failed");
         }
 
@@ -539,7 +539,8 @@ public class DiffFileParser
             Debug.Log("ReplacePartWithMissingLeadingWhitespace succeeded");
             return result;
         }
-        else{
+        else
+        {
             Debug.Log("ReplacePartWithMissingLeadingWhitespace failed");
         }
 
@@ -553,7 +554,7 @@ public class DiffFileParser
                             .SkipWhile(string.IsNullOrWhiteSpace)
                             .Reverse()
                             .ToArray();
-        
+
         int partLen = partLines.Length;
 
         // Instead of looking for Update(), look for the first line of our search block
@@ -564,7 +565,7 @@ public class DiffFileParser
         for (int i = 0; i < wholeLines.Length - partLen + 1; i++)
         {
             if (wholeLines[i] == firstSearchLine)
-            {                
+            {
                 // Check if all lines match at this position
                 bool allLinesMatch = true;
                 for (int j = 0; j < partLen; j++)
@@ -585,7 +586,7 @@ public class DiffFileParser
                         .Concat(replaceLines)
                         .Concat(new[] { ">>>>>>> REPLACE" })
                         .Concat(wholeLines.Skip(i + partLen));
-                        
+
                     return string.Join(Environment.NewLine, result);
                 }
                 else
@@ -626,7 +627,7 @@ public class DiffFileParser
         for (int i = 0; i < wholeLines.Length - numPartLines + 1; i++)
         {
             string addLeading = MatchButForLeadingWhitespace(
-                wholeLines.Skip(i).Take(numPartLines).ToArray(), 
+                wholeLines.Skip(i).Take(numPartLines).ToArray(),
                 partLines
             );
 
@@ -635,9 +636,9 @@ public class DiffFileParser
                 continue;
             }
 
-            replaceLines = replaceLines.Select(rline => 
+            replaceLines = replaceLines.Select(rline =>
                 !string.IsNullOrWhiteSpace(rline) ? addLeading + rline : rline).ToArray();
-            
+
             var result = wholeLines.Take(i)
                 .Concat(new[] { "<<<<<<< SEARCH" })
                 .Concat(wholeLines.Skip(i).Take(numPartLines))
@@ -645,7 +646,7 @@ public class DiffFileParser
                 .Concat(replaceLines)
                 .Concat(new[] { ">>>>>>> REPLACE" })
                 .Concat(wholeLines.Skip(i + numPartLines));
-            
+
             return string.Join(Environment.NewLine, result);
         }
 
@@ -744,4 +745,4 @@ public class DiffFileParser
 
         return (double)matches / totalLength;
     }
-} 
+}
