@@ -16,28 +16,37 @@ namespace IndieBuff.Editor
         public static string SetProperty(Dictionary<string, string> parameters)
         {
 
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
+            string prefabPath = parameters.ContainsKey("prefab_path") ? parameters["prefab_path"] : null;
 
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string componentName = parameters.ContainsKey("component_type") ? parameters["component_type"] : null;
 
             string propertyName = parameters.ContainsKey("property_name") ? parameters["property_name"] : null;
+
             string value = parameters.ContainsKey("value") ? parameters["value"] : null;
 
-
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
                 originalGameObject = GameObject.Find(hierarchyPath);
+            }
+
+            if ((originalGameObject == null && !string.IsNullOrEmpty(prefabPath)))
+            {
+                if (!prefabPath.StartsWith("Assets/", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    prefabPath = Path.Combine("Assets/", prefabPath);
+                }
+
+                // Ensure path ends with .prefab
+                if (!prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    prefabPath += ".prefab";
+                }
+
+                originalGameObject = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             }
 
             if (originalGameObject == null || string.IsNullOrEmpty(componentName))
@@ -62,7 +71,29 @@ namespace IndieBuff.Editor
                 return "Failed to find component type: " + componentName;
             }
 
-            Component existingComponent = originalGameObject.GetComponent(componentType);
+            Component existingComponent = null;
+            
+            // For UI components, we need to use the full assembly-qualified name because they not in the component namespace
+            if(componentType.ToString().Contains("UIElements") || componentType.ToString().Contains("UI.Image")){
+                
+                string fullComponentName = "UnityEngine.UI." + componentName + ", UnityEngine.UI";
+                componentType = Type.GetType(fullComponentName);
+                existingComponent = originalGameObject.GetComponent(componentType);
+                
+                if (existingComponent == null) {
+                    existingComponent = originalGameObject.AddComponent(componentType);
+                }
+            }
+            else{
+                try{
+                    existingComponent = originalGameObject.GetComponent(componentType);
+                }
+                catch (Exception)
+                {
+                    return "Failed to get component. Component not a valid component type";
+                }
+            }
+
             if (existingComponent == null)
             {
                 Undo.IncrementCurrentGroup();
@@ -84,6 +115,10 @@ namespace IndieBuff.Editor
             }
             SerializedObject serializedObject = new SerializedObject(existingComponent);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
+
+            if(!string.IsNullOrEmpty(prefabPath)){
+                PrefabUtility.RecordPrefabInstancePropertyModifications(originalGameObject);
+            }
 
             if (property == null)
             {
@@ -122,6 +157,13 @@ namespace IndieBuff.Editor
                 return "Error when parsring property type";
             }
 
+            if (!string.IsNullOrEmpty(prefabPath))
+            {
+                EditorUtility.SetDirty(originalGameObject);
+                AssetDatabase.SaveAssets();
+                return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
+            }
+
             serializedObject.ApplyModifiedProperties();
             EditorUtility.SetDirty(existingComponent);
             EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
@@ -131,24 +173,13 @@ namespace IndieBuff.Editor
 
         public static string SetTransform2DProperty(Dictionary<string, string> parameters)
         {
-
-            string instanceID = parameters.ContainsKey("instance_id") && int.TryParse(parameters["instance_id"], out int temp)
-            ? parameters["instance_id"]
-            : null;
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string localPosition = parameters.ContainsKey("position") ? parameters["position"] : null;
             string localRotation = parameters.ContainsKey("rotation") ? parameters["rotation"] : null;
             string localScale = parameters.ContainsKey("scale") ? parameters["scale"] : null;
 
-
             GameObject originalGameObject = null;
-
-            if (!string.IsNullOrEmpty(instanceID))
-            {
-                originalGameObject = EditorUtility.InstanceIDToObject(int.Parse(instanceID)) as GameObject;
-            }
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
@@ -159,6 +190,7 @@ namespace IndieBuff.Editor
             {
                 return "Could not locate gameobject" + hierarchyPath;
             }
+
 
             if (string.IsNullOrEmpty(localPosition))
             {
@@ -210,38 +242,35 @@ namespace IndieBuff.Editor
 
             Transform originalGameObjectTransform = originalGameObject.transform;
 
-            if (originalGameObject != null)
-            {
-                Undo.IncrementCurrentGroup();
-                Undo.RecordObject(originalGameObjectTransform, $"Set Transform2D on {originalGameObject.name}");
-            }
+            Undo.IncrementCurrentGroup();
+            Undo.RecordObject(originalGameObjectTransform, $"Set Transform2D on {originalGameObject.name}");
 
             originalGameObjectTransform.position = position;
             originalGameObjectTransform.localScale = scale;
 
             EditorUtility.SetDirty(originalGameObject);
+
             EditorSceneManager.MarkSceneDirty(originalGameObject.scene);
+            
 
             return $"Transform set with position '{position}' and scale '{scale}' to gameobject {hierarchyPath}";
         }
 
         public static string SetTransform3DProperty(Dictionary<string, string> parameters)
         {
-
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
 
             string localPosition = parameters.ContainsKey("position") ? parameters["position"] : null;
             string localRotation = parameters.ContainsKey("rotation") ? parameters["rotation"] : null;
             string localScale = parameters.ContainsKey("scale") ? parameters["scale"] : null;
 
-
             GameObject originalGameObject = null;
-
 
             if (originalGameObject == null && !string.IsNullOrEmpty(hierarchyPath))
             {
                 originalGameObject = GameObject.Find(hierarchyPath);
             }
+
 
             if (originalGameObject == null)
             {
@@ -326,15 +355,16 @@ namespace IndieBuff.Editor
 
             Transform originalGameObjectTransform = originalGameObject.transform;
 
-            if (originalGameObjectTransform != null)
-            {
-                Undo.IncrementCurrentGroup();
-                Undo.RecordObject(originalGameObjectTransform, $"Set Transform3D on {originalGameObject.name}");
-            }
+            Undo.IncrementCurrentGroup();
+            Undo.RecordObject(originalGameObjectTransform, $"Set Transform3D on {originalGameObject.name}");
 
             originalGameObjectTransform.position = position;
             originalGameObjectTransform.localScale = scale;
             originalGameObjectTransform.localRotation = Quaternion.Euler(rotation);
+
+            EditorUtility.SetDirty(originalGameObject);
+
+            EditorSceneManager.MarkSceneDirty(originalGameObject.scene);
 
             return $"Transform set with position '{position}' rotation '{rotation}' and scale '{scale}' to gameobject {hierarchyPath}";
         }
@@ -604,18 +634,50 @@ namespace IndieBuff.Editor
                             // Check if it's a Color property
                             if (propType == typeof(Color))
                             {
-                                string[] components = value.Trim('(', ')').Split(',');
-                                if (components.Length == 4 &&
-                                    float.TryParse(components[0], out float r) &&
-                                    float.TryParse(components[1], out float g) &&
-                                    float.TryParse(components[2], out float b) &&
-                                    float.TryParse(components[3], out float a))
+                                bool colorSet = false;
+                                Color finalColor = Color.white;
+
+                                // Try RGBA format
+                                string[] rgbaValues = value.Replace("RGBA(", "").Replace("RGB(", "").Trim('(', ')').Split(',');
+                                if (rgbaValues.Length >= 3) // Allow both RGB and RGBA
                                 {
-                                    prop.SetValue(target, new Color(r, g, b, a));
-                                    EditorUtility.SetDirty(target);
-                                    return $"Property named '{propertyName}' assigned with value '{value}' to {objectPath}";
+                                    if (float.TryParse(rgbaValues[0].Trim(), out float r) &&
+                                        float.TryParse(rgbaValues[1].Trim(), out float g) &&
+                                        float.TryParse(rgbaValues[2].Trim(), out float b))
+                                    {
+                                        float a = rgbaValues.Length >= 4 && float.TryParse(rgbaValues[3].Trim(), out float alpha) ? alpha : 1f;
+                                        finalColor = new Color(r, g, b, a);
+                                        colorSet = true;
+                                    }
                                 }
-                                return $"Invalid color format. Expected (r,g,b,a), got: {value}";
+
+                                // Try hex format
+                                if (!colorSet && ColorUtility.TryParseHtmlString(value, out Color hexColor))
+                                {
+                                    finalColor = hexColor;
+                                    colorSet = true;
+                                }
+
+                                // Try named colors (red, blue, etc.)
+                                if (!colorSet)
+                                {
+                                    System.Type colorType = typeof(Color);
+                                    var colorProperty = colorType.GetProperty(value, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                                    if (colorProperty != null)
+                                    {
+                                        finalColor = (Color)colorProperty.GetValue(null);
+                                        colorSet = true;
+                                    }
+                                }
+
+                                if (colorSet)
+                                {
+                                    prop.SetValue(target, finalColor);
+                                    EditorUtility.SetDirty(target);
+                                    return $"Property named '{propertyName}' assigned with color value to {objectPath}";
+                                }
+
+                                return $"Invalid color format. Expected RGBA(r,g,b,a), hex (#RRGGBB), or color name, got: {value}";
                             }
                             // Check if the property type inherits from UnityEngine.Object
                             else if (typeof(UnityEngine.Object).IsAssignableFrom(propType))

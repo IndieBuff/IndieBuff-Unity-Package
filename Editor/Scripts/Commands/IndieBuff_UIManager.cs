@@ -167,6 +167,7 @@ namespace IndieBuff.Editor
 
                     GameObject checkmarkToggleObj = new GameObject("Checkmark", typeof(Image));
                     checkmarkToggleObj.transform.SetParent(uiElement.transform, false);
+                    checkmarkToggleObj.GetComponent<Image>().sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Checkmark.psd");
 
                     Toggle toggle = uiElement.GetComponent<Toggle>();
                     toggle.targetGraphic = backgroundToggleObj.GetComponent<Image>();
@@ -184,6 +185,72 @@ namespace IndieBuff.Editor
                     scrollRect.viewport = viewportObj.GetComponent<RectTransform>();
                     scrollRect.content = contentObj.GetComponent<RectTransform>();  
                     break;
+                case "slider":
+                    uiElement = new GameObject(elementName, typeof(Slider), typeof(Image));
+                    
+                    // Background
+                    GameObject backgroundSliderObj = new GameObject("Background", typeof(Image));
+                    backgroundSliderObj.transform.SetParent(uiElement.transform, false);
+                    backgroundSliderObj.GetComponent<Image>().sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Background.psd");
+                    backgroundSliderObj.GetComponent<Image>().type = Image.Type.Sliced;
+                    backgroundSliderObj.GetComponent<RectTransform>().anchorMin = Vector2.zero;
+                    backgroundSliderObj.GetComponent<RectTransform>().anchorMax = Vector2.one;
+                    backgroundSliderObj.GetComponent<RectTransform>().sizeDelta = Vector2.zero;
+
+                    // Fill Area
+                    GameObject fillArea = new GameObject("Fill Area", typeof(RectTransform));
+                    fillArea.transform.SetParent(uiElement.transform, false);
+                    RectTransform fillAreaRect = fillArea.GetComponent<RectTransform>();
+                    fillAreaRect.anchorMin = new Vector2(0, 0.25f);
+                    fillAreaRect.anchorMax = new Vector2(1, 0.75f);
+                    fillAreaRect.sizeDelta = Vector2.zero;
+
+                    // Fill
+                    GameObject fillSliderObj = new GameObject("Fill", typeof(Image));
+                    fillSliderObj.transform.SetParent(fillArea.transform, false);
+                    fillSliderObj.GetComponent<Image>().sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+                    fillSliderObj.GetComponent<Image>().type = Image.Type.Sliced;
+                    fillSliderObj.GetComponent<Image>().color = new Color(0.3f, 0.6f, 1f, 1f);
+                    RectTransform fillRect = fillSliderObj.GetComponent<RectTransform>();
+                    fillRect.sizeDelta = Vector2.zero;
+                    fillRect.anchorMin = Vector2.zero;
+                    fillRect.anchorMax = Vector2.one;
+
+                    // Handle Slide Area
+                    GameObject handleSlideArea = new GameObject("Handle Slide Area", typeof(RectTransform));
+                    handleSlideArea.transform.SetParent(uiElement.transform, false);
+                    RectTransform handleSlideAreaRect = handleSlideArea.GetComponent<RectTransform>();
+                    handleSlideAreaRect.sizeDelta = Vector2.zero;
+                    handleSlideAreaRect.anchorMin = Vector2.zero;
+                    handleSlideAreaRect.anchorMax = Vector2.one;
+                    handleSlideAreaRect.offsetMin = Vector2.zero;
+                    handleSlideAreaRect.offsetMax = Vector2.zero;
+
+                    // Handle
+                    GameObject handle = new GameObject("Handle", typeof(Image));
+                    handle.transform.SetParent(handleSlideArea.transform, false);
+                    handle.GetComponent<Image>().sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+                    RectTransform handleRect = handle.GetComponent<RectTransform>();
+                    handleRect.sizeDelta = new Vector2(20, 0);
+                    handleRect.anchorMin = new Vector2(0, 0.25f);
+                    handleRect.anchorMax = new Vector2(0, 0.75f);
+
+                    // Setup Slider component
+                    Slider slider = uiElement.GetComponent<Slider>();
+                    slider.fillRect = fillSliderObj.GetComponent<RectTransform>();
+                    slider.handleRect = handle.GetComponent<RectTransform>();
+                    slider.targetGraphic = handle.GetComponent<Image>();
+                    slider.direction = Slider.Direction.LeftToRight;
+                    
+                    // Set default values
+                    slider.minValue = 0;
+                    slider.maxValue = 1;
+                    slider.value = 0.5f;
+                    
+                    // Set RectTransform for the slider
+                    RectTransform sliderRect = uiElement.GetComponent<RectTransform>();
+                    sliderRect.sizeDelta = new Vector2(160, 20);
+                    break;
                 default:
                     return $"Unsupported UI element type: {elementType}";
             }
@@ -196,37 +263,33 @@ namespace IndieBuff.Editor
                     uiElement.transform.SetParent(parent.transform, false);
                 }
                 else{
-                    return $"Parent object not found: {parentName}";
-                }
+                    Canvas canvas = Object.FindObjectOfType<Canvas>();
+                    if (canvas == null)
+                    {
+                        GameObject canvasObj = new GameObject("Canvas");
+                        canvas = canvasObj.AddComponent<Canvas>();
+                        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                        canvasObj.AddComponent<CanvasScaler>();
+                        canvasObj.AddComponent<GraphicRaycaster>();
+                        Undo.RegisterCreatedObjectUndo(canvasObj, "Create Canvas");
+                    }
+
+                    // create event system if it doesnt exist
+                    if (Object.FindObjectOfType<EventSystem>() == null)
+                    {
+                        GameObject eventSystemObj = new GameObject("EventSystem");
+                        eventSystemObj.AddComponent<EventSystem>();
+                        eventSystemObj.AddComponent<StandaloneInputModule>();
+                    }
+
+                    /*if (uiElement.GetComponent<RectTransform>() == null)
+                    {
+                        uiElement.AddComponent<RectTransform>();
+                    }*/
+                    uiElement.transform.SetParent(canvas.transform, false);
+                        
+                    }
             }
-            else{
-                Canvas canvas = Object.FindObjectOfType<Canvas>();
-                if (canvas == null)
-                {
-                    GameObject canvasObj = new GameObject("Canvas");
-                    canvas = canvasObj.AddComponent<Canvas>();
-                    canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    canvasObj.AddComponent<CanvasScaler>();
-                    canvasObj.AddComponent<GraphicRaycaster>();
-                    Undo.RegisterCreatedObjectUndo(canvasObj, "Create Canvas");
-                }
-
-                // create event system if it doesnt exist
-                if (Object.FindObjectOfType<EventSystem>() == null)
-                {
-                    GameObject eventSystemObj = new GameObject("EventSystem");
-                    eventSystemObj.AddComponent<EventSystem>();
-                    eventSystemObj.AddComponent<StandaloneInputModule>();
-                }
-
-                /*if (uiElement.GetComponent<RectTransform>() == null)
-                {
-                    uiElement.AddComponent<RectTransform>();
-                }*/
-                uiElement.transform.SetParent(canvas.transform, false);
-            }
-
-
 
             // Register undo
             Undo.RegisterCreatedObjectUndo(uiElement, $"Create UI {elementType}");
@@ -268,7 +331,7 @@ namespace IndieBuff.Editor
         public static string SetImage(Dictionary<string, string> parameters)
         {
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
-            string imagePath = parameters.ContainsKey("image") ? parameters["image"] : null;
+            string spritePath = parameters.ContainsKey("sprite_path") ? parameters["sprite_path"] : null;
             string imageType = parameters.ContainsKey("image_type") ? parameters["image_type"] : "Simple";
 
             GameObject element = GameObject.Find(hierarchyPath);
@@ -286,13 +349,13 @@ namespace IndieBuff.Editor
             Undo.RecordObject(imageComponent, "Modify Image");
 
             // Set the sprite if a path is provided
-            if (!string.IsNullOrEmpty(imagePath))
+            if (!string.IsNullOrEmpty(spritePath))
             {
-                Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(imagePath);
+                Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
                 if (sprite == null)
                 {
                     // Try to find the sprite by name if direct path fails
-                    string[] guids = AssetDatabase.FindAssets($"t:Sprite {System.IO.Path.GetFileNameWithoutExtension(imagePath)}");
+                    string[] guids = AssetDatabase.FindAssets($"t:Sprite {System.IO.Path.GetFileNameWithoutExtension(spritePath)}");
                     if (guids.Length > 0)
                     {
                         string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
@@ -306,13 +369,16 @@ namespace IndieBuff.Editor
                 }
                 else
                 {
-                    return $"Failed to load sprite at path: {imagePath}";
+                    return $"Failed to load sprite at path: {spritePath}";
                 }
             }
 
             // Set image type
             if (!string.IsNullOrEmpty(imageType))
             {
+                // ensure image type starts with a capital letter and the rest are lowercase
+                imageType = char.ToUpper(imageType[0]) + imageType.Substring(1).ToLower();
+
                 if (System.Enum.TryParse<Image.Type>(imageType, true, out Image.Type type))
                 {
                     imageComponent.type = type;
