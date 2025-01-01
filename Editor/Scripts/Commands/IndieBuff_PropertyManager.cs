@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Collections;
 using UnityEditor.SceneManagement;
+using System.IO;
 
 namespace IndieBuff.Editor
 {
@@ -84,235 +85,9 @@ namespace IndieBuff.Editor
             SerializedObject serializedObject = new SerializedObject(existingComponent);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
 
-
-            // using reflection if no seralized property might gotta make own method
             if (property == null)
             {
-                try
-                {
-                    var prop = componentType.GetProperty(propertyName, 
-                        BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                    
-                    if (prop != null)
-                    {
-                        Type propType = prop.PropertyType;
-                        
-
-                        // handling enums
-                        if (propType.IsEnum)
-                        {
-                            if (value.Contains("|") || value.Contains(","))
-                            {
-                                // split by comma in case 2 groups of pipes
-                                string[] groups = value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                                int finalValue = 0;
-                                
-                                foreach (string group in groups)
-                                {
-                                    
-                                    string[] enumNames = group.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-                                    int groupValue = 0;
-                                    
-                                    foreach (string enumName in enumNames.Select(n => n.Trim()))
-                                    {
-                                        if (Enum.TryParse(propType, enumName, true, out object enumValue))
-                                        {
-                                            groupValue |= Convert.ToInt32(enumValue);
-                                        }
-                                        else
-                                        {
-                                            return $"Failed to parse enum value: {enumName}";
-                                        }
-                                    }
-                                    
-                                    finalValue |= groupValue;
-                                }
-                                
-                                prop.SetValue(existingComponent, Enum.ToObject(propType, finalValue));
-                            }
-                            else
-                            {
-                                if (Enum.TryParse(propType, value, true, out object enumValue))
-                                {
-                                    prop.SetValue(existingComponent, enumValue);
-                                }
-                                else
-                                {
-                                    return $"Failed to parse enum value: {value}";
-                                }
-                            }
-                        }
-
-                        else if (propType.IsArray)
-                        {
-                            try
-                            {
-                                // Get the type of elements in the array
-                                Type elementType = propType.GetElementType();
-                                
-                                
-                                Array existingArray;
-                                if (elementType == typeof(Material) && existingComponent is Renderer renderer)
-                                {
-                                    existingArray = renderer.sharedMaterials;
-                                }
-                                else
-                                {
-                                    existingArray = prop.GetValue(existingComponent) as Array;
-                                    if (existingArray == null)
-                                    {
-                                        existingArray = Array.CreateInstance(elementType, 0);
-                                    }
-                                }
-            
-                                
-                                // Create new array with +1 length
-                                Array updatedArray = Array.CreateInstance(elementType, existingArray.Length + 1);
-                                existingArray.CopyTo(updatedArray, 0);
-
-                                // Handle UnityEngine.Object types (like Materials, GameObjects, etc.)
-                                if (typeof(UnityEngine.Object).IsAssignableFrom(elementType))
-                                {
-                                    string[] guids = AssetDatabase.FindAssets($"t:{elementType.Name} {value}");
-                                    if (guids.Length > 0)
-                                    {
-                                        string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                                        var newItem = AssetDatabase.LoadAssetAtPath(assetPath, elementType);
-                                        
-                                        if (newItem != null)
-                                        {
-                                            updatedArray.SetValue(newItem, existingArray.Length);
-                                            prop.SetValue(existingComponent, updatedArray);
-                                            EditorUtility.SetDirty(existingComponent);
-                                            EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
-                                            return $"Added {value} to array in {hierarchyPath}";
-                                        }
-                                    }
-                                    return $"Failed to find asset: {value}";
-                                }
-                                // Handle primitive types (int, string, etc.)
-                                else
-                                {
-                                    try
-                                    {
-                                        var convertedValue = Convert.ChangeType(value, elementType);
-                                        updatedArray.SetValue(convertedValue, existingArray.Length);
-                                        prop.SetValue(existingComponent, updatedArray);
-                                        EditorUtility.SetDirty(existingComponent);
-                                        EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
-                                        return $"Added {value} to array in {hierarchyPath}";
-                                    }
-                                    catch
-                                    {
-                                        return $"Failed to convert {value} to type {elementType.Name}";
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                return $"Failed to modify array: {ex.Message}";
-                            }
-                        }
-                        // Check if it's a List<T>
-                        else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(List<>))
-                        {
-                            try
-                            {
-                                var currentList = prop.GetValue(existingComponent) as IList;
-                                if (currentList == null)
-                                {
-                                    currentList = Activator.CreateInstance(propType) as IList;
-                                }
-
-                                Type elementType = propType.GetGenericArguments()[0];
-                                
-                                // Find and add the asset
-                                string[] guids = AssetDatabase.FindAssets($"t:{elementType.Name} {value}");
-                                if (guids.Length > 0)
-                                {
-                                    string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                                    var newItem = AssetDatabase.LoadAssetAtPath(assetPath, elementType);
-                                    
-                                    if (newItem != null)
-                                    {
-                                        currentList.Add(newItem);
-                                        prop.SetValue(existingComponent, currentList);
-                                        EditorUtility.SetDirty(existingComponent);
-                                        EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
-                                        return $"Added {value} to list in {hierarchyPath}";
-                                    }
-                                }
-                                return $"Failed to find asset: {value}";
-                            }
-                            catch (Exception ex)
-                            {
-                                return $"Failed to modify list: {ex.Message}";
-                            }
-                        }
-
-                        else
-                        {
-                            try
-                            {
-                                // Check if the property type inherits from UnityEngine.Object
-                                if (typeof(UnityEngine.Object).IsAssignableFrom(propType))
-                                {
-                                    UnityEngine.Object asset = null;
-                                    
-                                    // First try direct path
-                                    asset = AssetDatabase.LoadAssetAtPath(value, propType);
-                                    
-                                    // If direct path fails, try searching for the asset
-                                    if (asset == null)
-                                    {
-                                        // Extract the file name without extension
-                                        string fileName = System.IO.Path.GetFileNameWithoutExtension(value);
-                                        // Search for assets of the specific type with matching name
-                                        string[] guids = AssetDatabase.FindAssets($"t:{propType.Name} {fileName}");
-                                        
-                                        if (guids.Length > 0)
-                                        {
-                                            string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                                            asset = AssetDatabase.LoadAssetAtPath(assetPath, propType);
-                                        }
-                                    }
-
-                                    if (asset != null)
-                                    {
-                                        prop.SetValue(existingComponent, asset);
-                                    }
-                                    else
-                                    {
-                                        return $"Failed to load asset: {value}";
-                                    }
-                                }
-                                else
-                                {
-                                    // Handle non-UnityEngine.Object types as before
-                                    var convertedValue = Convert.ChangeType(value, propType);
-                                    prop.SetValue(existingComponent, convertedValue);
-                                }
-                                
-                                EditorUtility.SetDirty(existingComponent);
-                                EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
-                                return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
-                            }
-                            catch (Exception ex)
-                            {
-                                return $"Failed to set property via reflection: {ex.Message}";
-                            }
-                        }
-                    }
-                    
-                    else
-                    {
-                        return $"Failed to find property '{propertyName}' on component {componentName}";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return $"Failed to set property via reflection: {ex.Message}";
-                }
+                return SetPropertyViaReflection(existingComponent, propertyName, value, hierarchyPath);
             }
 
             try
@@ -564,47 +339,51 @@ namespace IndieBuff.Editor
             return $"Transform set with position '{position}' rotation '{rotation}' and scale '{scale}' to gameobject {hierarchyPath}";
         }
 
-
-
-        public static string SetCustomAssetSerializedProperty(Dictionary<string, string> parameters)
+        public static string SetAssetProperty(Dictionary<string, string> parameters)
         {
-
-            string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
-
+            string assetPath = parameters.ContainsKey("asset_path") ? parameters["asset_path"] : null;
             string propertyName = parameters.ContainsKey("property_name") ? parameters["property_name"] : null;
-
             string value = parameters.ContainsKey("value") ? parameters["value"] : null;
 
-            if (string.IsNullOrEmpty(scriptName))
+            if (string.IsNullOrEmpty(assetPath) || string.IsNullOrEmpty(propertyName) || string.IsNullOrEmpty(value))
             {
-                return "Failed to get script name";
+                return "Missing required parameters (asset_path, property_name, or value)";
             }
 
-            if (!scriptName.Contains("Assets/", StringComparison.OrdinalIgnoreCase))
+            string extension = Path.GetExtension(assetPath).ToLower();
+            UnityEngine.Object asset = null;
+
+            Debug.Log(extension);
+
+            // Load appropriate asset type based on extension
+            switch (extension)
             {
-                scriptName = System.IO.Path.Combine("Assets/", scriptName);
+                case ".mat":
+                    asset = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+                    break;
+                case ".physicsmaterial2d":
+                    asset = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(assetPath);
+                    break;
+                case ".physicmaterial":
+                    asset = AssetDatabase.LoadAssetAtPath<PhysicMaterial>(assetPath);
+                    break;
+                default:
+                    return $"Unsupported asset type: {extension}";
             }
 
-            if (!scriptName.Contains(".cs", StringComparison.OrdinalIgnoreCase))
+            if (asset == null)
             {
-                scriptName = System.IO.Path.Combine(scriptName, ".cs");
+                return $"Failed to load asset at path: {assetPath}";
             }
 
+            Undo.RecordObject(asset, $"Set {propertyName} on {asset.name}");
 
-            var scriptAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(scriptName);
-
-            if (scriptAsset == null)
-            {
-                return "Failed to find script named: " + scriptName;
-            }
-
-            SerializedObject serializedObject = new SerializedObject(scriptAsset);
+            SerializedObject serializedObject = new SerializedObject(asset);
             SerializedProperty property = serializedObject.FindProperty(propertyName);
 
-            if (scriptAsset != null)
+            if (property == null)
             {
-                Undo.IncrementCurrentGroup();
-                Undo.RecordObject(scriptAsset, $"Modify {propertyName} on {scriptAsset.name}");
+                return SetPropertyViaReflection(asset, propertyName, value, assetPath);
             }
 
             try
@@ -623,26 +402,275 @@ namespace IndieBuff.Editor
                     case SerializedPropertyType.String:
                         property.stringValue = value;
                         break;
-                    case SerializedPropertyType.Enum:
-                        property.enumValueIndex = Enum.Parse(typeof(Enum), value) != null ? int.Parse(value) : property.enumValueIndex;
-                        break;
-                    case SerializedPropertyType.ObjectReference:
-                        UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(value);
-                        if (obj != null) property.objectReferenceValue = obj;
+                    case SerializedPropertyType.Color:
+                        string[] components = value.Trim('(', ')').Split(',');
+                        if (components.Length == 4 &&
+                            float.TryParse(components[0], out float r) &&
+                            float.TryParse(components[1], out float g) &&
+                            float.TryParse(components[2], out float b) &&
+                            float.TryParse(components[3], out float a))
+                        {
+                            property.colorValue = new Color(r, g, b, a);
+                        }
                         break;
                     default:
-                        return "Unsupported PropertyType";
+                        return $"Unsupported property type: {property.propertyType}";
                 }
+
+                serializedObject.ApplyModifiedProperties();
+                EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssets();
+                
+                return $"Property '{propertyName}' set to '{value}' on asset '{asset.name}'";
             }
-            catch
+            catch (Exception ex)
             {
-                return "Error when parsring property type";
+                return $"Error setting property: {ex.Message}";
             }
-
-            serializedObject.ApplyModifiedProperties();
-
-            return $"Property named '{propertyName}' modified to value '{value}' in script {scriptName}";
         }
 
+        private static string SetPropertyViaReflection(UnityEngine.Object target, string propertyName, string value, string objectPath)
+        {
+            try
+            {
+                var prop = target.GetType().GetProperty(propertyName, 
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                
+                Debug.Log(prop);
+                if (prop != null)
+                {
+                    Type propType = prop.PropertyType;
+                    
+
+                    // handling enums
+                    if (propType.IsEnum)
+                    {
+                        if (value.Contains("|") || value.Contains(","))
+                        {
+                            // split by comma in case 2 groups of pipes
+                            string[] groups = value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                            int finalValue = 0;
+                            
+                            foreach (string group in groups)
+                            {
+                                string[] enumNames = group.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                                int groupValue = 0;
+                                
+                                foreach (string enumName in enumNames.Select(n => n.Trim()))
+                                {
+                                    if (Enum.TryParse(propType, enumName, true, out object enumValue))
+                                    {
+                                        groupValue |= Convert.ToInt32(enumValue);
+                                    }
+                                    else
+                                    {
+                                        return $"Failed to parse enum value: {enumName}";
+                                    }
+                                }
+                                
+                                finalValue |= groupValue;
+                            }
+                            
+                            prop.SetValue(target, Enum.ToObject(propType, finalValue));
+                            EditorUtility.SetDirty(target);
+                            return $"Property named '{propertyName}' assigned with value '{value}' to {objectPath}";
+                        }
+                        else
+                        {
+                            if (Enum.TryParse(propType, value, true, out object enumValue))
+                            {
+                                prop.SetValue(target, enumValue);
+                                EditorUtility.SetDirty(target);
+                                return $"Property named '{propertyName}' assigned with value '{value}' to {objectPath}";
+                            }
+                            else
+                            {
+                                return $"Failed to parse enum value: {value}";
+                            }
+                        }
+                    }
+
+                    else if (propType.IsArray)
+                    {
+                        try
+                        {
+                            // Get the type of elements in the array
+                            Type elementType = propType.GetElementType();
+                            
+                            
+                            Array existingArray;
+                            if (elementType == typeof(Material) && target is Renderer renderer)
+                            {
+                                existingArray = renderer.sharedMaterials;
+                            }
+                            else
+                            {
+                                existingArray = prop.GetValue(target) as Array;
+                                if (existingArray == null)
+                                {
+                                    existingArray = Array.CreateInstance(elementType, 0);
+                                }
+                            }
+        
+                            
+                            // Create new array with +1 length
+                            Array updatedArray = Array.CreateInstance(elementType, existingArray.Length + 1);
+                            existingArray.CopyTo(updatedArray, 0);
+
+                            // Handle UnityEngine.Object types (like Materials, GameObjects, etc.)
+                            if (typeof(UnityEngine.Object).IsAssignableFrom(elementType))
+                            {
+                                string[] guids = AssetDatabase.FindAssets($"t:{elementType.Name} {value}");
+                                if (guids.Length > 0)
+                                {
+                                    string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                                    var newItem = AssetDatabase.LoadAssetAtPath(assetPath, elementType);
+                                    
+                                    if (newItem != null)
+                                    {
+                                        updatedArray.SetValue(newItem, existingArray.Length);
+                                        prop.SetValue(target, updatedArray);
+                                        EditorUtility.SetDirty(target);
+                                        //EditorSceneManager.MarkSceneDirty(target.gameObject.scene);
+                                        return $"Added {value} to array in {objectPath}";
+                                    }
+                                }
+                                return $"Failed to find asset: {value}";
+                            }
+                            // Handle primitive types (int, string, etc.)
+                            else
+                            {
+                                try
+                                {
+                                    var convertedValue = Convert.ChangeType(value, elementType);
+                                    updatedArray.SetValue(convertedValue, existingArray.Length);
+                                    prop.SetValue(target, updatedArray);
+                                    EditorUtility.SetDirty(target);
+                                    //EditorSceneManager.MarkSceneDirty(target.gameObject.scene);
+                                    return $"Added {value} to array in {objectPath}";
+                                }
+                                catch
+                                {
+                                    return $"Failed to convert {value} to type {elementType.Name}";
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            return $"Failed to modify array: {ex.Message}";
+                        }
+                    }
+                    // Check if it's a List<T>
+                    else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(List<>))
+                    {
+                        try
+                        {
+                            var currentList = prop.GetValue(target) as IList;
+                            if (currentList == null)
+                            {
+                                currentList = Activator.CreateInstance(propType) as IList;
+                            }
+
+                            Type elementType = propType.GetGenericArguments()[0];
+                            
+                            // Find and add the asset
+                            string[] guids = AssetDatabase.FindAssets($"t:{elementType.Name} {value}");
+                            if (guids.Length > 0)
+                            {
+                                string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                                var newItem = AssetDatabase.LoadAssetAtPath(assetPath, elementType);
+                                
+                                if (newItem != null)
+                                {
+                                    currentList.Add(newItem);
+                                    prop.SetValue(target, currentList);
+                                    EditorUtility.SetDirty(target);
+                                    //EditorSceneManager.MarkSceneDirty(target.gameObject.scene);
+                                    return $"Added {value} to list in {objectPath}";
+                                }
+                            }
+                            return $"Failed to find asset: {value}";
+                        }
+                        catch (Exception ex)
+                        {
+                            return $"Failed to modify list: {ex.Message}";
+                        }
+                    }
+
+                    else
+                    {
+                        try
+                        {
+                            // Check if it's a Color property
+                            if (propType == typeof(Color))
+                            {
+                                string[] components = value.Trim('(', ')').Split(',');
+                                if (components.Length == 4 &&
+                                    float.TryParse(components[0], out float r) &&
+                                    float.TryParse(components[1], out float g) &&
+                                    float.TryParse(components[2], out float b) &&
+                                    float.TryParse(components[3], out float a))
+                                {
+                                    prop.SetValue(target, new Color(r, g, b, a));
+                                    EditorUtility.SetDirty(target);
+                                    return $"Property named '{propertyName}' assigned with value '{value}' to {objectPath}";
+                                }
+                                return $"Invalid color format. Expected (r,g,b,a), got: {value}";
+                            }
+                            // Check if the property type inherits from UnityEngine.Object
+                            else if (typeof(UnityEngine.Object).IsAssignableFrom(propType))
+                            {
+                                UnityEngine.Object asset = null;
+                                
+                                // First try direct path
+                                asset = AssetDatabase.LoadAssetAtPath(value, propType);
+                                
+                                // If direct path fails, try searching for the asset
+                                if (asset == null)
+                                {
+                                    // Extract the file name without extension
+                                    string fileName = System.IO.Path.GetFileNameWithoutExtension(value);
+                                    // Search for assets of the specific type with matching name
+                                    string[] guids = AssetDatabase.FindAssets($"t:{propType.Name} {fileName}");
+                                    
+                                    if (guids.Length > 0)
+                                    {
+                                        string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                                        asset = AssetDatabase.LoadAssetAtPath(assetPath, propType);
+                                    }
+                                }
+
+                                if (asset != null)
+                                {
+                                    prop.SetValue(target, asset);
+                                }
+                                else
+                                {
+                                    return $"Failed to load asset: {value}";
+                                }
+                            }
+                            else
+                            {
+                                var convertedValue = Convert.ChangeType(value, propType);
+                                prop.SetValue(target, convertedValue);
+                            }
+                            
+                            EditorUtility.SetDirty(target);
+                            return $"Property named '{propertyName}' assigned with value '{value}' to {objectPath}";
+                        }
+                        catch (Exception ex)
+                        {
+                            return $"Failed to set property via reflection: {ex.Message}";
+                        }
+                    }
+                }
+                
+                return $"Failed to find property '{propertyName}' on {target.GetType().Name}";
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to set property via reflection: {ex.Message}";
+            }
+        }
     }
 }
