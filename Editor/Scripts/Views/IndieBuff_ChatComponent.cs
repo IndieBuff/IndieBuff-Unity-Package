@@ -43,6 +43,11 @@ namespace IndieBuff.Editor
         private IndieBuff_ModelSelectComponent modelSelectComponent;
         private Label aiModelSelectLabel;
 
+        // chat mode selection
+        private Button chatModeSelectButton;
+        private IndieBuff_ChatModeSelectComponent chatModeSelectComponent;
+        private Label chatModeSelectLabel;
+
         // pop up
         private VisualElement activePopup = null;
         private VisualElement activeTrigger = null;
@@ -81,6 +86,8 @@ namespace IndieBuff.Editor
             aiModelSelectButton = root.Q<Button>("AIModelSelectButton");
             profileSettingsButton = root.Q<Button>("ProfileButton");
             aiModelSelectLabel = aiModelSelectButton.Q<Label>("AIModelSelectLabel");
+            chatModeSelectButton = root.Q<Button>("ChatModeSelectButton");
+            chatModeSelectLabel = chatModeSelectButton.Q<Label>("ChatModeSelectLabel");
             userContextRoot = root.Q<VisualElement>("UserContextRoot");
             bottombarContainer = root.Q<VisualElement>("BottomBar");
             loadingComponent = root.Q<ProgressBar>("LoadingBar");
@@ -91,6 +98,7 @@ namespace IndieBuff.Editor
 
             SetupPopupContainer();
             SetupModelSelection();
+            SetupChatModeSelection();
             SetupProfileSettings();
             SetupAddContext();
 
@@ -109,12 +117,18 @@ namespace IndieBuff.Editor
             InitializeConversation();
 
             aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
+            chatModeSelectLabel.text = IndieBuff_ChatModeCommands.GetChatModeCommand(IndieBuff_UserInfo.Instance.currentMode);
 
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded += onMessagesLoaded;
 
             IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
             {
                 aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
+            };
+
+            IndieBuff_UserInfo.Instance.onChatModeChanged += () =>
+            {
+                chatModeSelectLabel.text = IndieBuff_ChatModeCommands.GetChatModeCommand(IndieBuff_UserInfo.Instance.currentMode);
             };
 
             IndieBuff_UserInfo.Instance.responseLoadingComplete += () =>
@@ -141,6 +155,16 @@ namespace IndieBuff.Editor
             popupContainer.pickingMode = PickingMode.Ignore;
 
             root.RegisterCallback<PointerDownEvent>(OnRootPointerDown, TrickleDown.TrickleDown);
+        }
+
+        private void SetupChatModeSelection()
+        {
+            chatModeSelectComponent = new IndieBuff_ChatModeSelectComponent();
+            chatModeSelectButton.clicked += () =>
+            {
+                ShowPopup(chatModeSelectComponent.GetRoot(), chatModeSelectButton);
+            };
+
         }
 
         private void SetupModelSelection()

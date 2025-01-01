@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace IndieBuff.Editor
 {
@@ -23,6 +24,16 @@ namespace IndieBuff.Editor
         public static bool TryGetChatMode(string command, out ChatMode mode)
         {
             return CommandMappings.TryGetValue(command, out mode);
+        }
+
+        public static ChatMode GetChatMode(string command)
+        {
+            return CommandMappings[command];
+        }
+
+        public static string GetChatModeCommand(ChatMode mode)
+        {
+            return CommandMappings.FirstOrDefault(x => x.Value == mode).Key;
         }
     }
 

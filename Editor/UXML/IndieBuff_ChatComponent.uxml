@@ -46,7 +46,11 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="ChatSettings" style="flex-grow: 0; flex-direction: row; width: 100%; justify-content: space-between; padding-top: 8px;">
-            <ui:RadioButtonGroup value="-1" name="ModeSelectGroup" style="flex-direction: row; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0;">
+            <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="ChatModeSelectButton" tooltip="Change Chat Mode" class="ai-model-select-button">
+                <ui:VisualElement name="ChatModeSelectIcon" style="flex-grow: 1; background-image: resource(&apos;Icons/IndieBuff_ModelSelectIcon&apos;); width: 10px; height: 10px; margin-right: 5px;" />
+                <ui:Label tabindex="-1" text="/chat" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ChatModeSelectLabel" />
+            </ui:Button>
+            <ui:RadioButtonGroup value="-1" name="ModeSelectGroup" style="flex-direction: row; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; display: none;">
                 <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="ChatModeButton" tooltip="Get chat/code help" class="mode-select-button">
                     <ui:VisualElement name="ChatModeButtonIcon" class="mode-select-button-icon" style="flex-grow: 1; -unity-background-scale-mode: scale-to-fit; background-image: resource(&apos;Icons/IndieBuff_ChatModeIcon&apos;);" />
                 </ui:Button>
@@ -57,7 +61,7 @@
             <ui:VisualElement name="UpgradeLabelContainer" style="flex-grow: 0; flex-direction: row; text-overflow: clip; overflow: hidden; margin-right: 3px; margin-left: 3px; position: relative; left: 0; right: 0; justify-content: center; align-items: center; align-self: flex-end;">
                 <ui:Label tabindex="-1" text="Liking IndieBuff?" parse-escape-sequences="true" display-tooltip-when-elided="true" name="UpgradeTextLabel1" style="font-size: 9px; justify-content: center; align-items: center; -unity-text-align: middle-center; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; color: rgb(123, 123, 123);" />
                 <ui:Button text="Upgrade" parse-escape-sequences="true" display-tooltip-when-elided="true" name="UpgradeButton" class="upgrade-button" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 1px; padding-bottom: 0; padding-left: 1px; font-size: 9px; border-left-color: rgba(255, 255, 255, 0); border-right-color: rgba(255, 255, 255, 0); border-top-color: rgba(255, 255, 255, 0); border-bottom-color: rgba(255, 255, 255, 0); color: rgb(111, 66, 239);" />
-                <ui:Label tabindex="-1" text="for better models &amp; context!" parse-escape-sequences="true" display-tooltip-when-elided="true" name="UpgradeTextLabel1" style="font-size: 9px; justify-content: center; align-items: center; -unity-text-align: middle-center; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; color: rgb(123, 123, 123); text-overflow: ellipsis;" />
+                <ui:Label tabindex="-1" text="for more features and models!" parse-escape-sequences="true" display-tooltip-when-elided="true" name="UpgradeTextLabel1" enable-rich-text="true" style="font-size: 9px; justify-content: center; align-items: center; -unity-text-align: middle-center; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; color: rgb(123, 123, 123); text-overflow: ellipsis;" />
             </ui:VisualElement>
             <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="AIModelSelectButton" tooltip="Change AI model" class="ai-model-select-button">
                 <ui:VisualElement name="AIModelSelectIcon" style="flex-grow: 1; background-image: resource(&apos;Icons/IndieBuff_ModelSelectIcon&apos;); width: 10px; height: 10px; margin-right: 5px;" />

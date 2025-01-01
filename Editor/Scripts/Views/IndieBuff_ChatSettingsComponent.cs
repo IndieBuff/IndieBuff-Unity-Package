@@ -9,14 +9,6 @@ namespace IndieBuff.Editor
     {
 
         private VisualElement chatSettingsBar;
-
-        private RadioButtonGroup modeSelectGroup;
-        private Button chatModeButton;
-        private Button commandModeButton;
-        private VisualElement chatModeButtonIcon;
-        private VisualElement commandModeButtonIcon;
-        private ChatMode currentMode;
-
         private Button upgradeButton;
         private VisualElement upgradeContainer;
 
@@ -24,18 +16,9 @@ namespace IndieBuff.Editor
         {
             this.chatSettingsBar = chatSettingsBar;
 
-            modeSelectGroup = chatSettingsBar.Q<RadioButtonGroup>("ModeSelectGroup");
-            chatModeButton = chatSettingsBar.Q<Button>("ChatModeButton");
-            commandModeButton = chatSettingsBar.Q<Button>("CommandModeButton");
-
-            chatModeButtonIcon = chatSettingsBar.Q<VisualElement>("ChatModeButtonIcon");
-            commandModeButtonIcon = chatSettingsBar.Q<VisualElement>("CommandModeButtonIcon");
-
             upgradeContainer = chatSettingsBar.Q<VisualElement>("UpgradeLabelContainer");
             upgradeButton = chatSettingsBar.Q<Button>("UpgradeButton");
 
-            chatModeButton.clicked += () => ChangeChatMode(ChatMode.Chat);
-            commandModeButton.clicked += () => ChangeChatMode(ChatMode.Prototype);
             upgradeButton.clicked += () =>
             {
                 Application.OpenURL(IndieBuff_EndpointData.GetFrontendBaseUrl() + "/pricing");
@@ -50,50 +33,8 @@ namespace IndieBuff.Editor
                 upgradeContainer.style.display = DisplayStyle.None;
             }
 
-            if (IndieBuff_UserInfo.Instance.currentUser.currentPlan == "personal")
-            {
-                commandModeButton.SetEnabled(false);
-                commandModeButton.RemoveFromClassList("mode-select-button-unselected");
-                commandModeButton.tooltip = "Upgrade to use engine commands!";
-            }
-
-            ChangeChatMode(ChatMode.Chat);
-
-
-            // disable while improving
-            commandModeButton.style.display = DisplayStyle.None;
-            commandModeButton.SetEnabled(false);
 
         }
 
-        private void ChangeChatMode(ChatMode mode)
-        {
-            currentMode = mode;
-
-            chatModeButton.RemoveFromClassList("mode-select-button-selected");
-            commandModeButton.RemoveFromClassList("mode-select-button-selected");
-
-            chatModeButton.RemoveFromClassList("mode-select-button-unselected");
-            commandModeButton.RemoveFromClassList("mode-select-button-unselected");
-
-
-            switch (mode)
-            {
-                case ChatMode.Chat:
-                    chatModeButton.AddToClassList("mode-select-button-selected");
-                    if (IndieBuff_UserInfo.Instance.currentUser.currentPlan != "personal")
-                    {
-                        commandModeButton.AddToClassList("mode-select-button-unselected");
-                    }
-
-                    break;
-
-            }
-
-            IndieBuff_UserInfo.Instance.currentMode = mode;
-        }
-
-
-        public bool IsChatMode() => currentMode == ChatMode.Chat;
     }
 }
