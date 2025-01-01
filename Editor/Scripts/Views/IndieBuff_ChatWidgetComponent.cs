@@ -16,9 +16,6 @@ namespace IndieBuff.Editor
         private Label placeholderLabel;
         private Func<VisualElement, Task> onMessageSend;
 
-        private bool isProcessingSlashCommand = false;
-        private string currentSlashCommand = "";
-
         public IndieBuff_ChatWidgetComponent(VisualElement root, Func<VisualElement, Task> sendMessageAction)
         {
             rootParent = root;
@@ -48,18 +45,24 @@ namespace IndieBuff.Editor
 
             if (newValue?.StartsWith("/") == true)
             {
-                string[] parts = newValue.Split(new[] { ' ' }, 2);
-                string command = parts[0];
-
-                if (IndieBuff_ChatModeCommands.TryGetChatMode(command, out ChatMode newMode))
+                if (evt.newValue.EndsWith(" "))
                 {
-                    IndieBuff_UserInfo.Instance.currentMode = newMode;
-                    Debug.Log(IndieBuff_UserInfo.Instance.currentMode);
-                    RemoveSlashCommand();
-
-                    if (parts.Length > 1)
+                    string[] parts = newValue.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length > 0)
                     {
-                        chatInputArea.value = parts[1];
+                        string command = parts[0];
+
+                        if (IndieBuff_ChatModeCommands.TryGetChatMode(command, out ChatMode newMode))
+                        {
+                            IndieBuff_UserInfo.Instance.currentMode = newMode;
+                            Debug.Log(IndieBuff_UserInfo.Instance.currentMode);
+                            RemoveSlashCommand();
+
+                            if (parts.Length > 1)
+                            {
+                                chatInputArea.value = parts[1];
+                            }
+                        }
                     }
                 }
             }
@@ -67,9 +70,6 @@ namespace IndieBuff.Editor
 
         private void RemoveSlashCommand()
         {
-            isProcessingSlashCommand = false;
-            currentSlashCommand = "";
-
             rootParent.schedule.Execute(() =>
             {
                 chatInputArea.value = "";
