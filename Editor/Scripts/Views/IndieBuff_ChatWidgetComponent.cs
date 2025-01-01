@@ -36,6 +36,8 @@ namespace IndieBuff.Editor
 
             SetupFocusCallbacks();
 
+
+            UpdatePlaceholderText();
             IndieBuff_UserInfo.Instance.onChatModeChanged += UpdatePlaceholderText;
 
         }

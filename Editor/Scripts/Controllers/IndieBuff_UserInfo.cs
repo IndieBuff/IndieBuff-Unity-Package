@@ -16,6 +16,7 @@ namespace IndieBuff.Editor
         public List<string> availableModels = new List<string>();
         public IndieBuff_User currentUser;
         const string CurrentModelKey = "IndieBuffUserSession_CurrentModel";
+        const string CurrentChatModeKey = "IndieBuffUserSession_CurrentChatMode";
         public Action onSelectedModelChanged;
         public string lastUsedModel = "";
         private string _selectedModel = "Base Model";
@@ -48,6 +49,7 @@ namespace IndieBuff.Editor
                 if (_currentMode != value)
                 {
                     _currentMode = value;
+                    SessionState.SetInt(CurrentChatModeKey, (int)value);
                     onChatModeChanged?.Invoke();
                 }
             }
@@ -56,6 +58,14 @@ namespace IndieBuff.Editor
         {
             await GetIndieBuffUser();
             await GetAvailableModels();
+            GetStoredMode();
+
+        }
+
+        public void GetStoredMode()
+        {
+            _currentMode = (ChatMode)SessionState.GetInt(CurrentChatModeKey, (int)ChatMode.Chat);
+            onChatModeChanged?.Invoke();
         }
 
         public static IndieBuff_UserInfo Instance
