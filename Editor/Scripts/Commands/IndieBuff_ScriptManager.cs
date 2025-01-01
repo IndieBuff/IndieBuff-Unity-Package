@@ -9,41 +9,6 @@ namespace IndieBuff.Editor
 {
     public class ScriptManager : ICommandManager
     {
-        public static string CreateScript(Dictionary<string, string> parameters)
-        {
-            string scriptName = parameters.ContainsKey("script_name") ? parameters["script_name"] : null;
-            string scriptContent = parameters.ContainsKey("script_content") ? parameters["script_content"] : null;
-
-            if (string.IsNullOrEmpty(scriptName) || string.IsNullOrEmpty(scriptContent))
-            {
-                return "Failed to create script with name: " + scriptName;
-            }
-            bool script_compiled = IndieBuff_CheckCompilation.CompileWithRoslyn(scriptContent, out string compilationLog);
-
-            if (!script_compiled)
-            {
-
-                return compilationLog;
-            }
-
-            if (!scriptName.EndsWith(".cs"))
-                scriptName += ".cs";
-
-            string path = Path.Combine(Application.dataPath, scriptName);
-
-            if (File.Exists(path))
-            {
-                return $"Failed to create script with name: {scriptName}. File already exists.";
-            }
-
-            File.WriteAllText(path, scriptContent);
-            AssetDatabase.Refresh();
-
-
-            return $"New script created at path: {path}";
-        }
-
-
         public static string AddScriptToGameObject(Dictionary<string, string> parameters)
         {
 

@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 using System;
+using System.Linq;
 
 namespace IndieBuff.Editor
 {
@@ -468,6 +469,225 @@ namespace IndieBuff.Editor
             AssetDatabase.SaveAssets();
 
             return $"Successfully removed component of type '{componentType}' from prefab at {prefabPath}";
+        }
+
+        public static string SetTransform2DPropertyPrefab(Dictionary<string, string> parameters)
+        {
+            string prefabPath = parameters.ContainsKey("prefab_path") ? parameters["prefab_path"] : null;
+
+            string localPosition = parameters.ContainsKey("position") ? parameters["position"] : null;
+            string localScale = parameters.ContainsKey("scale") ? parameters["scale"] : null;
+
+            if (string.IsNullOrEmpty(prefabPath))
+            {
+                return "Failed to modify prefab - path is missing";
+            }
+
+            // Ensure path starts with Assets/
+            if (!prefabPath.StartsWith("Assets/", System.StringComparison.OrdinalIgnoreCase))
+            {
+                prefabPath = Path.Combine("Assets/", prefabPath);
+            }
+
+            // Ensure path ends with .prefab
+            if (!prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase))
+            {
+                prefabPath += ".prefab";
+            }
+
+            GameObject prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefabAsset == null)
+            {
+                return $"Failed to load prefab at path: {prefabPath}";
+            }
+
+            if (string.IsNullOrEmpty(localPosition))
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+            string[] positionValues = localPosition.Split(',').Select(x => x.Trim()).ToArray();
+
+            if (positionValues.Length != 2)
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+            Vector2 position;
+            if (float.TryParse(positionValues[0], out float x) &&
+                float.TryParse(positionValues[1], out float y))
+            {
+                position = new Vector3(x, y);
+            }
+            else
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+
+            if (string.IsNullOrEmpty(localScale))
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+            string[] scaleValues = localScale.Split(',').Select(x => x.Trim()).ToArray();
+
+            if (scaleValues.Length != 2)
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+
+            Vector2 scale;
+            if (float.TryParse(scaleValues[0], out float x3) &&
+                float.TryParse(scaleValues[1], out float y3))
+            {
+                scale = new Vector3(x3, y3);
+            }
+            else
+            {
+                return "When setting transform scale value is empty" + prefabPath;
+            }
+
+            Transform prefabTransform = prefabAsset.transform;
+
+            Undo.IncrementCurrentGroup();
+            Undo.RecordObject(prefabTransform, $"Set Transform2D on {prefabAsset.name}");
+
+            PrefabUtility.RecordPrefabInstancePropertyModifications(prefabAsset);
+
+            prefabTransform.position = position;
+            prefabTransform.localScale = scale;
+
+            EditorUtility.SetDirty(prefabAsset);
+            AssetDatabase.SaveAssets();
+
+            return $"Transform2D properties updated for prefab at {prefabPath}";
+        }
+
+
+        public static string SetTransform3DPropertyPrefab(Dictionary<string, string> parameters)
+        {
+            string prefabPath = parameters.ContainsKey("prefab_path") ? parameters["prefab_path"] : null;
+
+            string localPosition = parameters.ContainsKey("position") ? parameters["position"] : null;
+            string localRotation = parameters.ContainsKey("rotation") ? parameters["rotation"] : null;
+            string localScale = parameters.ContainsKey("scale") ? parameters["scale"] : null;
+
+            if (string.IsNullOrEmpty(prefabPath))
+            {
+                return "Failed to modify prefab - path is missing";
+            }
+
+            // Ensure path starts with Assets/
+            if (!prefabPath.StartsWith("Assets/", System.StringComparison.OrdinalIgnoreCase))
+            {
+                prefabPath = Path.Combine("Assets/", prefabPath);
+            }
+
+            // Ensure path ends with .prefab
+            if (!prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase))
+            {
+                prefabPath += ".prefab";
+            }
+
+            GameObject prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefabAsset == null)
+            {
+                return $"Failed to load prefab at path: {prefabPath}";
+            }
+
+            if (string.IsNullOrEmpty(localPosition))
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+            string[] positionValues = localPosition.Split(',').Select(x => x.Trim()).ToArray();
+
+            if (positionValues.Length != 3)
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+            Vector3 position;
+            if (float.TryParse(positionValues[0], out float x) &&
+                float.TryParse(positionValues[1], out float y) &&
+                float.TryParse(positionValues[2], out float z))
+            {
+                position = new Vector3(x, y, z);
+            }
+            else
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+
+            if (string.IsNullOrEmpty(localRotation))
+            {
+                return "When setting transform rotation value is empty" + prefabPath;
+            }
+
+            string[] rotationValues = localRotation.Split(',').Select(x => x.Trim()).ToArray();
+
+            if (rotationValues.Length != 3)
+            {
+                return "When setting transform rotation value is empty" + prefabPath;
+            }
+
+            Vector3 rotation;
+            if (float.TryParse(rotationValues[0], out float x2) &&
+                float.TryParse(rotationValues[1], out float y2) &&
+                float.TryParse(rotationValues[2], out float z2))
+            {
+                rotation = new Vector3(x2, y2, z2);
+            }
+            else
+            {
+                return "When setting transform rotation value is empty" + prefabPath;
+            }
+
+
+
+            if (string.IsNullOrEmpty(localScale))
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+            string[] scaleValues = localScale.Split(',').Select(x => x.Trim()).ToArray();
+
+            if (scaleValues.Length != 3)
+            {
+                return "When setting transform position value is empty" + prefabPath;
+            }
+
+
+            Vector3 scale;
+            if (float.TryParse(scaleValues[0], out float x3) &&
+                float.TryParse(scaleValues[1], out float y3) &&
+                float.TryParse(scaleValues[2], out float z3))
+            {
+                scale = new Vector3(x3, y3, z3);
+            }
+            else
+            {
+                return "When setting transform scale value is empty" + prefabPath;
+            }
+
+            Transform prefabTransform = prefabAsset.transform;
+
+            Undo.IncrementCurrentGroup();
+            Undo.RecordObject(prefabTransform, $"Set Transform2D on {prefabAsset.name}");
+
+            PrefabUtility.RecordPrefabInstancePropertyModifications(prefabAsset);
+
+            prefabTransform.position = position;
+            prefabTransform.localScale = scale;
+            prefabTransform.localRotation = Quaternion.Euler(rotation);
+
+            EditorUtility.SetDirty(prefabAsset);
+            AssetDatabase.SaveAssets();
+
+            return $"Transform2D properties updated for prefab at {prefabPath}";
         }
     }
 }
