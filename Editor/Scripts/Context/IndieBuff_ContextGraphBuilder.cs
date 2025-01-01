@@ -182,7 +182,7 @@ namespace IndieBuff.Editor
                 {
                     objectData["properties"] = GetAnimatorControllerProperties(animator);
                 }
-                // check if its a material. Have to do this differently from animator because animator is empty. adding proeprties to material
+                // check if its a material. Have to do this differently from animator because animator properties are empty. adding proeprties to material
                 else if (obj is Material material)
                 {
                     // Add material-specific properties to the existing properties dictionary so ai will be able to focus on it
@@ -456,12 +456,16 @@ namespace IndieBuff.Editor
 
                 if (!string.IsNullOrEmpty(scriptPath))
                 {
-                    scriptData["scriptPath"] = scriptPath;
-                    scriptData["scriptContent"] = File.ReadAllLines(scriptPath);
-
+                    
+                    if (!scriptPath.Contains("Packages/com.unity.ugui/Runtime/UI/"))
+                    {
+                        scriptData["scriptPath"] = scriptPath;
+                        scriptData["scriptContent"] = File.ReadAllLines(scriptPath);
+                        scriptData["type"] = "MonoScript";
+                    }
                 }
-                scriptData["type"] = "MonoScript";
 
+                /*
                 // Get custom attributes
                 var attributes = script.GetType()
                     .GetCustomAttributes(true)
@@ -471,7 +475,7 @@ namespace IndieBuff.Editor
                 if (attributes.Any())
                 {
                     //scriptData["attributes"] = attributes;
-                }
+                }*/
             }
             catch (Exception e)
             {
@@ -505,10 +509,12 @@ namespace IndieBuff.Editor
 
         private void ProcessSerializedPropertyInner(Dictionary<string, object> properties, SerializedProperty current)
         {
-            if (current.depth < m_CurrentDepth)
+            // THIS MIGHT BE NEEDED. prevents infinite loop i think but I removed it and its working. Commented out for now because was blocking some properties from being processed.
+            /*if (current.depth < m_CurrentDepth)
             {
+                Debug.Log($"Skipping {current.name} due to depth check");
                 return;
-            }
+            }*/
 
             if (current.propertyType == SerializedPropertyType.ManagedReference && m_VisitedNodes.Contains(current.managedReferenceId))
             {
