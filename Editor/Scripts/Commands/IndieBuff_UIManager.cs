@@ -30,13 +30,13 @@ namespace IndieBuff.Editor
             switch (elementType)
             {
                 case "text":
-                    uiElement = new GameObject(elementName, typeof(Text), typeof(RectTransform));
+                    uiElement = new GameObject(elementName, typeof(Text));
                     break;
                 case "image":
-                    uiElement = new GameObject(elementName, typeof(Image), typeof(RectTransform));
+                    uiElement = new GameObject(elementName, typeof(Image));
                     break;
                 case "button":
-                    uiElement = new GameObject(elementName, typeof(Button), typeof(RectTransform));
+                    uiElement = new GameObject(elementName, typeof(Button), typeof(Image));
                     //var button = uiElement.AddComponent<Button>();
                     //var image = uiElement.AddComponent<Image>();
                     
@@ -56,7 +56,7 @@ namespace IndieBuff.Editor
                     textRect.sizeDelta = Vector2.zero;
                     break;
                 case "panel":
-                    uiElement = new GameObject(elementName, typeof(Image), typeof(RectTransform));
+                    uiElement = new GameObject(elementName, typeof(Image));
                     RectTransform rectTransform = uiElement.GetComponent<RectTransform>();
                     rectTransform.sizeDelta = new Vector2(160, 30);
                     rectTransform.anchorMin = Vector2.zero;
@@ -66,26 +66,28 @@ namespace IndieBuff.Editor
 
                     Image image = uiElement.GetComponent<Image>();
                     image.color = new Color(0.9f, 0.9f, 0.9f, 1f);
-                    //image.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Background.psd");
+
+                    image.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Background.psd");
+
                     image.type = Image.Type.Sliced;
                     image.fillCenter = true;
                     break;
                 case "inputfield":
-                    uiElement = new GameObject(elementName, typeof(InputField), typeof(RectTransform));
-                    GameObject textInputObj = new GameObject("Text", typeof(Text), typeof(RectTransform));
+                    uiElement = new GameObject(elementName, typeof(InputField));
+                    GameObject textInputObj = new GameObject("Text", typeof(Text));
                     textInputObj.transform.SetParent(uiElement.transform, false);
                     InputField inputField = uiElement.GetComponent<InputField>();
                     inputField.textComponent = textInputObj.GetComponent<Text>();
                     break;
                 case "dropdown":
-                    uiElement = new GameObject(elementName, typeof(Dropdown), typeof(RectTransform));
+                    uiElement = new GameObject(elementName, typeof(Dropdown), typeof(Image));
                     break;
                 case "toggle":
-                    uiElement = new GameObject(elementName, typeof(Toggle), typeof(RectTransform));
-                    GameObject backgroundToggleObj = new GameObject("Background", typeof(Image), typeof(RectTransform));
+                    uiElement = new GameObject(elementName, typeof(Toggle));
+                    GameObject backgroundToggleObj = new GameObject("Background", typeof(Image));
                     backgroundToggleObj.transform.SetParent(uiElement.transform, false);
 
-                    GameObject checkmarkToggleObj = new GameObject("Checkmark", typeof(Image), typeof(RectTransform));
+                    GameObject checkmarkToggleObj = new GameObject("Checkmark", typeof(Image));
                     checkmarkToggleObj.transform.SetParent(uiElement.transform, false);
 
                     Toggle toggle = uiElement.GetComponent<Toggle>();
@@ -93,8 +95,8 @@ namespace IndieBuff.Editor
                     toggle.graphic = checkmarkToggleObj.GetComponent<Image>();
                     break;
                 case "scrollview":
-                    uiElement = new GameObject(elementName, typeof(ScrollRect), typeof(RectTransform));
-                    GameObject viewportObj = new GameObject("Viewport", typeof(RectTransform));
+                    uiElement = new GameObject(elementName, typeof(ScrollRect));
+                    GameObject viewportObj = new GameObject("Viewport", typeof(RectTransform), typeof(Image));
                     viewportObj.transform.SetParent(uiElement.transform, false);
 
                     GameObject contentObj = new GameObject("Content", typeof(RectTransform));
