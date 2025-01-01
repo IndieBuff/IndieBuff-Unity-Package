@@ -19,21 +19,12 @@ namespace IndieBuff.Editor
         {
             var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
             var messageLabel = messageContainer.Q<TextField>();
-            bool isFirstChunk = true;
             try
             {
 
                 await IndieBuff_ApiClient.Instance.StreamChatMessageAsync(userMessage, (chunk) =>
                 {
                     parser.ParseChunk(chunk);
-
-                    if (isFirstChunk)
-                    {
-                        messageLabel.value = "";
-                        IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
-                        responseContainer.style.visibility = Visibility.Visible;
-                        isFirstChunk = false;
-                    }
                 }, token);
 
                 await OnStreamComplete();

@@ -17,6 +17,7 @@ namespace IndieBuff.Editor
         protected TextField currentMessageLabel;
         protected IndieBuff_SyntaxHighlighter syntaxHighlighter;
         protected string rawCode = "";
+        protected bool isFirstChunk;
 
         protected BaseMarkdownParser(VisualElement responseContainer)
         {
@@ -25,6 +26,7 @@ namespace IndieBuff.Editor
             lineBuffer = new StringBuilder();
             fullMessage = new StringBuilder();
             syntaxHighlighter = new IndieBuff_SyntaxHighlighter();
+            isFirstChunk = true;
 
             messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
             currentMessageLabel = messageContainer.Q<TextField>();
@@ -37,7 +39,15 @@ namespace IndieBuff.Editor
             {
                 if (c == '\n')
                 {
+                    if (isFirstChunk)
+                    {
+                        currentMessageLabel.value = "";
+                        IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
+                        messageContainer.parent.style.visibility = Visibility.Visible;
+                        isFirstChunk = false;
+                    }
                     ProcessLine(lineBuffer.ToString());
+
                     lineBuffer.Clear();
                 }
                 else
