@@ -182,6 +182,22 @@ namespace IndieBuff.Editor
                 {
                     objectData["properties"] = GetAnimatorControllerProperties(animator);
                 }
+                // check if its a material. Have to do this differently from animator because animator is empty. adding proeprties to material
+                else if (obj is Material material)
+                {
+                    // Add material-specific properties to the existing properties dictionary so ai will be able to focus on it
+                    var oldProperties = (Dictionary<string, object>)objectData["properties"];
+                    var materialProperties = GetMaterialProperties(material);
+
+                    var newProperties = new Dictionary<string, object>(materialProperties);
+
+                    foreach (var kvp in oldProperties)
+                    {
+                        newProperties[kvp.Key] = kvp.Value;
+                    }
+
+                    objectData["properties"] = newProperties;
+                }
 
                 AddToContext(obj.name, objectData);
             }
@@ -465,259 +481,6 @@ namespace IndieBuff.Editor
             return scriptData;
         }
 
-        private Dictionary<string, object> GetAnimatorProperties(Animator animator)
-        {
-            var properties = new Dictionary<string, object>();
-
-
-            var animatorController = animator.runtimeAnimatorController as UnityEditor.Animations.AnimatorController;
-
-
-            // Extract parameters
-            var parameterList = animatorController.parameters.Select(parameter => new Dictionary<string, object>
-            {
-                ["name"] = parameter.name,
-                ["type"] = parameter.type.ToString(),
-                ["defaultFloat"] = parameter.defaultFloat,
-                ["defaultInt"] = parameter.defaultInt,
-                ["defaultBool"] = parameter.defaultBool
-            }).ToList();
-
-            properties["parameters"] = parameterList;
-
-            // Extract states and transitions
-            var stateMachines = animatorController.layers.Select(layer => layer.stateMachine).ToList();
-            var statesList = new List<Dictionary<string, object>>();
-            var exitTransitions = new List<Dictionary<string, object>>();
-
-            foreach (var stateMachine in stateMachines)
-            {
-                // Handle entry node
-                var entryTransitions = stateMachine.entryTransitions
-                    .Where(t => t.destinationState != null)
-                    .Select(t => new Dictionary<string, object>
-                    {
-                        ["name"] = t.destinationState.name
-                    }).ToList();
-
-                statesList.Add(new Dictionary<string, object>
-                {
-                    ["name"] = "Entry",
-                    ["type"] = "EntryNode",
-                    ["transitions"] = entryTransitions
-                });
-
-                // Process all regular states and collect exit transitions
-                foreach (var state in stateMachine.states)
-                {
-                    var stateTransitions = new List<Dictionary<string, object>>();
-
-                    foreach (var transition in state.state.transitions)
-                    {
-                        // Check if it's an exit transition
-                        if (transition.destinationState == null &&
-                            transition.destinationStateMachine == null &&
-                            transition.isExit)
-                        {
-                            // Add to state's transitions without sourceState
-                            stateTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["name"] = "Exit",
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-
-                            // Add to exit transitions list with sourceState
-                            exitTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["sourceState"] = state.state.name,
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-                        }
-                        // Regular transition to another state
-                        else if (transition.destinationState != null)
-                        {
-                            stateTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["name"] = transition.destinationState.name,
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-                        }
-                    }
-
-                    statesList.Add(new Dictionary<string, object>
-                    {
-                        ["name"] = state.state.name,
-                        ["speed"] = state.state.speed,
-                        ["tag"] = state.state.tag,
-                        ["transitions"] = stateTransitions
-                    });
-                }
-
-                // Handle exit node with collected transitions
-                statesList.Add(new Dictionary<string, object>
-                {
-                    ["name"] = "Exit",
-                    ["type"] = "ExitNode",
-                    ["incomingTransitions"] = exitTransitions,
-                    ["transitions"] = new List<Dictionary<string, object>>()
-                });
-
-                // Add any state transitions only if they exist
-                var anyStateTransitions = stateMachine.anyStateTransitions
-                    .Where(t => t.destinationState != null)
-                    .Select(t => new Dictionary<string, object>
-                    {
-                        ["name"] = t.destinationState.name,
-                        ["duration"] = t.duration,
-                        ["offset"] = t.offset,
-                        ["hasExitTime"] = t.hasExitTime,
-                        ["exitTime"] = t.exitTime
-                    }).ToList();
-
-                if (anyStateTransitions.Any())
-                {
-                    properties["transitions"] = anyStateTransitions;
-                }
-            }
-
-            properties["states"] = statesList;
-
-            return properties;
-        }
-
-        private Dictionary<string, object> GetAnimatorControllerProperties(UnityEditor.Animations.AnimatorController animatorController)
-        {
-            var properties = new Dictionary<string, object>();
-
-            // Extract parameters
-            var parameterList = animatorController.parameters.Select(parameter => new Dictionary<string, object>
-            {
-                ["name"] = parameter.name,
-                ["type"] = parameter.type.ToString(),
-                ["defaultFloat"] = parameter.defaultFloat,
-                ["defaultInt"] = parameter.defaultInt,
-                ["defaultBool"] = parameter.defaultBool
-            }).ToList();
-
-            properties["parameters"] = parameterList;
-
-            // Extract states and transitions
-            var stateMachines = animatorController.layers.Select(layer => layer.stateMachine).ToList();
-            var statesList = new List<Dictionary<string, object>>();
-            var exitTransitions = new List<Dictionary<string, object>>();
-
-            foreach (var stateMachine in stateMachines)
-            {
-                // Handle entry node
-                var entryTransitions = stateMachine.entryTransitions
-                    .Where(t => t.destinationState != null)
-                    .Select(t => new Dictionary<string, object>
-                    {
-                        ["name"] = t.destinationState.name
-                    }).ToList();
-
-                statesList.Add(new Dictionary<string, object>
-                {
-                    ["name"] = "Entry",
-                    ["type"] = "EntryNode",
-                    ["transitions"] = entryTransitions
-                });
-
-                // Process all regular states and collect exit transitions
-                foreach (var state in stateMachine.states)
-                {
-                    var stateTransitions = new List<Dictionary<string, object>>();
-
-                    foreach (var transition in state.state.transitions)
-                    {
-                        // Check if it's an exit transition
-                        if (transition.destinationState == null &&
-                            transition.destinationStateMachine == null &&
-                            transition.isExit)
-                        {
-                            // Add to state's transitions without sourceState
-                            stateTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["name"] = "Exit",
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-
-                            // Add to exit transitions list with sourceState
-                            exitTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["sourceState"] = state.state.name,
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-                        }
-                        // Regular transition to another state
-                        else if (transition.destinationState != null)
-                        {
-                            stateTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["name"] = transition.destinationState.name,
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-                        }
-                    }
-
-                    statesList.Add(new Dictionary<string, object>
-                    {
-                        ["name"] = state.state.name,
-                        ["speed"] = state.state.speed,
-                        ["tag"] = state.state.tag,
-                        ["transitions"] = stateTransitions
-                    });
-                }
-
-                // Handle exit node with collected transitions
-                statesList.Add(new Dictionary<string, object>
-                {
-                    ["name"] = "Exit",
-                    ["type"] = "ExitNode",
-                    ["incomingTransitions"] = exitTransitions,
-                    ["transitions"] = new List<Dictionary<string, object>>()
-                });
-
-                // Add any state transitions only if they exist
-                var anyStateTransitions = stateMachine.anyStateTransitions
-                    .Where(t => t.destinationState != null)
-                    .Select(t => new Dictionary<string, object>
-                    {
-                        ["name"] = t.destinationState.name,
-                        ["duration"] = t.duration,
-                        ["offset"] = t.offset,
-                        ["hasExitTime"] = t.hasExitTime,
-                        ["exitTime"] = t.exitTime
-                    }).ToList();
-
-                if (anyStateTransitions.Any())
-                {
-                    properties["transitions"] = anyStateTransitions;
-                }
-            }
-
-            properties["states"] = statesList;
-
-            return properties;
-        }
 
         private Dictionary<string, object> GetSerializedProperties(object obj)
         {
@@ -1027,6 +790,285 @@ namespace IndieBuff.Editor
                    type == typeof(LayerMask) ||
                    type == typeof(AnimationCurve) ||
                    (type.IsArray && IsSerializableValue(type.GetElementType()));
+        }
+
+        
+        private Dictionary<string, object> GetAnimatorProperties(Animator animator)
+        {
+            var properties = new Dictionary<string, object>();
+
+
+            var animatorController = animator.runtimeAnimatorController as UnityEditor.Animations.AnimatorController;
+
+
+            // Extract parameters
+            var parameterList = animatorController.parameters.Select(parameter => new Dictionary<string, object>
+            {
+                ["name"] = parameter.name,
+                ["type"] = parameter.type.ToString(),
+                ["defaultFloat"] = parameter.defaultFloat,
+                ["defaultInt"] = parameter.defaultInt,
+                ["defaultBool"] = parameter.defaultBool
+            }).ToList();
+
+            properties["parameters"] = parameterList;
+
+            // Extract states and transitions
+            var stateMachines = animatorController.layers.Select(layer => layer.stateMachine).ToList();
+            var statesList = new List<Dictionary<string, object>>();
+            var exitTransitions = new List<Dictionary<string, object>>();
+
+            foreach (var stateMachine in stateMachines)
+            {
+                // Handle entry node
+                var entryTransitions = stateMachine.entryTransitions
+                    .Where(t => t.destinationState != null)
+                    .Select(t => new Dictionary<string, object>
+                    {
+                        ["name"] = t.destinationState.name
+                    }).ToList();
+
+                statesList.Add(new Dictionary<string, object>
+                {
+                    ["name"] = "Entry",
+                    ["type"] = "EntryNode",
+                    ["transitions"] = entryTransitions
+                });
+
+                // Process all regular states and collect exit transitions
+                foreach (var state in stateMachine.states)
+                {
+                    var stateTransitions = new List<Dictionary<string, object>>();
+
+                    foreach (var transition in state.state.transitions)
+                    {
+                        // Check if it's an exit transition
+                        if (transition.destinationState == null &&
+                            transition.destinationStateMachine == null &&
+                            transition.isExit)
+                        {
+                            // Add to state's transitions without sourceState
+                            stateTransitions.Add(new Dictionary<string, object>
+                            {
+                                ["name"] = "Exit",
+                                ["duration"] = transition.duration,
+                                ["offset"] = transition.offset,
+                                ["hasExitTime"] = transition.hasExitTime,
+                                ["exitTime"] = transition.exitTime
+                            });
+
+                            // Add to exit transitions list with sourceState
+                            exitTransitions.Add(new Dictionary<string, object>
+                            {
+                                ["sourceState"] = state.state.name,
+                                ["duration"] = transition.duration,
+                                ["offset"] = transition.offset,
+                                ["hasExitTime"] = transition.hasExitTime,
+                                ["exitTime"] = transition.exitTime
+                            });
+                        }
+                        // Regular transition to another state
+                        else if (transition.destinationState != null)
+                        {
+                            stateTransitions.Add(new Dictionary<string, object>
+                            {
+                                ["name"] = transition.destinationState.name,
+                                ["duration"] = transition.duration,
+                                ["offset"] = transition.offset,
+                                ["hasExitTime"] = transition.hasExitTime,
+                                ["exitTime"] = transition.exitTime
+                            });
+                        }
+                    }
+
+                    statesList.Add(new Dictionary<string, object>
+                    {
+                        ["name"] = state.state.name,
+                        ["speed"] = state.state.speed,
+                        ["tag"] = state.state.tag,
+                        ["transitions"] = stateTransitions
+                    });
+                }
+
+                // Handle exit node with collected transitions
+                statesList.Add(new Dictionary<string, object>
+                {
+                    ["name"] = "Exit",
+                    ["type"] = "ExitNode",
+                    ["incomingTransitions"] = exitTransitions,
+                    ["transitions"] = new List<Dictionary<string, object>>()
+                });
+
+                // Add any state transitions only if they exist
+                var anyStateTransitions = stateMachine.anyStateTransitions
+                    .Where(t => t.destinationState != null)
+                    .Select(t => new Dictionary<string, object>
+                    {
+                        ["name"] = t.destinationState.name,
+                        ["duration"] = t.duration,
+                        ["offset"] = t.offset,
+                        ["hasExitTime"] = t.hasExitTime,
+                        ["exitTime"] = t.exitTime
+                    }).ToList();
+
+                if (anyStateTransitions.Any())
+                {
+                    properties["transitions"] = anyStateTransitions;
+                }
+            }
+
+            properties["states"] = statesList;
+
+            return properties;
+        }
+
+        private Dictionary<string, object> GetAnimatorControllerProperties(UnityEditor.Animations.AnimatorController animatorController)
+        {
+            var properties = new Dictionary<string, object>();
+
+            // Extract parameters
+            var parameterList = animatorController.parameters.Select(parameter => new Dictionary<string, object>
+            {
+                ["name"] = parameter.name,
+                ["type"] = parameter.type.ToString(),
+                ["defaultFloat"] = parameter.defaultFloat,
+                ["defaultInt"] = parameter.defaultInt,
+                ["defaultBool"] = parameter.defaultBool
+            }).ToList();
+
+            properties["parameters"] = parameterList;
+
+            // Extract states and transitions
+            var stateMachines = animatorController.layers.Select(layer => layer.stateMachine).ToList();
+            var statesList = new List<Dictionary<string, object>>();
+            var exitTransitions = new List<Dictionary<string, object>>();
+
+            foreach (var stateMachine in stateMachines)
+            {
+                // Handle entry node
+                var entryTransitions = stateMachine.entryTransitions
+                    .Where(t => t.destinationState != null)
+                    .Select(t => new Dictionary<string, object>
+                    {
+                        ["name"] = t.destinationState.name
+                    }).ToList();
+
+                statesList.Add(new Dictionary<string, object>
+                {
+                    ["name"] = "Entry",
+                    ["type"] = "EntryNode",
+                    ["transitions"] = entryTransitions
+                });
+
+                // Process all regular states and collect exit transitions
+                foreach (var state in stateMachine.states)
+                {
+                    var stateTransitions = new List<Dictionary<string, object>>();
+
+                    foreach (var transition in state.state.transitions)
+                    {
+                        // Check if it's an exit transition
+                        if (transition.destinationState == null &&
+                            transition.destinationStateMachine == null &&
+                            transition.isExit)
+                        {
+                            // Add to state's transitions without sourceState
+                            stateTransitions.Add(new Dictionary<string, object>
+                            {
+                                ["name"] = "Exit",
+                                ["duration"] = transition.duration,
+                                ["offset"] = transition.offset,
+                                ["hasExitTime"] = transition.hasExitTime,
+                                ["exitTime"] = transition.exitTime
+                            });
+
+                            // Add to exit transitions list with sourceState
+                            exitTransitions.Add(new Dictionary<string, object>
+                            {
+                                ["sourceState"] = state.state.name,
+                                ["duration"] = transition.duration,
+                                ["offset"] = transition.offset,
+                                ["hasExitTime"] = transition.hasExitTime,
+                                ["exitTime"] = transition.exitTime
+                            });
+                        }
+                        // Regular transition to another state
+                        else if (transition.destinationState != null)
+                        {
+                            stateTransitions.Add(new Dictionary<string, object>
+                            {
+                                ["name"] = transition.destinationState.name,
+                                ["duration"] = transition.duration,
+                                ["offset"] = transition.offset,
+                                ["hasExitTime"] = transition.hasExitTime,
+                                ["exitTime"] = transition.exitTime
+                            });
+                        }
+                    }
+
+                    statesList.Add(new Dictionary<string, object>
+                    {
+                        ["name"] = state.state.name,
+                        ["speed"] = state.state.speed,
+                        ["tag"] = state.state.tag,
+                        ["transitions"] = stateTransitions
+                    });
+                }
+
+                // Handle exit node with collected transitions
+                statesList.Add(new Dictionary<string, object>
+                {
+                    ["name"] = "Exit",
+                    ["type"] = "ExitNode",
+                    ["incomingTransitions"] = exitTransitions,
+                    ["transitions"] = new List<Dictionary<string, object>>()
+                });
+
+                // Add any state transitions only if they exist
+                var anyStateTransitions = stateMachine.anyStateTransitions
+                    .Where(t => t.destinationState != null)
+                    .Select(t => new Dictionary<string, object>
+                    {
+                        ["name"] = t.destinationState.name,
+                        ["duration"] = t.duration,
+                        ["offset"] = t.offset,
+                        ["hasExitTime"] = t.hasExitTime,
+                        ["exitTime"] = t.exitTime
+                    }).ToList();
+
+                if (anyStateTransitions.Any())
+                {
+                    properties["transitions"] = anyStateTransitions;
+                }
+            }
+
+            properties["states"] = statesList;
+
+            return properties;
+        }
+
+        private Dictionary<string, object> GetMaterialProperties(Material material)
+        {
+            var properties = new Dictionary<string, object>();
+            
+            try
+            {
+                // Get the main color as a string to avoid serialization issues
+                Color mainColor = material.color;
+                properties["color"] = $"({mainColor.r:F3}, {mainColor.g:F3}, {mainColor.b:F3}, {mainColor.a:F3})";
+                
+                // Add shader name
+                properties["shader"] = material.shader != null ? material.shader.name : "null";
+                
+                // Add whether the material is transparent
+                properties["isTransparent"] = material.GetTag("RenderType", false) == "Transparent";
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error getting material properties: {e.Message}");
+            }
+            
+            return properties;
         }
 
     }
