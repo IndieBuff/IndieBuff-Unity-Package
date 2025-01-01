@@ -171,7 +171,7 @@ public class WholeFileParser
 
     private List<string> GetInChatRelativeFiles()
     {
-        // This is a placeholder - you'll need to implement this based on your chat context
+        // This is a placeholder you'll need to implement this based on your chat context
         // It should return a list of relative file paths that have been mentioned in the chat
         return new List<string>();
     }

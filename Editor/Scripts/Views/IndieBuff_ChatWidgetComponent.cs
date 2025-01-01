@@ -58,7 +58,6 @@ namespace IndieBuff.Editor
                         {
                             if (IndieBuff_UserInfo.Instance.currentUser.currentPlan == "personal" && newMode != ChatMode.Chat) return;
                             IndieBuff_UserInfo.Instance.currentMode = newMode;
-                            Debug.Log(IndieBuff_UserInfo.Instance.currentMode);
                             RemoveSlashCommand();
 
                             if (parts.Length > 1)
