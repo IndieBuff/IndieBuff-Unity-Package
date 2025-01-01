@@ -255,40 +255,37 @@ namespace IndieBuff.Editor
                     return $"Unsupported UI element type: {elementType}";
             }
 
-            if (!string.IsNullOrEmpty(parentName))
+
+            GameObject parent = GameObject.Find(parentName);
+            if (parent != null)
             {
-                GameObject parent = GameObject.Find(parentName);
-                if (parent != null)
+                uiElement.transform.SetParent(parent.transform, false);
+            }
+            else{
+                Canvas canvas = Object.FindObjectOfType<Canvas>();
+                if (canvas == null)
                 {
-                    uiElement.transform.SetParent(parent.transform, false);
+                    GameObject canvasObj = new GameObject("Canvas");
+                    canvas = canvasObj.AddComponent<Canvas>();
+                    canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    canvasObj.AddComponent<CanvasScaler>();
+                    canvasObj.AddComponent<GraphicRaycaster>();
+                    Undo.RegisterCreatedObjectUndo(canvasObj, "Create Canvas");
                 }
-                else{
-                    Canvas canvas = Object.FindObjectOfType<Canvas>();
-                    if (canvas == null)
-                    {
-                        GameObject canvasObj = new GameObject("Canvas");
-                        canvas = canvasObj.AddComponent<Canvas>();
-                        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                        canvasObj.AddComponent<CanvasScaler>();
-                        canvasObj.AddComponent<GraphicRaycaster>();
-                        Undo.RegisterCreatedObjectUndo(canvasObj, "Create Canvas");
-                    }
 
-                    // create event system if it doesnt exist
-                    if (Object.FindObjectOfType<EventSystem>() == null)
-                    {
-                        GameObject eventSystemObj = new GameObject("EventSystem");
-                        eventSystemObj.AddComponent<EventSystem>();
-                        eventSystemObj.AddComponent<StandaloneInputModule>();
-                    }
+                // create event system if it doesnt exist
+                if (Object.FindObjectOfType<EventSystem>() == null)
+                {
+                    GameObject eventSystemObj = new GameObject("EventSystem");
+                    eventSystemObj.AddComponent<EventSystem>();
+                    eventSystemObj.AddComponent<StandaloneInputModule>();
+                }
 
-                    /*if (uiElement.GetComponent<RectTransform>() == null)
-                    {
-                        uiElement.AddComponent<RectTransform>();
-                    }*/
-                    uiElement.transform.SetParent(canvas.transform, false);
-                        
-                    }
+                /*if (uiElement.GetComponent<RectTransform>() == null)
+                {
+                    uiElement.AddComponent<RectTransform>();
+                }*/
+                uiElement.transform.SetParent(canvas.transform, false);    
             }
 
             // Register undo
@@ -297,7 +294,7 @@ namespace IndieBuff.Editor
             return $"Created UI {elementType} element: {elementName}";
         }
     
-        public static string SetText(Dictionary<string, string> parameters){
+        public static string SetUIText(Dictionary<string, string> parameters){
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
             string text = parameters.ContainsKey("text") ? parameters["text"] : null;
 
@@ -328,7 +325,7 @@ namespace IndieBuff.Editor
             return $"Text set for: {hierarchyPath}";
         }
 
-        public static string SetImage(Dictionary<string, string> parameters)
+        public static string SetUIImage(Dictionary<string, string> parameters)
         {
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
             string spritePath = parameters.ContainsKey("sprite_path") ? parameters["sprite_path"] : null;

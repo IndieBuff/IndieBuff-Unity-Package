@@ -463,6 +463,10 @@ namespace IndieBuff.Editor
                         scriptData["scriptContent"] = File.ReadAllLines(scriptPath);
                         scriptData["type"] = "MonoScript";
                     }
+                    // if its a ui element, get the serialized properties
+                    else{
+                        scriptData["properties"] = GetSerializedProperties(script);
+                    }
                 }
 
                 /*
