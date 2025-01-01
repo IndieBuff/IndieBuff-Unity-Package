@@ -187,6 +187,10 @@ namespace IndieBuff.Editor
                     break;
                 case "slider":
                     uiElement = new GameObject(elementName, typeof(Slider), typeof(Image));
+
+                    // Set RectTransform for the slider
+                    RectTransform sliderRect = uiElement.GetComponent<RectTransform>();
+                    sliderRect.sizeDelta = new Vector2(160, 20);
                     
                     // Background
                     GameObject backgroundSliderObj = new GameObject("Background", typeof(Image));
@@ -246,10 +250,6 @@ namespace IndieBuff.Editor
                     slider.minValue = 0;
                     slider.maxValue = 1;
                     slider.value = 0.5f;
-                    
-                    // Set RectTransform for the slider
-                    RectTransform sliderRect = uiElement.GetComponent<RectTransform>();
-                    sliderRect.sizeDelta = new Vector2(160, 20);
                     break;
                 default:
                     return $"Unsupported UI element type: {elementType}";
