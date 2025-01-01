@@ -92,7 +92,7 @@ namespace IndieBuff.Editor
         {
             string elementName = parameters.ContainsKey("element_name") ? parameters["element_name"] : "New UI Element";
             string elementType = parameters.ContainsKey("element_type") ? parameters["element_type"] : null;
-            string parentName = parameters.ContainsKey("parent_name") ? parameters["parent_name"] : null;
+            string parentName = parameters.ContainsKey("parent_hierarchy_path") ? parameters["parent_hierarchy_path"] : null;
 
             // Validate element type
             if (string.IsNullOrEmpty(elementType) || string.IsNullOrEmpty(elementName))
@@ -232,6 +232,37 @@ namespace IndieBuff.Editor
             Undo.RegisterCreatedObjectUndo(uiElement, $"Create UI {elementType}");
 
             return $"Created UI {elementType} element: {elementName}";
+        }
+    
+        public static string SetText(Dictionary<string, string> parameters){
+            string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
+            string text = parameters.ContainsKey("text") ? parameters["text"] : null;
+
+            GameObject element = GameObject.Find(hierarchyPath);
+            if (element == null)
+            {
+                return $"Element not found: {hierarchyPath}";
+            }
+
+            Text textComponent = element.GetComponent<Text>();
+
+            if (textComponent == null)
+            {
+                textComponent = element.GetComponentInChildren<Text>();
+            }
+
+            if (textComponent == null)
+            {
+                return $"No Text component found on or in children of: {hierarchyPath}";
+            }
+
+            Undo.RecordObject(textComponent, "Modify Text");
+
+            textComponent.text = text;  
+
+            EditorUtility.SetDirty(element);
+
+            return $"Text set for: {hierarchyPath}";
         }
     }
 }
