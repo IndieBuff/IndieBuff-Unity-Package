@@ -235,7 +235,7 @@ namespace IndieBuff.Editor
             SerializedObject serializedObject = new SerializedObject(scriptInstance);
             serializedObject.Update();
             SerializedProperty field = serializedObject.FindProperty(fieldName);
-            
+
             if (field == null)
             {
                 return $"Failed to find field {fieldName}";
@@ -243,49 +243,62 @@ namespace IndieBuff.Editor
 
             try
             {
-                switch (fieldType.ToLower())
+                // Use the actual property type from the SerializedProperty
+                switch (field.propertyType)
                 {
-                    case "int":
+                    case SerializedPropertyType.Integer:
                         field.intValue = int.Parse(fieldValue);
                         break;
-                    case "float":
+                    case SerializedPropertyType.Float:
                         field.floatValue = float.Parse(fieldValue);
                         break;
-                    case "bool":
+                    case SerializedPropertyType.Boolean:
                         field.boolValue = bool.Parse(fieldValue);
                         break;
-                    case "string":
+                    case SerializedPropertyType.String:
                         field.stringValue = fieldValue;
                         break;
-                    case "gameobject":
-                        var referencedGO = GameObject.Find(fieldValue);
-                        if (referencedGO != null)
-                            field.objectReferenceValue = referencedGO;
-                        else{
-                            prefabPath = fieldValue;
-                            if (!prefabPath.StartsWith("Assets/"))
+                    case SerializedPropertyType.ObjectReference:
+                        UnityEngine.Object referencedObject = null;
+                        
+                        // Try to find in scene first
+                        referencedObject = GameObject.Find(fieldValue);
+                        
+                        if (referencedObject == null)
+                        {
+                            // Try direct asset path first
+                            string assetPath = fieldValue.StartsWith("Assets/") ? fieldValue : "Assets/" + fieldValue;
+                            referencedObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath);
+
+                            // If not found, try asset search
+                            if (referencedObject == null)
                             {
-                                prefabPath = "Assets/" + prefabPath;
+                                string assetName = Path.GetFileNameWithoutExtension(fieldValue);
+                                string[] guids = AssetDatabase.FindAssets(assetName);
+                                
+                                foreach (string guid in guids)
+                                {
+                                    string asetPath = AssetDatabase.GUIDToAssetPath(guid);
+                                    referencedObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(asetPath);
+                                    if (referencedObject != null)
+                                        break;
+                                }
                             }
-                            if (!prefabPath.EndsWith(".prefab"))
-                            {
-                                prefabPath += ".prefab";
-                            }
-                            referencedGO = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-                            if (referencedGO != null)
-                                field.objectReferenceValue = referencedGO;
+                        }
+                        
+                        if (referencedObject != null)
+                        {
+                            field.objectReferenceValue = referencedObject;
+                        }
+                        else
+                        {
+                            return $"Could not find asset: {fieldValue}";
                         }
                         break;
-                    case "asset":
-                        string refPath = fieldValue.StartsWith("Assets/") ? fieldValue : "Assets/" + fieldValue;
-                        var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(refPath);
-                        if (asset != null)
-                            field.objectReferenceValue = asset;
-                        break;
-                    case "enum":
+                    case SerializedPropertyType.Enum:
                         field.enumValueIndex = int.Parse(fieldValue);
                         break;
-                    case "vector2":
+                    case SerializedPropertyType.Vector2:
                         var v2Values = fieldValue.Split(',');
                         if (v2Values.Length == 2)
                         {
@@ -295,7 +308,7 @@ namespace IndieBuff.Editor
                             );
                         }
                         break;
-                    case "vector3":
+                    case SerializedPropertyType.Vector3:
                         var v3Values = fieldValue.Split(',');
                         if (v3Values.Length == 3)
                         {
@@ -307,7 +320,7 @@ namespace IndieBuff.Editor
                         }
                         break;
                     default:
-                        return $"Unsupported field type: {fieldType}";
+                        return $"Unsupported field type: {field.propertyType}";
                 }
 
                 serializedObject.ApplyModifiedProperties();

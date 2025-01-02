@@ -150,10 +150,12 @@ namespace IndieBuff.Editor
         private double GetNamespaceMultiplier(string relativePath)
         {
             var path = relativePath.ToLower();
-            if (path.Contains("internal")) return 2.0;
+
+            if (path.Contains("indiebuff") || path.Contains("/indiebuff") || path.Contains("indiebuff/")) return 0.0;
+            /*if (path.Contains("internal")) return 2.0;
             if (path.Contains("shared")) return 1.5;
             if (path.Contains("models")) return 0.7;
-            if (path.Contains("editor")) return 0.5;
+            if (path.Contains("editor")) return 0.5;*/
             return 1.0;
         }
         private double CalculateBaseWeight(SymbolDefinition symbol, double namespaceMul) =>
