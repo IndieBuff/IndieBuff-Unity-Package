@@ -62,6 +62,10 @@ namespace IndieBuff.Editor
             }
 
             if (componentType == null) {
+                componentType = Type.GetType("UnityEngine.UI." + componentName + ", UnityEngine.UI");
+            }
+
+            if (componentType == null) {
                 componentType = AppDomain.CurrentDomain.GetAssemblies()
                                     .SelectMany(a => a.GetTypes())
                                     .FirstOrDefault(t => t.Name == componentName);
@@ -74,8 +78,7 @@ namespace IndieBuff.Editor
             Component existingComponent = null;
             
             // For UI components, we need to use the full assembly-qualified name because they not in the component namespace
-            if(componentType.ToString().Contains("UIElements") || componentType.ToString().Contains("UI.Image")){
-                
+            if(componentType.ToString().Contains("UIElements") || componentType.ToString().Contains("UI")){
                 string fullComponentName = "UnityEngine.UI." + componentName + ", UnityEngine.UI";
                 componentType = Type.GetType(fullComponentName);
                 existingComponent = originalGameObject.GetComponent(componentType);

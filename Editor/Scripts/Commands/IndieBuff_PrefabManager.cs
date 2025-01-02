@@ -330,16 +330,27 @@ namespace IndieBuff.Editor
             }
 
             // Ensure path ends with .prefab
-            if (!prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase))
+            if (!prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase) && !Path.HasExtension(prefabPath))
             {
                 prefabPath += ".prefab";
             }
+
+           
 
             // Load the prefab asset
             GameObject prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             if (prefabAsset == null)
             {
-                return $"Failed to load prefab at path: {prefabPath}";
+                 // check the assetdb for the name if its still null
+                 string[] guids = AssetDatabase.FindAssets(Path.GetFileNameWithoutExtension(prefabPath));
+                 if (guids.Length > 0)
+                 {
+                    prefabPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                 }
+                 else{
+                    return $"Failed to load prefab at path: {prefabPath}";
+                 }
             }
 
             // Instantiate the prefab in the scene
