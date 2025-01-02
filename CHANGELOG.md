@@ -1,16 +1,24 @@
-## [2.0.0] - 2025-01-01
+## [2.0.0] - 2025-01-02
 
 ### Added
 
--
+- Reduced loading times across all AI models
+- Can now type '/INSERT_COMMAND' to quickly switch chat modes
+- Added support for prefab instantiation via chat commands
+- Now storing last used command in between editor reloads
 
 ### Feature
 
--
+- Newly added slash commands replacing old command system
+- Chat slash command used for general Unity inquiries, debugging, design process
+- Script slash command used to directly create/edit your scripts
+- Accept/Deny each inserted script using SEARCH/REPLACE blocks
+- Prototype slash command used to quickly create your scene and game objects
+- Prototype command now has ability to create simple game UIs
 
 ### Fixed
 
--
+- Placeholder text wasn't displaying proper text always
 
 ## [1.2.0] - 2024-12-28
 
