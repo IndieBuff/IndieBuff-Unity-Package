@@ -317,6 +317,7 @@ namespace IndieBuff.Editor
         public static string AddPrefabToScene(Dictionary<string, string> parameters)
         {
             string prefabPath = parameters.ContainsKey("prefab_path") ? parameters["prefab_path"] : null;
+            string gameObjectName = parameters.ContainsKey("game_object_name") ? parameters["game_object_name"] : null;
 
             if (string.IsNullOrEmpty(prefabPath))
             {
@@ -358,6 +359,11 @@ namespace IndieBuff.Editor
             if (instance == null)
             {
                 return $"Failed to instantiate prefab from {prefabPath}";
+            }
+
+            if (!string.IsNullOrEmpty(gameObjectName))
+            {
+                instance.name = gameObjectName;
             }
 
             Undo.IncrementCurrentGroup();

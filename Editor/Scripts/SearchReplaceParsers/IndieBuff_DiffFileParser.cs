@@ -358,7 +358,9 @@ public class DiffFileParser
         {
 
             var (path, original, updated) = edit;
-            string fullPath = Path.GetFullPath(Path.Combine(rootPath, path));
+            // Get the project root by going up one level from Assets
+            string projectRoot = Path.GetDirectoryName(rootPath); // removes "Assets" from the path
+            string fullPath = Path.GetFullPath(Path.Combine(projectRoot, path));
             string content = File.ReadAllText(fullPath);
 
             errorMessage += $"\n## SearchReplaceNoExactMatch: This SEARCH block failed to exactly match lines in {path}\n";

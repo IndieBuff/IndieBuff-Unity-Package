@@ -39,6 +39,9 @@ namespace IndieBuff.Editor
             // Build asset context
             Dictionary<string, object> assetMap = await IndieBuff_AssetContextRanker.Instance.BuildRankedAssetContext(prompt);
 
+            // Build project context
+            Dictionary<string, object> projectMap = IndieBuff_ProjectContext.Instance.BuildProjectMap();
+
 
             var settings = new JsonSerializerSettings
             {
@@ -54,6 +57,7 @@ namespace IndieBuff.Editor
                 codeMap,
                 sceneMap,
                 assetMap,
+                projectMap
             };
 
             ContextObjectString = JsonConvert.SerializeObject(new { context = contextData }, settings);
