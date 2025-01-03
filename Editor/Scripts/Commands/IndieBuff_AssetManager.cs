@@ -79,6 +79,91 @@ namespace IndieBuff.Editor
             return $"Material created successfully at: {assetPath}";
         }
 
+        public static string CreateTexture(Dictionary<string, string> parameters)
+        {
+            string textureName = parameters.ContainsKey("texture_name") ? parameters["texture_name"] : null;
+            string colorName = parameters.ContainsKey("color") ? parameters["color"] : null;
+            string widthStr = parameters.ContainsKey("width") ? parameters["width"] : "256";
+            string heightStr = parameters.ContainsKey("height") ? parameters["height"] : "256";
+
+            if (string.IsNullOrEmpty(textureName))
+            {
+                return "Failed to create texture: Texture name is required";
+            }
+
+            // Parse dimensions with defaults
+            if (!int.TryParse(widthStr, out int width)) width = 256;
+            if (!int.TryParse(heightStr, out int height)) height = 256;
+
+            // Create the Textures folder if it doesn't exist
+            string folderPath = "Assets/Textures";
+            if (!AssetDatabase.IsValidFolder(folderPath))
+            {
+                AssetDatabase.CreateFolder("Assets", "Textures");
+            }
+
+            // Create texture
+            Texture2D texture = new Texture2D(width, height);
+            Color fillColor = Color.white; // Default color
+
+            // Set color if provided
+            if (!string.IsNullOrEmpty(colorName))
+            {
+                // RGBA vals
+                string[] rgbaValues = colorName.Split(',');
+                if (rgbaValues.Length >= 3)
+                {
+                    if (float.TryParse(rgbaValues[0].Trim(), out float r) &&
+                        float.TryParse(rgbaValues[1].Trim(), out float g) &&
+                        float.TryParse(rgbaValues[2].Trim(), out float b))
+                    {
+                        float a = rgbaValues.Length >= 4 && float.TryParse(rgbaValues[3].Trim(), out float alpha) ? alpha : 1f;
+                        fillColor = new Color(r, g, b, a);
+                    }
+                }
+                // hex vals
+                else if (ColorUtility.TryParseHtmlString(colorName, out Color color))
+                {
+                    fillColor = color;
+                }
+                // name vals (red etc)
+                else
+                {
+                    System.Type colorType = typeof(Color);
+                    var colorProperty = colorType.GetProperty(colorName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    if (colorProperty != null)
+                    {
+                        fillColor = (Color)colorProperty.GetValue(null);
+                    }
+                }
+            }
+
+            // Fill texture with color
+            Color[] colors = new Color[width * height];
+            for (int i = 0; i < colors.Length; i++)
+            {
+                colors[i] = fillColor;
+            }
+            texture.SetPixels(colors);
+            texture.Apply();
+
+            // Save texture
+            if (!textureName.EndsWith(".png"))
+                textureName += ".png";
+
+            string assetPath = Path.Combine(folderPath, textureName);
+            assetPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
+
+            byte[] bytes = texture.EncodeToPNG();
+            File.WriteAllBytes(assetPath, bytes);
+
+            AssetDatabase.ImportAsset(assetPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            return $"Texture created successfully at: {assetPath}";
+        }
+
         public static string RenameAsset(Dictionary<string, string> parameters)
         {
             string assetPath = parameters.ContainsKey("asset_path") ? parameters["asset_path"] : null;
