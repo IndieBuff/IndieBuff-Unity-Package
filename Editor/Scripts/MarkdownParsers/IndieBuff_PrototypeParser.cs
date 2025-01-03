@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using IndieBuff.Editor;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Indiebuff.Editor
@@ -10,10 +12,14 @@ namespace Indiebuff.Editor
     {
         private List<IndieBuff_CommandData> parsedCommands = new List<IndieBuff_CommandData>();
         private List<Button> commandButtons = new List<Button>();
+        private bool inExplaination;
+        private StringBuilder explainBuffer;
 
         public PrototypeParser(VisualElement responseContainer)
             : base(responseContainer)
         {
+            inExplaination = false;
+            explainBuffer = new StringBuilder();
 
         }
 
@@ -33,25 +39,50 @@ namespace Indiebuff.Editor
             {
                 return;
             }
-            var commandData = IndieBuff_CommandParser.ParseCommandLine(line.Trim());
-            if (commandData != null)
-            {
-                if (commandData.MethodName == "Explain")
-                {
-                    currentMessageLabel.value += commandData.Parameters["explanation"];
-                    return;
-                }
-                parsedCommands.Add(commandData);
-                VisualElement commandContainer = CreateCommandElement(commandData);
-                messageContainer.Add(commandContainer);
 
-                InitializeViewCommand(commandData, commandContainer.Q<Foldout>("command-foldout"));
+            if (!inExplaination)
+            {
+                var commandData = IndieBuff_CommandParser.ParseCommandLine(line.Trim());
+                if (commandData != null)
+                {
+                    if (commandData.MethodName == "Explain")
+                    {
+                        if (commandData.Parameters.ContainsKey("explanation"))
+                        {
+                            currentMessageLabel.value += commandData.Parameters["explanation"];
+                        }
+                        else
+                        {
+                            inExplaination = true;
+                        }
+
+                        return;
+                    }
+                    parsedCommands.Add(commandData);
+                    VisualElement commandContainer = CreateCommandElement(commandData);
+                    messageContainer.Add(commandContainer);
+
+                    InitializeViewCommand(commandData, commandContainer.Q<Foldout>("command-foldout"));
+                }
+                else
+                {
+                    VisualElement errorContainer = CreateCommandElementError();
+                    messageContainer.Add(errorContainer);
+                }
             }
             else
             {
-                VisualElement errorContainer = CreateCommandElementError();
-                messageContainer.Add(errorContainer);
+                explainBuffer.Append(line + "\n");
+                if (line.EndsWith("]"))
+                {
+                    currentMessageLabel.value += explainBuffer.ToString().Substring(0, explainBuffer.Length - 3);
+                    explainBuffer.Clear();
+                    inExplaination = false;
+                }
             }
+
+
+
         }
 
         private void InitializeViewCommand(IndieBuff_CommandData commandData, Foldout commandPreview)

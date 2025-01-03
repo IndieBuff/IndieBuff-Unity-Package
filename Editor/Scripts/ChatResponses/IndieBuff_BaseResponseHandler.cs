@@ -42,8 +42,9 @@ namespace IndieBuff.Editor
 
 
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Debug.LogError(e.Message);
                 HandleError(responseContainer);
             }
         }
