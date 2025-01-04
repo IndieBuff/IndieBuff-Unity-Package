@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Linq;
+using System.IO;
 
 namespace IndieBuff.Editor
 {
@@ -335,6 +336,58 @@ namespace IndieBuff.Editor
                 }
             }
             return false;
+        }
+        public static string CreateSpriteGameObject(Dictionary<string, string> parameters)
+        {
+            string gameObjectName = parameters.ContainsKey("game_object_name") ? parameters["game_object_name"] : "New Default Sprite";
+            string shapeType = parameters.ContainsKey("type_of_sprite_shape") ? parameters["type_of_sprite_shape"].ToLower() : "square";
+
+            // Convert the local path to a package path
+            string packagePath = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/";
+            string texturePath = "";
+
+            // make shape type lowercase
+            shapeType = shapeType.ToLower();
+
+            switch (shapeType)
+            {
+                case "square":
+                    texturePath = packagePath + "Square.png";
+                    break;
+                case "circle":
+                    texturePath = packagePath + "Circle.png";
+                    break;
+                case "triangle":
+                    texturePath = packagePath + "Triangle.png";
+                    break;
+                case "diamond":
+                    texturePath = packagePath + "IsometricDiamond.png";
+                    break;
+                case "hexagon":
+                    texturePath = packagePath + "HexagonPointedTop.png";
+                    break;
+                case "capsule":
+                    texturePath = packagePath + "Capsule.png";
+                    break;
+                default:
+                    return "Invalid shape type. Supported types: square, circle, triangle, diamond, hexagon, capsule";
+            }
+
+            // Load the sprite from the package
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(texturePath);
+            if (sprite == null)
+            {
+                return $"Failed to load sprite at path: {texturePath}. Make sure you have unity 2d sprite package installed!";
+            }
+
+            GameObject spriteObject = new GameObject(gameObjectName);
+            SpriteRenderer spriteRenderer = spriteObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = sprite;
+
+            Undo.IncrementCurrentGroup();
+            Undo.RegisterCreatedObjectUndo(spriteObject, "Create Default Sprite");
+
+            return $"New {shapeType} sprite created with name: {spriteObject.name}";
         }
     }
 }
