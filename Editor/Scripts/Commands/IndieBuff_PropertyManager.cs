@@ -33,7 +33,7 @@ namespace IndieBuff.Editor
                 originalGameObject = GameObject.Find(hierarchyPath);
             }
 
-            if ((originalGameObject == null && !string.IsNullOrEmpty(prefabPath)))
+            if (originalGameObject == null && !string.IsNullOrEmpty(prefabPath))
             {
                 if (!prefabPath.StartsWith("Assets/", System.StringComparison.OrdinalIgnoreCase))
                 {
@@ -172,6 +172,18 @@ namespace IndieBuff.Editor
             EditorSceneManager.MarkSceneDirty(existingComponent.gameObject.scene);
 
             return $"Property named '{propertyName}' assigned with value '{value}' to gameobject {hierarchyPath}";
+        }
+
+        // This is a special case for setting properties on prefabs and the ai refuses to use prefab_path
+        public static string SetPropertyPrefab(Dictionary<string, string> parameters)
+        {
+            // if parameters contains a hierachy_path, we need to change the key to prefab_path
+            if (parameters.ContainsKey("hierarchy_path"))
+            {
+                parameters["prefab_path"] = parameters["hierarchy_path"];
+                parameters.Remove("hierarchy_path");
+            }
+            return SetProperty(parameters);
         }
 
         public static string SetTransform2DProperty(Dictionary<string, string> parameters)
