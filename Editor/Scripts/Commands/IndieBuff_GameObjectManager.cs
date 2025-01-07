@@ -379,96 +379,90 @@ namespace IndieBuff.Editor
             // If sprite is null, create a fallback texture
             if (sprite == null)
             {
-                // Create Textures directory if it doesn't exist
-                string texturesPath = "Assets/Textures";
-                if (!Directory.Exists(texturesPath))
-                {
-                    Directory.CreateDirectory(texturesPath);
-                }
-
-                // Create a new texture based on shape
-                Texture2D texture = new Texture2D(32, 32);
-                Color[] colors = new Color[32 * 32];
+                const int textureSize = 256;
+                Texture2D texture = new Texture2D(textureSize, textureSize);
+                Color[] colors = new Color[textureSize * textureSize];
                 
                 // Fill texture based on shape
-                for (int y = 0; y < 32; y++)
+                for (int y = 0; y < textureSize; y++)
                 {
-                    for (int x = 0; x < 32; x++)
+                    for (int x = 0; x < textureSize; x++)
                     {
-                        float centerX = x - 15.5f;
-                        float centerY = y - 15.5f;
+                        float centerX = x - (textureSize / 2f);
+                        float centerY = y - (textureSize / 2f);
                         
-                        bool isPixelVisible = false;
+                        float alpha = 1f;
                         switch (shapeType)
                         {
                             case "circle":
-                                isPixelVisible = (centerX * centerX + centerY * centerY) <= 225; // radius of 15
+                                float distanceFromCenter = Mathf.Sqrt(centerX * centerX + centerY * centerY);
+                                float radius = textureSize * 0.45f; // Slightly smaller than half to ensure smooth edges
+                                alpha = Mathf.Clamp01(1f - (distanceFromCenter - radius + 1f));
                                 break;
                             case "triangle":
-                                float height_triangle = 30;  // total height of triangle
-                                float base_triangle = 30;    // base width of triangle
-                                float centerOfBase_triangle = 16.0f;  // true center for 32-pixel width (pixels 0-31)
+                                float height_triangle = textureSize * 0.9f;
+                                float base_triangle = textureSize * 0.9f;
+                                float centerOfBase_triangle = textureSize / 2f;
                                 
-                                // Calculate if point is inside an equilateral triangle
-                                float triangleY = 31 - y;  // Flip Y to draw triangle point-up
+                                float triangleY = textureSize - y;
                                 float slope = height_triangle / (base_triangle / 2);
                                 float leftBound = centerOfBase_triangle - (triangleY / slope);
                                 float rightBound = centerOfBase_triangle + (triangleY / slope);
                                 
-                                isPixelVisible = (x >= leftBound && x <= rightBound && triangleY <= height_triangle);
+                                float distanceToEdge = Mathf.Min(
+                                    Mathf.Abs(x - leftBound),
+                                    Mathf.Abs(x - rightBound),
+                                    triangleY / slope
+                                );
+                                alpha = Mathf.Clamp01(distanceToEdge);
                                 break;
                             case "diamond":
-                                isPixelVisible = Math.Abs(centerX) + Math.Abs(centerY) <= 15;
+                                float diamondDist = (Mathf.Abs(centerX) + Mathf.Abs(centerY)) / (textureSize * 0.45f);
+                                alpha = Mathf.Clamp01(1f - (diamondDist - 0.9f) * textureSize * 0.1f);
                                 break;
                             case "hexagon":
-                                isPixelVisible = Math.Abs(centerX) <= 15 - Math.Abs(centerY) * 0.5f;
+                                float hexRadius = textureSize * 0.45f;
+                                float q2x = Mathf.Abs(centerX);
+                                float q2y = Mathf.Abs(centerY);
+                                float hexDist = Mathf.Max(q2x * 0.866025f + q2y * 0.5f, q2y);
+                                alpha = Mathf.Clamp01(1f - (hexDist - hexRadius + 1f));
                                 break;
                             case "capsule":
-                                float radiusSquared = 8 * 8;  // radius of 8 pixels
-                                float halfHeight = 15;        // half height of the entire capsule
+                                float capsuleRadius = textureSize * 0.25f;
+                                float capsuleHeight = textureSize * 0.45f;
                                 
-                                // For points in the middle section
-                                if (Math.Abs(centerY) <= halfHeight - 8)
+                                if (Mathf.Abs(centerY) <= capsuleHeight - capsuleRadius)
                                 {
-                                    isPixelVisible = (centerX * centerX) <= radiusSquared;
+                                    float distFromCenter = Mathf.Abs(centerX);
+                                    alpha = Mathf.Clamp01(1f - (distFromCenter - capsuleRadius + 1f));
                                 }
-                                // For points in the end caps
                                 else
                                 {
-                                    float circleY = Math.Abs(centerY) - (halfHeight - 8);
-                                    isPixelVisible = (circleY * circleY + centerX * centerX) <= radiusSquared;
+                                    float circleY = Mathf.Abs(centerY) - (capsuleHeight - capsuleRadius);
+                                    float distFromCircleCenter = Mathf.Sqrt(centerX * centerX + circleY * circleY);
+                                    alpha = Mathf.Clamp01(1f - (distFromCircleCenter - capsuleRadius + 1f));
                                 }
                                 break;
                             default: // square
-                                isPixelVisible = true;
+                                float edgeDistance = Mathf.Min(
+                                    Mathf.Min(x, textureSize - x),
+                                    Mathf.Min(y, textureSize - y)
+                                );
+                                alpha = Mathf.Clamp01(edgeDistance / 2f);
                                 break;
                         }
                         
-                        colors[y * 32 + x] = isPixelVisible ? Color.white : Color.clear;
+                        colors[y * textureSize + x] = new Color(1, 1, 1, alpha);
                     }
                 }
                 
                 texture.SetPixels(colors);
                 texture.Apply();
 
-                // Save the texture
-                string assetPath = $"{texturesPath}/{shapeType}_sprite.png";
-                byte[] pngData = texture.EncodeToPNG();
-                File.WriteAllBytes(assetPath, pngData);
-                AssetDatabase.Refresh();
-
-                // Configure texture import settings
-                TextureImporter importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
-                if (importer != null)
-                {
-                    importer.textureType = TextureImporterType.Sprite;
-                    importer.spritePixelsPerUnit = 32;
-                    importer.filterMode = FilterMode.Bilinear;
-                    importer.SaveAndReimport();
-                }
-
-                // Load the newly created sprite
-                sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+                // Create sprite with higher resolution settings
+                Rect rect = new Rect(0, 0, texture.width, texture.height);
+                Vector2 pivot = new Vector2(0.5f, 0.5f);
+                sprite = Sprite.Create(texture, rect, pivot, 256f, 0, SpriteMeshType.FullRect);
             }
 
             if (sprite == null)
