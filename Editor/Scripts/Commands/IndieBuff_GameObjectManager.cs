@@ -76,6 +76,166 @@ namespace IndieBuff.Editor
             return "New primative gameobject created with name: " + gameObjectPrimative.name;
         }
         
+
+        public static string CreateSpriteGameObject(Dictionary<string, string> parameters)
+        {
+            string gameObjectName = parameters.ContainsKey("game_object_name") ? parameters["game_object_name"] : "New Default Sprite";
+            string shapeType = parameters.ContainsKey("type_of_sprite_shape") ? parameters["type_of_sprite_shape"].ToLower() : "square";
+
+            // Try package path first
+            string packagePath = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/";
+            string texturePath = "";
+            
+            // make shape type lowercase
+            shapeType = shapeType.ToLower();
+
+            switch (shapeType)
+            {
+                case "square":
+                    texturePath = packagePath + "Square.png";
+                    break;
+                case "circle":
+                    texturePath = packagePath + "Circle.png";
+                    break;
+                case "triangle":
+                    texturePath = packagePath + "Triangle.png";
+                    break;
+                case "diamond":
+                    texturePath = packagePath + "IsometricDiamond.png";
+                    break;
+                case "hexagon":
+                    texturePath = packagePath + "HexagonPointedTop.png";
+                    break;
+                case "capsule":
+                    texturePath = packagePath + "Capsule.png";
+                    break;
+                default:
+                    return "Invalid shape type. Supported types: square, circle, triangle, diamond, hexagon, capsule";
+            }
+
+            // Try to load from package first
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(texturePath);
+            
+            // If sprite is null, create a fallback texture
+            if (sprite == null)
+            {
+                const int textureSize = 256;
+                Texture2D texture = new Texture2D(textureSize, textureSize);
+                Color[] colors = new Color[textureSize * textureSize];
+                
+                // Fill texture based on shape
+                for (int y = 0; y < textureSize; y++)
+                {
+                    for (int x = 0; x < textureSize; x++)
+                    {
+                        float centerX = x - (textureSize / 2f);
+                        float centerY = y - (textureSize / 2f);
+                        
+                        float alpha = 1f;
+                        switch (shapeType)
+                        {
+                            case "circle":
+                                float distanceFromCenter = Mathf.Sqrt(centerX * centerX + centerY * centerY);
+                                float radius = textureSize * 0.45f; // Slightly smaller than half to ensure smooth edges
+                                alpha = Mathf.Clamp01(1f - (distanceFromCenter - radius + 1f));
+                                break;
+                            case "triangle":
+                                float height_triangle = textureSize * 0.9f;
+                                float base_triangle = textureSize * 0.9f;
+                                float centerOfBase_triangle = textureSize / 2f;
+                                float topY = textureSize * 0.1f; // Define the top point of triangle
+                                
+                                float triangleY = y;
+                                float slope = height_triangle / (base_triangle / 2);
+                                float leftBound = centerOfBase_triangle - ((textureSize - triangleY) / slope);
+                                float rightBound = centerOfBase_triangle + ((textureSize - triangleY) / slope);
+                                
+                                // Check if the current pixel is inside the triangle AND below the top point
+                                if (x >= leftBound && x <= rightBound && y >= topY && y <= textureSize - 1)
+                                {
+                                    alpha = 1f;
+                                    
+                                    // Add smooth edges
+                                    float distanceToEdge = Mathf.Min(
+                                        x - leftBound,
+                                        rightBound - x,
+                                        (textureSize - y) / slope
+                                    );
+                                    if (distanceToEdge < 1f)
+                                    {
+                                        alpha = distanceToEdge;
+                                    }
+                                }
+                                else
+                                {
+                                    alpha = 0;
+                                }
+                                break;
+                            case "diamond":
+                                float diamondDist = (Mathf.Abs(centerX) + Mathf.Abs(centerY)) / (textureSize * 0.45f);
+                                alpha = Mathf.Clamp01(1f - (diamondDist - 0.9f) * textureSize * 0.1f);
+                                break;
+                            case "hexagon":
+                                float hexRadius = textureSize * 0.45f;
+                                float q2x = Mathf.Abs(centerX);
+                                float q2y = Mathf.Abs(centerY);
+                                float hexDist = Mathf.Max(q2x * 0.866025f + q2y * 0.5f, q2y);
+                                alpha = Mathf.Clamp01(1f - (hexDist - hexRadius + 1f));
+                                break;
+                            case "capsule":
+                                float capsuleRadius = textureSize * 0.25f;
+                                float capsuleHeight = textureSize * 0.45f;
+                                
+                                if (Mathf.Abs(centerY) <= capsuleHeight - capsuleRadius)
+                                {
+                                    float distFromCenter = Mathf.Abs(centerX);
+                                    alpha = Mathf.Clamp01(1f - (distFromCenter - capsuleRadius + 1f));
+                                }
+                                else
+                                {
+                                    float circleY = Mathf.Abs(centerY) - (capsuleHeight - capsuleRadius);
+                                    float distFromCircleCenter = Mathf.Sqrt(centerX * centerX + circleY * circleY);
+                                    alpha = Mathf.Clamp01(1f - (distFromCircleCenter - capsuleRadius + 1f));
+                                }
+                                break;
+                            default: // square
+                                float edgeDistance = Mathf.Min(
+                                    Mathf.Min(x, textureSize - x),
+                                    Mathf.Min(y, textureSize - y)
+                                );
+                                alpha = Mathf.Clamp01(edgeDistance / 2f);
+                                break;
+                        }
+                        
+                        colors[y * textureSize + x] = new Color(1, 1, 1, alpha);
+                    }
+                }
+                
+                texture.SetPixels(colors);
+                texture.Apply();
+
+                // Create sprite with higher resolution settings
+                Rect rect = new Rect(0, 0, texture.width, texture.height);
+                Vector2 pivot = new Vector2(0.5f, 0.5f);
+                sprite = Sprite.Create(texture, rect, pivot, 256f, 0, SpriteMeshType.FullRect);
+            }
+
+            if (sprite == null)
+            {
+                return "Failed to create sprite";
+            }
+
+            GameObject spriteObject = new GameObject(gameObjectName);
+            SpriteRenderer spriteRenderer = spriteObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = sprite;
+
+            Undo.IncrementCurrentGroup();
+            Undo.RegisterCreatedObjectUndo(spriteObject, "Create Default Sprite");
+
+            return $"New {shapeType} sprite created with name: {spriteObject.name}";
+        }
+    
+    
         public static string DuplicateGameObject(Dictionary<string, string> parameters)
         {
 
@@ -337,162 +497,6 @@ namespace IndieBuff.Editor
             }
             return false;
         }
-        public static string CreateSpriteGameObject(Dictionary<string, string> parameters)
-        {
-            string gameObjectName = parameters.ContainsKey("game_object_name") ? parameters["game_object_name"] : "New Default Sprite";
-            string shapeType = parameters.ContainsKey("type_of_sprite_shape") ? parameters["type_of_sprite_shape"].ToLower() : "square";
 
-            // Try package path first
-            string packagePath = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/";
-            string texturePath = "";
-            
-            // make shape type lowercase
-            shapeType = shapeType.ToLower();
-
-            switch (shapeType)
-            {
-                case "square":
-                    texturePath = packagePath + "Square.png";
-                    break;
-                case "circle":
-                    texturePath = packagePath + "Circle.png";
-                    break;
-                case "triangle":
-                    texturePath = packagePath + "Triangle.png";
-                    break;
-                case "diamond":
-                    texturePath = packagePath + "IsometricDiamond.png";
-                    break;
-                case "hexagon":
-                    texturePath = packagePath + "HexagonPointedTop.png";
-                    break;
-                case "capsule":
-                    texturePath = packagePath + "Capsule.png";
-                    break;
-                default:
-                    return "Invalid shape type. Supported types: square, circle, triangle, diamond, hexagon, capsule";
-            }
-
-            // Try to load from package first
-            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(texturePath);
-            
-            // If sprite is null, create a fallback texture
-            if (sprite == null)
-            {
-                const int textureSize = 256;
-                Texture2D texture = new Texture2D(textureSize, textureSize);
-                Color[] colors = new Color[textureSize * textureSize];
-                
-                // Fill texture based on shape
-                for (int y = 0; y < textureSize; y++)
-                {
-                    for (int x = 0; x < textureSize; x++)
-                    {
-                        float centerX = x - (textureSize / 2f);
-                        float centerY = y - (textureSize / 2f);
-                        
-                        float alpha = 1f;
-                        switch (shapeType)
-                        {
-                            case "circle":
-                                float distanceFromCenter = Mathf.Sqrt(centerX * centerX + centerY * centerY);
-                                float radius = textureSize * 0.45f; // Slightly smaller than half to ensure smooth edges
-                                alpha = Mathf.Clamp01(1f - (distanceFromCenter - radius + 1f));
-                                break;
-                            case "triangle":
-                                float height_triangle = textureSize * 0.9f;
-                                float base_triangle = textureSize * 0.9f;
-                                float centerOfBase_triangle = textureSize / 2f;
-                                float topY = textureSize * 0.1f; // Define the top point of triangle
-                                
-                                float triangleY = y;
-                                float slope = height_triangle / (base_triangle / 2);
-                                float leftBound = centerOfBase_triangle - ((textureSize - triangleY) / slope);
-                                float rightBound = centerOfBase_triangle + ((textureSize - triangleY) / slope);
-                                
-                                // Check if the current pixel is inside the triangle AND below the top point
-                                if (x >= leftBound && x <= rightBound && y >= topY && y <= textureSize - 1)
-                                {
-                                    alpha = 1f;
-                                    
-                                    // Add smooth edges
-                                    float distanceToEdge = Mathf.Min(
-                                        x - leftBound,
-                                        rightBound - x,
-                                        (textureSize - y) / slope
-                                    );
-                                    if (distanceToEdge < 1f)
-                                    {
-                                        alpha = distanceToEdge;
-                                    }
-                                }
-                                else
-                                {
-                                    alpha = 0;
-                                }
-                                break;
-                            case "diamond":
-                                float diamondDist = (Mathf.Abs(centerX) + Mathf.Abs(centerY)) / (textureSize * 0.45f);
-                                alpha = Mathf.Clamp01(1f - (diamondDist - 0.9f) * textureSize * 0.1f);
-                                break;
-                            case "hexagon":
-                                float hexRadius = textureSize * 0.45f;
-                                float q2x = Mathf.Abs(centerX);
-                                float q2y = Mathf.Abs(centerY);
-                                float hexDist = Mathf.Max(q2x * 0.866025f + q2y * 0.5f, q2y);
-                                alpha = Mathf.Clamp01(1f - (hexDist - hexRadius + 1f));
-                                break;
-                            case "capsule":
-                                float capsuleRadius = textureSize * 0.25f;
-                                float capsuleHeight = textureSize * 0.45f;
-                                
-                                if (Mathf.Abs(centerY) <= capsuleHeight - capsuleRadius)
-                                {
-                                    float distFromCenter = Mathf.Abs(centerX);
-                                    alpha = Mathf.Clamp01(1f - (distFromCenter - capsuleRadius + 1f));
-                                }
-                                else
-                                {
-                                    float circleY = Mathf.Abs(centerY) - (capsuleHeight - capsuleRadius);
-                                    float distFromCircleCenter = Mathf.Sqrt(centerX * centerX + circleY * circleY);
-                                    alpha = Mathf.Clamp01(1f - (distFromCircleCenter - capsuleRadius + 1f));
-                                }
-                                break;
-                            default: // square
-                                float edgeDistance = Mathf.Min(
-                                    Mathf.Min(x, textureSize - x),
-                                    Mathf.Min(y, textureSize - y)
-                                );
-                                alpha = Mathf.Clamp01(edgeDistance / 2f);
-                                break;
-                        }
-                        
-                        colors[y * textureSize + x] = new Color(1, 1, 1, alpha);
-                    }
-                }
-                
-                texture.SetPixels(colors);
-                texture.Apply();
-
-                // Create sprite with higher resolution settings
-                Rect rect = new Rect(0, 0, texture.width, texture.height);
-                Vector2 pivot = new Vector2(0.5f, 0.5f);
-                sprite = Sprite.Create(texture, rect, pivot, 256f, 0, SpriteMeshType.FullRect);
-            }
-
-            if (sprite == null)
-            {
-                return "Failed to create sprite";
-            }
-
-            GameObject spriteObject = new GameObject(gameObjectName);
-            SpriteRenderer spriteRenderer = spriteObject.AddComponent<SpriteRenderer>();
-            spriteRenderer.sprite = sprite;
-
-            Undo.IncrementCurrentGroup();
-            Undo.RegisterCreatedObjectUndo(spriteObject, "Create Default Sprite");
-
-            return $"New {shapeType} sprite created with name: {spriteObject.name}";
-        }
     }
 }
