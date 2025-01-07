@@ -403,18 +403,33 @@ namespace IndieBuff.Editor
                                 float height_triangle = textureSize * 0.9f;
                                 float base_triangle = textureSize * 0.9f;
                                 float centerOfBase_triangle = textureSize / 2f;
+                                float topY = textureSize * 0.1f; // Define the top point of triangle
                                 
-                                float triangleY = textureSize - y;
+                                float triangleY = y;
                                 float slope = height_triangle / (base_triangle / 2);
-                                float leftBound = centerOfBase_triangle - (triangleY / slope);
-                                float rightBound = centerOfBase_triangle + (triangleY / slope);
+                                float leftBound = centerOfBase_triangle - ((textureSize - triangleY) / slope);
+                                float rightBound = centerOfBase_triangle + ((textureSize - triangleY) / slope);
                                 
-                                float distanceToEdge = Mathf.Min(
-                                    Mathf.Abs(x - leftBound),
-                                    Mathf.Abs(x - rightBound),
-                                    triangleY / slope
-                                );
-                                alpha = Mathf.Clamp01(distanceToEdge);
+                                // Check if the current pixel is inside the triangle AND below the top point
+                                if (x >= leftBound && x <= rightBound && y >= topY && y <= textureSize - 1)
+                                {
+                                    alpha = 1f;
+                                    
+                                    // Add smooth edges
+                                    float distanceToEdge = Mathf.Min(
+                                        x - leftBound,
+                                        rightBound - x,
+                                        (textureSize - y) / slope
+                                    );
+                                    if (distanceToEdge < 1f)
+                                    {
+                                        alpha = distanceToEdge;
+                                    }
+                                }
+                                else
+                                {
+                                    alpha = 0;
+                                }
                                 break;
                             case "diamond":
                                 float diamondDist = (Mathf.Abs(centerX) + Mathf.Abs(centerY)) / (textureSize * 0.45f);
