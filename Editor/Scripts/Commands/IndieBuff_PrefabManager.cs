@@ -731,11 +731,7 @@ namespace IndieBuff.Editor
             }
 
             // Check if prefab already exists
-            GameObject existingPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-            if (existingPrefab != null)
-            {
-                return $"Prefab at path: {prefabPath} already exists";
-            }
+            prefabPath = AssetDatabase.GenerateUniqueAssetPath(prefabPath);
 
             // Try package path first
             string packagePath = "Packages/com.unity.2d.sprite/Editor/ObjectMenuCreation/DefaultAssets/Textures/v2/";
@@ -866,10 +862,26 @@ namespace IndieBuff.Editor
                 texture.SetPixels(colors);
                 texture.Apply();
 
-                // Create sprite with higher resolution settings
-                Rect rect = new Rect(0, 0, texture.width, texture.height);
-                Vector2 pivot = new Vector2(0.5f, 0.5f);
-                sprite = Sprite.Create(texture, rect, pivot, 256f, 0, SpriteMeshType.FullRect);
+                // Save the texture as an asset first
+                string TexturePath = "Assets/Textures/" + shapeType + ".png";
+                Directory.CreateDirectory(Path.GetDirectoryName(TexturePath));
+                byte[] pngData = texture.EncodeToPNG();
+
+                // check if the file exists
+                if (!File.Exists(TexturePath))
+                {
+                    File.WriteAllBytes(TexturePath, pngData);
+                    AssetDatabase.ImportAsset(TexturePath);
+                    // Create sprite with higher resolution settings
+                    TextureImporter importer = AssetImporter.GetAtPath(TexturePath) as TextureImporter;
+                    if (importer != null)
+                    {
+                        importer.textureType = TextureImporterType.Sprite;
+                        importer.spritePixelsPerUnit = 256f;
+                        importer.SaveAndReimport();
+                    }
+                }
+                sprite = AssetDatabase.LoadAssetAtPath<Sprite>(TexturePath);
             }
 
             if (sprite == null)
