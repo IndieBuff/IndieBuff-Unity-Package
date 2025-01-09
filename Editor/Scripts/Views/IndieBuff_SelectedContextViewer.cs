@@ -74,7 +74,14 @@ namespace IndieBuff.Editor
                 logIcon.AddToClassList("context-list-item-icon");
 
                 Label logLabel = new Label();
-                logLabel.text = $"{logMessage}";
+                string truncatedMessage = logMessage.Message.Length > 20 
+                    ? logMessage.Message.Substring(0, 20) + "..." 
+                    : logMessage.Message;
+                logLabel.text = truncatedMessage;
+
+                logItemContainer.tooltip = logMessage.Message;
+                logLabel.tooltip = logMessage.Message;
+
                 logLabel.AddToClassList("context-list-item-label");
 
                 Button removeButton = new Button { text = "X" };

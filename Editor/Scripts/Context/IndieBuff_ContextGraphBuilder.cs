@@ -1101,7 +1101,8 @@ namespace IndieBuff.Editor
                 {
                     var logEntries = consoleLogs.Select(log => new Dictionary<string, object>
                     {
-                        ["message"] = log.Message,
+                        // if message is more then 200 characters, truncate it
+                        ["message"] = log.Message.Length > 200 ? log.Message.Substring(0, 200) : log.Message,
                         ["file"] = log.File,
                         ["line"] = log.Line,
                         ["column"] = log.Column,
@@ -1109,6 +1110,11 @@ namespace IndieBuff.Editor
                     }).ToList();
                     
                     consoleData["logs"] = logEntries;
+                    AddToContext("console_logs", consoleData);
+                }
+                else{
+                    // pass in an empty dictionary
+                    consoleData["logs"] = new List<Dictionary<string, object>>();
                     AddToContext("console_logs", consoleData);
                 }
             }
