@@ -73,15 +73,21 @@ namespace IndieBuff.Editor
 
         private void OnGetSelectedItemsClicked()
         {
-            UnityEngine.Object[] selectedObjects = Selection.objects;
+            Object[] selectedObjects = Selection.objects;
 
-            foreach (UnityEngine.Object obj in selectedObjects)
+            foreach (Object obj in selectedObjects)
             {
                 if (obj is not DefaultAsset && !processedObjects.Contains(obj))
                 {
                     IndieBuff_UserSelectedContext.Instance.AddContextObject(obj);
                     processedObjects.Add(obj);
                 }
+            }
+            // Handle selected console logs
+            var selectedLogs = IndieBuff_ConsoleLogHandler.Instance.GetSelectedConsoleLogs();
+            foreach (var logMessage in selectedLogs)
+            {
+                IndieBuff_UserSelectedContext.Instance.AddConsoleLog(logMessage);
             }
         }
 
@@ -137,8 +143,5 @@ namespace IndieBuff.Editor
             IndieBuff_UserSelectedContext.Instance.ClearContextObjects();
             processedObjects.Clear();
         }
-
-
-
     }
 }
