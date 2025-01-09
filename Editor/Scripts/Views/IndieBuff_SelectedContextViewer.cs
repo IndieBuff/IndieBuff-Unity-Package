@@ -1,4 +1,3 @@
-
 using UnityEngine.UIElements;
 using UnityEngine;
 using UnityEditor;
@@ -59,6 +58,44 @@ namespace IndieBuff.Editor
                 removeButton.clicked += () => RemoveContextItem(index);
 
                 userContextItemsContainer.Add(contextListItemContainer);
+            }
+
+            // Display console logs
+            for (int i = 0; i < IndieBuff_UserSelectedContext.Instance.ConsoleLogs.Count; i++)
+            {
+                var logMessage = IndieBuff_UserSelectedContext.Instance.ConsoleLogs[i];
+                
+                VisualElement logItemContainer = new VisualElement();
+                logItemContainer.AddToClassList("context-list-item-container");
+
+                VisualElement logIcon = new VisualElement();
+                Texture2D logIconTexture = EditorGUIUtility.FindTexture("console.infoicon");
+                logIcon.style.backgroundImage = logIconTexture;
+                logIcon.AddToClassList("context-list-item-icon");
+
+                Label logLabel = new Label();
+                logLabel.text = $"{logMessage}";
+                logLabel.AddToClassList("context-list-item-label");
+
+                Button removeButton = new Button { text = "X" };
+                removeButton.AddToClassList("context-list-item-remove-button");
+
+                logItemContainer.Add(logIcon);
+                logItemContainer.Add(logLabel);
+                logItemContainer.Add(removeButton);
+
+                int index = i;
+                removeButton.clicked += () => RemoveLogItem(index);
+
+                userContextItemsContainer.Add(logItemContainer);
+            }
+        }
+
+        private void RemoveLogItem(int index)
+        {
+            if (index >= 0 && index < IndieBuff_UserSelectedContext.Instance.ConsoleLogs.Count)
+            {
+                IndieBuff_UserSelectedContext.Instance.RemoveConsoleLog(index);
             }
         }
 
