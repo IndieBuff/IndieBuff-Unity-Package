@@ -21,8 +21,7 @@ namespace IndieBuff.Editor
         }
 
         private LogType ParseLogMode(int mode)
-        {            
-            // Unity's console window uses these numbers
+        {
             return mode switch
             {
                 0 => LogType.Error,
@@ -37,6 +36,25 @@ namespace IndieBuff.Editor
         public override string ToString()
         {
             return $"[{Mode}] {Message} at {File}:{Line}";
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is not IndieBuff_LogEntry other)
+                return false;
+
+            return Message == other.Message && 
+                   File == other.File && 
+                   Line == other.Line && 
+                   Mode == other.Mode;
+        }
+
+        public override int GetHashCode()
+        {
+            return Message.GetHashCode() ^ 
+                   File.GetHashCode() ^ 
+                   Line.GetHashCode() ^ 
+                   Mode.GetHashCode();
         }
     }
 } 
