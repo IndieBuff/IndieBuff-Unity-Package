@@ -18,15 +18,15 @@ namespace IndieBuff.Editor
             get { return _contextObjects; }
         }
 
-        private List<string> _consoleLogs;
-        internal List<string> ConsoleLogs
+        private List<IndieBuff_LogEntry> _consoleLogs;
+        internal List<IndieBuff_LogEntry> ConsoleLogs
         {
             get { return _consoleLogs; }
         }
         private IndieBuff_UserSelectedContext()
         {
             _contextObjects = new List<UnityEngine.Object>();
-            _consoleLogs = new List<string>();
+            _consoleLogs = new List<IndieBuff_LogEntry>();
         }
 
         private static IndieBuff_UserSelectedContext _instance;
@@ -55,11 +55,11 @@ namespace IndieBuff.Editor
             return false;
         }
 
-        internal bool AddConsoleLog(string logMessage)
+        internal bool AddConsoleLog(IndieBuff_LogEntry logEntry)
         {
-            if (!string.IsNullOrEmpty(logMessage) && !_consoleLogs.Contains(logMessage))
+            if (logEntry != null && !_consoleLogs.Contains(logEntry))
             {
-                _consoleLogs.Add(logMessage);
+                _consoleLogs.Add(logEntry);
                 onUserSelectedContextUpdated?.Invoke();
                 return true;
             }

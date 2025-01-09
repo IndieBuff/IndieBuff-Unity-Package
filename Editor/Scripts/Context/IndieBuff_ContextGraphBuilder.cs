@@ -1099,7 +1099,16 @@ namespace IndieBuff.Editor
                 
                 if (consoleLogs.Count > 0)
                 {
-                    consoleData["logs"] = consoleLogs;
+                    var logEntries = consoleLogs.Select(log => new Dictionary<string, object>
+                    {
+                        ["message"] = log.Message,
+                        ["file"] = log.File,
+                        ["line"] = log.Line,
+                        ["column"] = log.Column,
+                        ["mode"] = log.Mode
+                    }).ToList();
+                    
+                    consoleData["logs"] = logEntries;
                     AddToContext("console_logs", consoleData);
                 }
             }
