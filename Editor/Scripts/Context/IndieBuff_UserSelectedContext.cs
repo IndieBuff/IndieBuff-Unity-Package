@@ -18,9 +18,15 @@ namespace IndieBuff.Editor
             get { return _contextObjects; }
         }
 
+        private List<string> _consoleLogs;
+        internal List<string> ConsoleLogs
+        {
+            get { return _consoleLogs; }
+        }
         private IndieBuff_UserSelectedContext()
         {
             _contextObjects = new List<UnityEngine.Object>();
+            _consoleLogs = new List<string>();
         }
 
         private static IndieBuff_UserSelectedContext _instance;
@@ -49,6 +55,17 @@ namespace IndieBuff.Editor
             return false;
         }
 
+        internal bool AddConsoleLog(string logMessage)
+        {
+            if (!string.IsNullOrEmpty(logMessage) && !_consoleLogs.Contains(logMessage))
+            {
+                _consoleLogs.Add(logMessage);
+                onUserSelectedContextUpdated?.Invoke();
+                return true;
+            }
+            return false;
+        }
+
         internal bool RemoveContextObject(int index)
         {
             if (index >= 0 && index < _contextObjects.Count)
@@ -60,18 +77,28 @@ namespace IndieBuff.Editor
             return false;
         }
 
+        internal bool RemoveConsoleLog(int index)
+        {
+            if (index >= 0 && index < _consoleLogs.Count)
+            {
+                _consoleLogs.RemoveAt(index);
+                onUserSelectedContextUpdated?.Invoke();
+                return true;
+            }
+            return false;
+        }
         internal bool ClearContextObjects()
         {
             _contextObjects.Clear();
+            _consoleLogs.Clear();
             onUserSelectedContextUpdated?.Invoke();
             return true;
         }
 
         internal Task<Dictionary<string, object>> BuildUserContext()
         {
-            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects);
+            IndieBuff_ContextGraphBuilder builder = new IndieBuff_ContextGraphBuilder(_contextObjects, includeConsoleLogs: true);
             return builder.StartContextBuild();
         }
-
     }
 }

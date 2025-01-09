@@ -31,11 +31,13 @@ namespace IndieBuff.Editor
         private int _maxTokenCount;
         private int currentTokenCount = 0;
         private TaskCompletionSource<Dictionary<string, object>> _completionSource;
+        private bool includeConsoleLogs;
 
-        public IndieBuff_ContextGraphBuilder(List<UnityEngine.Object> contextObjects, int maxTokenCount = int.MaxValue)
+        public IndieBuff_ContextGraphBuilder(List<UnityEngine.Object> contextObjects, int maxTokenCount = int.MaxValue, bool includeConsoleLogs = false)
         {
             _contextObjects = contextObjects;
             _maxTokenCount = maxTokenCount;
+            this.includeConsoleLogs = includeConsoleLogs;
         }
 
         internal Task<Dictionary<string, object>> StartContextBuild()
@@ -43,6 +45,13 @@ namespace IndieBuff.Editor
             _completionSource = new TaskCompletionSource<Dictionary<string, object>>();
             isProcessing = true;
             contextData = new Dictionary<string, object>();
+            
+            // so scene doesnt take logs
+            if(includeConsoleLogs)
+            {
+                AddConsoleLogsToContext();
+            }
+            
             objectsToProcess = new Queue<GameObject>();
             processedObjects.Clear();
             prefabContentsMap.Clear();
@@ -1081,5 +1090,23 @@ namespace IndieBuff.Editor
             return properties;
         }
 
+        private void AddConsoleLogsToContext()
+        {
+            try
+            {
+                var consoleData = new Dictionary<string, object>();
+                var consoleLogs = IndieBuff_UserSelectedContext.Instance.ConsoleLogs;
+                
+                if (consoleLogs.Count > 0)
+                {
+                    consoleData["logs"] = consoleLogs;
+                    AddToContext("console_logs", consoleData);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error adding console logs to context: {e.Message}");
+            }
+        }
     }
 }
