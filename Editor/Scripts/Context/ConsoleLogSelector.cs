@@ -23,16 +23,11 @@ public class ConsoleLogSelector : EditorWindow
 
     void OnGUI()
     {
-        if (GUILayout.Button("Refresh Console Logs"))
-        {
-            RefreshConsoleLogs();
-        }
-
         EditorGUILayout.Space();
 
-        if (GUILayout.Button("Save All Console Logs"))
+        if (GUILayout.Button("Save Selected Console Logs"))
         {
-            SaveAllLogs();
+            SaveSelectedLogs();
         }
 
         EditorGUILayout.Space();
@@ -45,12 +40,20 @@ public class ConsoleLogSelector : EditorWindow
         EditorGUILayout.EndScrollView();
     }
 
-    private void RefreshConsoleLogs()
+    private void SaveSelectedLogs()
     {
-        consoleLogs.Clear();
+        string path = EditorUtility.SaveFilePanel(
+            "Save Console Logs",
+            "",
+            "console_logs.txt",
+            "txt");
+
+        if (string.IsNullOrEmpty(path))
+            return;
 
         try
         {
+            // actually get the console log window
             var assembly = Assembly.GetAssembly(typeof(SceneView));
             var consoleWindowType = assembly.GetType("UnityEditor.ConsoleWindow");
             var windowInstance = EditorWindow.GetWindow(consoleWindowType);
@@ -61,12 +64,17 @@ public class ConsoleLogSelector : EditorWindow
             var selectedEntriesField = listViewState.GetType().GetField("selectedItems", BindingFlags.Instance | BindingFlags.Public);
             var selectedEntries = selectedEntriesField.GetValue(listViewState) as bool[];
 
+            List<string> selectedLogs = new List<string>();
+            HashSet<string> uniqueLogs = new HashSet<string>();
+
             if (selectedEntries != null && selectedEntries.Length > 0)
             {
+                // get log entry types
                 var logEntryType = assembly.GetType("UnityEditor.LogEntry");
                 var logEntriesType = assembly.GetType("UnityEditor.LogEntries");
                 var getEntries = logEntriesType.GetMethod("GetEntryInternal");
 
+                // looping over each selected log entry
                 for (int i = 0; i < selectedEntries.Length; i++)
                 {
                     if (selectedEntries[i])
@@ -80,10 +88,22 @@ public class ConsoleLogSelector : EditorWindow
 
                         if (!string.IsNullOrEmpty(message))
                         {
-                            consoleLogs.Add(message);
-                            Debug.Log($"Added log: {message}");
+                            if (uniqueLogs.Add(message))
+                            {
+                                selectedLogs.Add(message);
+                            }
                         }
                     }
+                }
+
+                if (selectedLogs.Count > 0)
+                {
+                    File.WriteAllLines(path, selectedLogs);
+                    Debug.Log($"Saved selected logs to: {path}");
+                }
+                else
+                {
+                    Debug.LogWarning("No logs were selected to save");
                 }
             }
             else
@@ -93,22 +113,7 @@ public class ConsoleLogSelector : EditorWindow
         }
         catch (Exception e)
         {
-            Debug.LogError($"Error refreshing console logs: {e.Message}\n{e.StackTrace}");
-        }
-    }
-
-    private void SaveAllLogs()
-    {
-        string path = EditorUtility.SaveFilePanel(
-            "Save Console Logs",
-            "",
-            "console_logs.txt",
-            "txt");
-
-        if (!string.IsNullOrEmpty(path))
-        {
-            File.WriteAllLines(path, consoleLogs);
-            Debug.Log($"Saved all console logs to: {path}");
+            Debug.LogError($"Error saving console logs: {e.Message}\n{e.StackTrace}");
         }
     }
 
