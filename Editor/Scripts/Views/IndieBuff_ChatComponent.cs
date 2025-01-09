@@ -193,7 +193,7 @@ namespace IndieBuff.Editor
 
             IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += () =>
             {
-                if (IndieBuff_UserSelectedContext.Instance.UserContextObjects.Count > 0)
+                if (IndieBuff_UserSelectedContext.Instance.UserContextObjects.Count > 0 || IndieBuff_UserSelectedContext.Instance.ConsoleLogs.Count > 0)
                 {
                     clearContextButton.style.visibility = Visibility.Visible;
                 }
