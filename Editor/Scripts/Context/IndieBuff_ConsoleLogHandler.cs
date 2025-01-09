@@ -3,6 +3,7 @@ using UnityEditor;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Drawing.Printing;
 
 namespace IndieBuff.Editor
 {
@@ -22,17 +23,15 @@ namespace IndieBuff.Editor
             }
         }
 
-        internal List<string> GetSelectedConsoleLogs()
+        internal List<IndieBuff_LogEntry> GetSelectedConsoleLogs()
         {
-            var selectedLogs = new List<string>();
+            var selectedLogs = new List<IndieBuff_LogEntry>();
             try
             {
-                // actually get the console log window
                 var assembly = Assembly.GetAssembly(typeof(SceneView));
                 var consoleWindowType = assembly.GetType("UnityEditor.ConsoleWindow");
                 var windowInstance = EditorWindow.GetWindow(consoleWindowType);
 
-                // get ListView and selected items
                 var listViewStateField = consoleWindowType.GetField("m_ListView", BindingFlags.Instance | BindingFlags.NonPublic);
                 var listViewState = listViewStateField.GetValue(windowInstance);
                 var selectedEntriesField = listViewState.GetType().GetField("selectedItems", BindingFlags.Instance | BindingFlags.Public);
@@ -40,28 +39,63 @@ namespace IndieBuff.Editor
 
                 if (selectedEntries != null && selectedEntries.Length > 0)
                 {
-                    // get log entry types
                     var logEntryType = assembly.GetType("UnityEditor.LogEntry");
                     var logEntriesType = assembly.GetType("UnityEditor.LogEntries");
                     var getEntries = logEntriesType.GetMethod("GetEntryInternal");
 
-                    // looping over each selected log entry
                     for (int i = 0; i < selectedEntries.Length; i++)
                     {
                         if (selectedEntries[i])
                         {
-                            // create log entry instance
                             var logEntryTemp = Activator.CreateInstance(logEntryType);
                             object[] parameters = new object[] { i, logEntryTemp };
                             getEntries.Invoke(null, parameters);
 
-                            // get message field
-                            var messageField = logEntryType.GetField("message", BindingFlags.Instance | BindingFlags.Public);
-                            string message = (string)messageField.GetValue(logEntryTemp);
+                            var fields = logEntryType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                            
+                            string message = "";
+                            string file = "";
+                            int line = 0;
+                            int column = 0;
+                            LogType mode = LogType.Log;
+
+                            foreach (var field in fields)
+                            {
+                                var value = field.GetValue(logEntryTemp);
+                                
+                                switch (field.Name)
+                                {
+                                    case "message":
+                                        message = value?.ToString() ?? "";
+                                        break;
+                                    case "file":
+                                        file = value?.ToString() ?? "";
+                                        break;
+                                    case "line":
+                                        line = value != null ? (int)value : 0;
+                                        break;
+                                    case "column":
+                                        column = value != null ? (int)value : 0;
+                                        break;
+                                    case "mode":
+                                        if (value != null)
+                                        {
+                                            mode = (LogType)3; // Default to Log
+                                            if (message.StartsWith("Warning"))
+                                                mode = LogType.Warning;
+                                            else if (message.StartsWith("Error"))
+                                                mode = LogType.Error;
+                                            else if (message.Contains("Exception"))
+                                                mode = LogType.Exception;
+                                        }
+                                        break;
+                                }
+                            }
 
                             if (!string.IsNullOrEmpty(message))
                             {
-                                selectedLogs.Add(message);
+                                var logEntry = new IndieBuff_LogEntry(message, file, line, column, (int)mode);
+                                selectedLogs.Add(logEntry);
                             }
                         }
                     }
