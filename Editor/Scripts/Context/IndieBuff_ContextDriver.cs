@@ -11,6 +11,7 @@ namespace IndieBuff.Editor
     {
         private static IndieBuff_ContextDriver _instance;
         internal string ContextObjectString = "";
+        private HashSet<string> processedLogs = new HashSet<string>();
 
 
         internal static IndieBuff_ContextDriver Instance
@@ -27,8 +28,25 @@ namespace IndieBuff.Editor
 
         public async Task<string> BuildAllContext(string prompt)
         {
+            // Clear processed logs at the start of building context
+            processedLogs.Clear();
+
             // build user selected context
             Dictionary<string, object> selectionMap = await IndieBuff_UserSelectedContext.Instance.BuildUserContext();
+
+            // If selectionMap contains logs, filter out duplicates
+            if (selectionMap.ContainsKey("consoleLogs") && selectionMap["consoleLogs"] is List<string> logs)
+            {
+                var uniqueLogs = new List<string>();
+                foreach (var log in logs)
+                {
+                    if (processedLogs.Add(log)) // Add returns true if the item wasn't already in the set
+                    {
+                        uniqueLogs.Add(log);
+                    }
+                }
+                selectionMap["consoleLogs"] = uniqueLogs;
+            }
 
             // Build code context
             Dictionary<string, object> codeMap = await IndieBuff_CodeContext.Instance.BuildGraphAndGenerateMap();
@@ -61,6 +79,8 @@ namespace IndieBuff.Editor
             };
 
             ContextObjectString = JsonConvert.SerializeObject(new { context = contextData }, settings);
+
+            Debug.Log("hello");
             return ContextObjectString;
 
         }
