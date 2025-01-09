@@ -57,7 +57,7 @@ namespace IndieBuff.Editor
                             string file = "";
                             int line = 0;
                             int column = 0;
-                            LogType mode = LogType.Log;
+                            int mode = 0;
 
                             foreach (var field in fields)
                             {
@@ -80,13 +80,33 @@ namespace IndieBuff.Editor
                                     case "mode":
                                         if (value != null)
                                         {
-                                            mode = (LogType)3; // Default to Log
-                                            if (message.StartsWith("Warning"))
-                                                mode = LogType.Warning;
-                                            else if (message.StartsWith("Error"))
-                                                mode = LogType.Error;
-                                            else if (message.Contains("Exception"))
-                                                mode = LogType.Exception;
+                                            int modeValue = (int)value;
+                                            
+                                            // Check against the flag combinations in LogType enum order (0-4)
+                                            if ((modeValue & (1 << 8)) != 0)  // kScriptingError
+                                            {
+                                                mode = 0;  // Error
+                                            }
+                                            else if ((modeValue & (1 << 21)) != 0)  // kScriptingAssertion
+                                            {
+                                                mode = 1;  // Assert
+                                            }
+                                            else if ((modeValue & (1 << 9)) != 0)  // kScriptingWarning
+                                            {
+                                                mode = 2;  // Warning
+                                            }
+                                            else if ((modeValue & (1 << 10)) != 0)  // kScriptingLog
+                                            {
+                                                mode = 3;  // Log
+                                            }
+                                            else if ((modeValue & (1 << 17)) != 0)  // kScriptingException
+                                            {
+                                                mode = 4;  // Exception
+                                            }
+                                            else
+                                            {
+                                                mode = 3;  // Default to Log
+                                            }
                                         }
                                         break;
                                 }
@@ -94,7 +114,7 @@ namespace IndieBuff.Editor
 
                             if (!string.IsNullOrEmpty(message))
                             {
-                                var logEntry = new IndieBuff_LogEntry(message, file, line, column, (int)mode);
+                                var logEntry = new IndieBuff_LogEntry(message, file, line, column, mode);
                                 selectedLogs.Add(logEntry);
                             }
                         }
@@ -103,7 +123,7 @@ namespace IndieBuff.Editor
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error getting selected console logs: {e.Message}");
+                Debug.LogError($"Error in GetSelectedConsoleLogs: {e.Message}\n{e.StackTrace}");
             }
             return selectedLogs;
         }
