@@ -1105,7 +1105,7 @@ namespace IndieBuff.Editor
                         ["file"] = log.File,
                         ["line"] = log.Line,
                         ["column"] = log.Column,
-                        ["mode"] = log.Mode
+                        ["mode"] = log.Mode.ToString()
                     }).ToList();
                     
                     consoleData["logs"] = logEntries;
