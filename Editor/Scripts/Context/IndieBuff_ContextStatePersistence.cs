@@ -11,10 +11,8 @@ namespace IndieBuff.Editor
     {
         private const string CONTEXT_OBJECTS_KEY = "IndieBuff_SelectedContextObjects";
         private const string CONSOLE_LOGS_KEY = "IndieBuff_SelectedConsoleLogs";
-        private const string PROCESSED_OBJECTS_KEY = "IndieBuff_ProcessedObjects";
         
-        private IndieBuff_UserSelectedContext _context;
-        private HashSet<UnityEngine.Object> processedObjects = new HashSet<UnityEngine.Object>();
+        private readonly IndieBuff_UserSelectedContext _context;
 
         internal IndieBuff_ContextStatePersistence(IndieBuff_UserSelectedContext context)
         {
@@ -32,7 +30,6 @@ namespace IndieBuff.Editor
         private void OnAfterAssemblyReload()
         {
             RestoreStateIfNeeded();
-            RestoreProcessedObjects();
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -40,15 +37,17 @@ namespace IndieBuff.Editor
             if (state == PlayModeStateChange.ExitingEditMode)
             {
                 SaveState();
-                SaveProcessedObjects();
             }
             else if (state == PlayModeStateChange.EnteredEditMode)
             {
                 RestoreStateIfNeeded();
-                RestoreProcessedObjects();
             }
         }
-        //
+
+        public bool IsObjectInContext(UnityEngine.Object obj)
+        {
+            return _context.UserContextObjects.Contains(obj);
+        }
 
         public void SaveState()
         {
@@ -64,42 +63,11 @@ namespace IndieBuff.Editor
             EditorPrefs.SetString(CONSOLE_LOGS_KEY, serializedLogs);
         }
 
-        private void SaveProcessedObjects()
-        {
-            var objectIds = processedObjects
-                .Where(obj => obj != null)
-                .Select(obj => obj.GetInstanceID())
-                .ToArray();
-            
-            string serializedData = JsonConvert.SerializeObject(objectIds);
-            EditorPrefs.SetString(PROCESSED_OBJECTS_KEY, serializedData);
-        }
-
-        private void RestoreProcessedObjects()
-        {
-            string serializedData = EditorPrefs.GetString(PROCESSED_OBJECTS_KEY, "");
-            if (string.IsNullOrEmpty(serializedData)) return;
-
-            int[] objectIds = JsonConvert.DeserializeObject<int[]>(serializedData);
-            processedObjects.Clear();
-
-            foreach (int id in objectIds)
-            {
-                var obj = EditorUtility.InstanceIDToObject(id);
-                if (obj != null)
-                {
-                    processedObjects.Add(obj);
-                }
-            }
-        }
-
         public void RestoreStateIfNeeded()
         {
             string objectsJson = EditorPrefs.GetString(CONTEXT_OBJECTS_KEY, "");
             string logsJson = EditorPrefs.GetString(CONSOLE_LOGS_KEY, "");
             
-            bool restoredSomething = false;
-
             try
             {
                 // Restore objects
@@ -115,7 +83,6 @@ namespace IndieBuff.Editor
                             if (obj != null)
                             {
                                 _context.AddContextObject(obj);
-                                restoredSomething = true;
                             }
                         }
                     }
@@ -129,16 +96,16 @@ namespace IndieBuff.Editor
                     foreach (var log in logs)
                     {
                         _context.AddConsoleLog(log);
-                        restoredSomething = true;
                     }
                 }
 
-                if (restoredSomething)
+                // Always notify of context update, even if nothing was restored
+                _context.onUserSelectedContextUpdated?.Invoke();
+                
+                if (!string.IsNullOrEmpty(objectsJson) || !string.IsNullOrEmpty(logsJson))
                 {
-                    _context.onUserSelectedContextUpdated?.Invoke();
-                    CleanupEditorPrefs();  // Only clean up after everything is restored
+                    CleanupEditorPrefs();
                 }
-
             }
             catch (Exception e)
             {
@@ -146,26 +113,10 @@ namespace IndieBuff.Editor
             }
         }
 
-        public bool IsObjectProcessed(UnityEngine.Object obj)
-        {
-            return processedObjects.Contains(obj);
-        }
-
-        public void AddProcessedObject(UnityEngine.Object obj)
-        {
-            processedObjects.Add(obj);
-        }
-
-        public void ClearProcessedObjects()
-        {
-            processedObjects.Clear();
-        }
-
         private void CleanupEditorPrefs()
         {
             EditorPrefs.DeleteKey(CONTEXT_OBJECTS_KEY);
             EditorPrefs.DeleteKey(CONSOLE_LOGS_KEY);
-            EditorPrefs.DeleteKey(PROCESSED_OBJECTS_KEY);
         }
 
         public void Cleanup()
