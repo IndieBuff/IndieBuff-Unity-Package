@@ -100,7 +100,6 @@ namespace IndieBuff.Editor
                 loginComponent.Cleanup();
                 loginComponent = null;
             }
-            //IndieBuff_UserSelectedContext.Instance.ClearContextObjects();
         }
 
         private void OnDestroy()
