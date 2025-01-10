@@ -85,8 +85,25 @@ namespace IndieBuff.Editor
             {
                 await LoadCurrentConversation();
             }
+            else
+            {
+                await LoadMostRecentConversation();
+            }
 
             _isInitialized = true;
+        }
+        
+        // Load the most recent conversation if no conversation is selected
+        private async Task LoadMostRecentConversation()
+        {
+            if (conversations.Count > 0)
+            {
+                _currentConvoId = conversations[0].ConversationId;
+                _currentConvoTitle = conversations[0].Title;
+                SessionState.SetInt(CurrentConvoIdKey, _currentConvoId);
+                SessionState.SetString(CurrentConvoTitleKey, _currentConvoTitle);
+                await LoadCurrentConversation();
+            }
         }
 
         private async Task LoadConversations()
