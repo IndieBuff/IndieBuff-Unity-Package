@@ -51,22 +51,24 @@ namespace IndieBuff.Editor
 
         public void SaveState()
         {
-            // Save objects
+            // get objects instance ids
             var objectIds = _context.UserContextObjects.Where(obj => obj != null)
                 .Select(obj => obj.GetInstanceID())
                 .ToArray();
             
+            // save objects instance ids
             string serializedIds = JsonConvert.SerializeObject(objectIds);
-            EditorPrefs.SetString(CONTEXT_OBJECTS_KEY, serializedIds);
+            SessionState.SetString(CONTEXT_OBJECTS_KEY, serializedIds);
             
+            // save logs
             var serializedLogs = JsonConvert.SerializeObject(_context.ConsoleLogs);
-            EditorPrefs.SetString(CONSOLE_LOGS_KEY, serializedLogs);
+            SessionState.SetString(CONSOLE_LOGS_KEY, serializedLogs);
         }
 
         public void RestoreStateIfNeeded()
         {
-            string objectsJson = EditorPrefs.GetString(CONTEXT_OBJECTS_KEY, "");
-            string logsJson = EditorPrefs.GetString(CONSOLE_LOGS_KEY, "");
+            string objectsJson = SessionState.GetString(CONTEXT_OBJECTS_KEY, "");
+            string logsJson = SessionState.GetString(CONSOLE_LOGS_KEY, "");
             
             try
             {
@@ -104,7 +106,7 @@ namespace IndieBuff.Editor
                 
                 if (!string.IsNullOrEmpty(objectsJson) || !string.IsNullOrEmpty(logsJson))
                 {
-                    CleanupEditorPrefs();
+                    CleanupSessionState();
                 }
             }
             catch (Exception e)
@@ -113,10 +115,10 @@ namespace IndieBuff.Editor
             }
         }
 
-        private void CleanupEditorPrefs()
+        private void CleanupSessionState()
         {
-            EditorPrefs.DeleteKey(CONTEXT_OBJECTS_KEY);
-            EditorPrefs.DeleteKey(CONSOLE_LOGS_KEY);
+            SessionState.EraseString(CONTEXT_OBJECTS_KEY);
+            SessionState.EraseString(CONSOLE_LOGS_KEY);
         }
 
         public void Cleanup()
@@ -124,7 +126,7 @@ namespace IndieBuff.Editor
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            CleanupEditorPrefs();
+            CleanupSessionState();
         }
     }
 } 
