@@ -10,77 +10,13 @@ namespace IndieBuff.Editor
     [System.Serializable]
     public class IndieBuff_AddContextComponent
     {
-        private const string PROCESSED_OBJECTS_KEY = "IndieBuff_ProcessedObjects";
         private VisualElement root;
         private VisualTreeAsset addContextAsset;
         private VisualElement dropArea;
         private Button getSelectedItemsButton;
-        private HashSet<UnityEngine.Object> processedObjects = new HashSet<UnityEngine.Object>();
 
         public IndieBuff_AddContextComponent()
         {
-            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-            AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-        }
-
-        private void OnBeforeAssemblyReload()
-        {
-            SaveProcessedObjects();
-        }
-
-        private void OnAfterAssemblyReload()
-        {
-            RestoreProcessedObjects();
-        }
-
-        private void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            if (state == PlayModeStateChange.ExitingEditMode)
-            {
-                SaveProcessedObjects();
-            }
-            else if (state == PlayModeStateChange.EnteredEditMode)
-            {
-                RestoreProcessedObjects();
-            }
-        }
-
-        private void SaveProcessedObjects()
-        {
-            var objectIds = processedObjects
-                .Where(obj => obj != null)
-                .Select(obj => obj.GetInstanceID())
-                .ToArray();
-            
-            string serializedData = JsonConvert.SerializeObject(objectIds);
-            EditorPrefs.SetString(PROCESSED_OBJECTS_KEY, serializedData);
-        }
-
-        private void RestoreProcessedObjects()
-        {
-            string serializedData = EditorPrefs.GetString(PROCESSED_OBJECTS_KEY, "");
-            if (string.IsNullOrEmpty(serializedData)) return;
-
-            int[] objectIds = JsonConvert.DeserializeObject<int[]>(serializedData);
-            processedObjects.Clear();
-
-            foreach (int id in objectIds)
-            {
-                var obj = EditorUtility.InstanceIDToObject(id);
-                if (obj != null)
-                {
-                    processedObjects.Add(obj);
-                }
-            }
-        }
-
-        ~IndieBuff_AddContextComponent()
-        {
-            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
-            AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            EditorPrefs.DeleteKey(PROCESSED_OBJECTS_KEY);
         }
 
         public void Initialize()
@@ -129,27 +65,24 @@ namespace IndieBuff.Editor
             dropArea.RegisterCallback<DragPerformEvent>(OnDragPerformed);
 
             dropArea.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
-
         }
 
 
         private void OnGetSelectedItemsClicked()
         {
             Object[] selectedObjects = Selection.objects;
-
             foreach (Object obj in selectedObjects)
             {
-                if (obj is not DefaultAsset && !processedObjects.Contains(obj))
+                if (obj is not DefaultAsset)
                 {
                     IndieBuff_UserSelectedContext.Instance.AddContextObject(obj);
-                    processedObjects.Add(obj);
                 }
             }
-            // Handle selected console logs
+            
             var selectedLogs = IndieBuff_ConsoleLogHandler.Instance.GetSelectedConsoleLogs();
             foreach (var logMessage in selectedLogs)
             {
-                //IndieBuff_UserSelectedContext.Instance.AddConsoleLog(logMessage);
+                IndieBuff_UserSelectedContext.Instance.AddConsoleLog(logMessage);
             }
         }
 
@@ -182,16 +115,12 @@ namespace IndieBuff.Editor
             dropArea.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
             if (!IsDraggedObjectValid()) return;
 
-            processedObjects.Clear();
-
             foreach (var objectReference in DragAndDrop.objectReferences)
             {
-                if (!processedObjects.Contains(objectReference))
+                if (objectReference is not DefaultAsset)
                 {
                     IndieBuff_UserSelectedContext.Instance.AddContextObject(objectReference);
-                    processedObjects.Add(objectReference);
                 }
-
             }
         }
 
@@ -203,7 +132,6 @@ namespace IndieBuff.Editor
         public void ClearContextItems()
         {
             IndieBuff_UserSelectedContext.Instance.ClearContextObjects();
-            processedObjects.Clear();
         }
     }
 }

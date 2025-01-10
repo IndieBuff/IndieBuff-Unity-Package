@@ -11,8 +11,7 @@ namespace IndieBuff.Editor
 {
     internal class IndieBuff_UserSelectedContext
     {
-        private const string CONTEXT_OBJECTS_KEY = "IndieBuff_SelectedContextObjects";
-        private const string CONSOLE_LOGS_KEY = "IndieBuff_SelectedConsoleLogs";
+        private IndieBuff_ContextStatePersistence _statePersistence;
         internal Action onUserSelectedContextUpdated;
         private List<UnityEngine.Object> _contextObjects;
         internal List<UnityEngine.Object> UserContextObjects
@@ -26,77 +25,6 @@ namespace IndieBuff.Editor
             get { return _consoleLogs; }
         }
         private static IndieBuff_UserSelectedContext _instance;
-        private IndieBuff_UserSelectedContext()
-        {
-            _contextObjects = new List<UnityEngine.Object>();
-            _consoleLogs = new List<IndieBuff_LogEntry>();
-            
-            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-        }
-
-        private void OnBeforeAssemblyReload()
-        {
-            SaveState();
-        }
-
-        private void SaveState()
-        {
-            var objectIds = _contextObjects.Where(obj => obj != null)
-                .Select(obj => obj.GetInstanceID())
-                .ToArray();
-            
-            string serializedIds = JsonConvert.SerializeObject(objectIds);
-            EditorPrefs.SetString(CONTEXT_OBJECTS_KEY, serializedIds);
-            Debug.Log($"IndieBuff_UserSelectedContext: Saved state - Objects: {serializedIds}");
-        }
-
-        // Call this when your editor window is shown
-        internal void RestoreStateIfNeeded()
-        {
-            string objectsJson = EditorPrefs.GetString(CONTEXT_OBJECTS_KEY, "");
-            Debug.Log($"IndieBuff_UserSelectedContext: Attempting to restore state: {objectsJson}");
-            
-            if (!string.IsNullOrEmpty(objectsJson))
-            {
-                try
-                {
-                    int[] objectIds = JsonConvert.DeserializeObject<int[]>(objectsJson);
-                    if (objectIds.Length > 0) // Only clear if we have something to restore
-                    {
-                        _contextObjects.Clear();
-                        
-                        foreach (int id in objectIds)
-                        {
-                            var obj = EditorUtility.InstanceIDToObject(id);
-                            if (obj != null)
-                            {
-                                _contextObjects.Add(obj);
-                            }
-                        }
-                        
-                        // Only clear EditorPrefs if we successfully restored objects
-                        if (_contextObjects.Count > 0)
-                        {
-                            EditorPrefs.DeleteKey(CONTEXT_OBJECTS_KEY);
-                            EditorPrefs.DeleteKey(CONSOLE_LOGS_KEY);
-                        }
-                        
-                        onUserSelectedContextUpdated?.Invoke();
-                        Debug.Log($"IndieBuff_UserSelectedContext: Restored {_contextObjects.Count} objects");
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"IndieBuff_UserSelectedContext: Error restoring state: {e}");
-                }
-            }
-        }
-
-        ~IndieBuff_UserSelectedContext()
-        {
-            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
-        }
-
         internal static IndieBuff_UserSelectedContext Instance
         {
             get
@@ -108,6 +36,18 @@ namespace IndieBuff.Editor
                 return _instance;
             }
         }
+        private IndieBuff_UserSelectedContext()
+        {
+            _contextObjects = new List<UnityEngine.Object>();
+            _consoleLogs = new List<IndieBuff_LogEntry>();
+            _statePersistence = new IndieBuff_ContextStatePersistence(this);
+        }
+
+        // restore state of context objects and console logs
+        internal void RestoreStateIfNeeded()
+        {
+            _statePersistence.RestoreStateIfNeeded();
+        }
 
         internal bool AddContextObject(UnityEngine.Object contextObject)
         {
@@ -115,7 +55,7 @@ namespace IndieBuff.Editor
             {
                 _contextObjects.Add(contextObject);
                 onUserSelectedContextUpdated?.Invoke();
-                SaveState();
+                _statePersistence.SaveState();
                 return true;
             }
             return false;
@@ -127,6 +67,7 @@ namespace IndieBuff.Editor
             {
                 _consoleLogs.Add(logEntry);
                 onUserSelectedContextUpdated?.Invoke();
+                _statePersistence.SaveState();
                 return true;
             }
             return false;
@@ -138,7 +79,7 @@ namespace IndieBuff.Editor
             {
                 _contextObjects.RemoveAt(index);
                 onUserSelectedContextUpdated?.Invoke();
-                SaveState();
+                _statePersistence.SaveState();
                 return true;
             }
             return false;
@@ -149,6 +90,7 @@ namespace IndieBuff.Editor
             {
                 _consoleLogs.RemoveAt(index);
                 onUserSelectedContextUpdated?.Invoke();
+                _statePersistence.SaveState();
                 return true;
             }
             return false;
@@ -157,9 +99,14 @@ namespace IndieBuff.Editor
         {
             _contextObjects.Clear();
             _consoleLogs.Clear();
-            SaveState();
             onUserSelectedContextUpdated?.Invoke();
+            _statePersistence.SaveState();
             return true;
+        }
+
+        internal void OnDestroy()
+        {
+            _statePersistence.Cleanup();
         }
 
         internal Task<Dictionary<string, object>> BuildUserContext()
