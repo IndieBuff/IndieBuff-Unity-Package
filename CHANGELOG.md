@@ -1,3 +1,17 @@
+## [2.1.0] - 2025-01-10
+
+### Feature
+
+- Can now select any console log to provide as context to AI
+- Added support for 2D with /prototype slash command
+
+### Fixed
+
+- Context selection getting cleared when entering/exiting play mode and when scripts are recompiled
+- New chat opening when entering/exiting play mode and when scripts are recompiled
+- Error messages when using claude-3-5-haiku
+- Error messages with some /prototype responses
+
 ## [2.0.0] - 2025-01-03
 
 ### Added
