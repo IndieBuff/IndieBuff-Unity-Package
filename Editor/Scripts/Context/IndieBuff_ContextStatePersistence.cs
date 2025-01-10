@@ -69,6 +69,12 @@ namespace IndieBuff.Editor
         {
             string objectsJson = SessionState.GetString(CONTEXT_OBJECTS_KEY, "");
             string logsJson = SessionState.GetString(CONSOLE_LOGS_KEY, "");
+
+            // if both json objects are empty just return
+            if (string.IsNullOrEmpty(objectsJson) && string.IsNullOrEmpty(logsJson))
+            {
+                return;
+            }
             
             try
             {

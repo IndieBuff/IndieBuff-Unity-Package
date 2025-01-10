@@ -18,7 +18,7 @@ namespace IndieBuff.Editor
             IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += OnContextUpdated;
         }
 
-        public void OnContextUpdated()
+        private void OnContextUpdated()
         {
             userContextItemsContainer.Clear();
             DisplaySelectedContextItems();
@@ -69,7 +69,34 @@ namespace IndieBuff.Editor
                 logItemContainer.AddToClassList("context-list-item-container");
 
                 VisualElement logIcon = new VisualElement();
-                Texture2D logIconTexture = EditorGUIUtility.FindTexture("console.infoicon");
+                Texture2D logIconTexture;
+                Color logColor;
+                
+                // Set icon and color based on log type
+                switch (logMessage.Mode)
+                {
+                    case LogType.Error:
+                        logIconTexture = EditorGUIUtility.FindTexture("console.erroricon");
+                        logColor = new Color(1f, 0.3f, 0.3f); // Red
+                        break;
+                    case LogType.Assert:
+                        logIconTexture = EditorGUIUtility.FindTexture("console.erroricon");
+                        logColor = new Color(1f, 0.5f, 0.5f); // Light red
+                        break;
+                    case LogType.Exception:
+                        logIconTexture = EditorGUIUtility.FindTexture("console.erroricon");
+                        logColor = new Color(1f, 0.3f, 0.3f); // Red
+                        break;
+                    case LogType.Warning:
+                        logIconTexture = EditorGUIUtility.FindTexture("console.warnicon");
+                        logColor = new Color(1f, 0.9f, 0.4f); // Yellow
+                        break;
+                    default:
+                        logIconTexture = EditorGUIUtility.FindTexture("console.infoicon");
+                        logColor = Color.white;
+                        break;
+                }
+                
                 logIcon.style.backgroundImage = logIconTexture;
                 logIcon.AddToClassList("context-list-item-icon");
 
@@ -78,11 +105,11 @@ namespace IndieBuff.Editor
                     ? logMessage.Message.Substring(0, 20) + "..." 
                     : logMessage.Message;
                 logLabel.text = truncatedMessage;
+                logLabel.style.color = logColor;
+                logLabel.AddToClassList("context-list-item-label");
 
                 logItemContainer.tooltip = logMessage.Message;
                 logLabel.tooltip = logMessage.Message;
-
-                logLabel.AddToClassList("context-list-item-label");
 
                 Button removeButton = new Button { text = "X" };
                 removeButton.AddToClassList("context-list-item-remove-button");
