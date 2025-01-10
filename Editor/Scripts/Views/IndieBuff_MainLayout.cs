@@ -79,6 +79,8 @@ namespace IndieBuff.Editor
             rootVisualElement.Add(chatUI);
             chatUI.style.flexGrow = 1;
 
+            IndieBuff_UserSelectedContext.Instance.RestoreStateIfNeeded();
+
             chatComponent = new IndieBuff_ChatComponent(chatUI, aiResponseBoxAsset);
             chatComponent.OnLogoutSuccess += ShowLoginComponent;
         }
@@ -98,8 +100,7 @@ namespace IndieBuff.Editor
                 loginComponent.Cleanup();
                 loginComponent = null;
             }
-
-            IndieBuff_UserSelectedContext.Instance.ClearContextObjects();
+            //IndieBuff_UserSelectedContext.Instance.ClearContextObjects();
         }
 
         private void OnDestroy()
