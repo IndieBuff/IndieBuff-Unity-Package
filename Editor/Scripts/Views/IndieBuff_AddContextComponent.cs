@@ -3,13 +3,14 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace IndieBuff.Editor
 {
     [System.Serializable]
     public class IndieBuff_AddContextComponent
     {
-
+        private const string PROCESSED_OBJECTS_KEY = "IndieBuff_ProcessedObjects";
         private VisualElement root;
         private VisualTreeAsset addContextAsset;
         private VisualElement dropArea;
@@ -18,8 +19,69 @@ namespace IndieBuff.Editor
 
         public IndieBuff_AddContextComponent()
         {
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+            AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
+        private void OnBeforeAssemblyReload()
+        {
+            SaveProcessedObjects();
+        }
+
+        private void OnAfterAssemblyReload()
+        {
+            RestoreProcessedObjects();
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                SaveProcessedObjects();
+            }
+            else if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                RestoreProcessedObjects();
+            }
+        }
+
+        private void SaveProcessedObjects()
+        {
+            var objectIds = processedObjects
+                .Where(obj => obj != null)
+                .Select(obj => obj.GetInstanceID())
+                .ToArray();
+            
+            string serializedData = JsonConvert.SerializeObject(objectIds);
+            EditorPrefs.SetString(PROCESSED_OBJECTS_KEY, serializedData);
+        }
+
+        private void RestoreProcessedObjects()
+        {
+            string serializedData = EditorPrefs.GetString(PROCESSED_OBJECTS_KEY, "");
+            if (string.IsNullOrEmpty(serializedData)) return;
+
+            int[] objectIds = JsonConvert.DeserializeObject<int[]>(serializedData);
+            processedObjects.Clear();
+
+            foreach (int id in objectIds)
+            {
+                var obj = EditorUtility.InstanceIDToObject(id);
+                if (obj != null)
+                {
+                    processedObjects.Add(obj);
+                }
+            }
+        }
+
+        ~IndieBuff_AddContextComponent()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+            AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorPrefs.DeleteKey(PROCESSED_OBJECTS_KEY);
+        }
 
         public void Initialize()
         {
@@ -87,7 +149,7 @@ namespace IndieBuff.Editor
             var selectedLogs = IndieBuff_ConsoleLogHandler.Instance.GetSelectedConsoleLogs();
             foreach (var logMessage in selectedLogs)
             {
-                IndieBuff_UserSelectedContext.Instance.AddConsoleLog(logMessage);
+                //IndieBuff_UserSelectedContext.Instance.AddConsoleLog(logMessage);
             }
         }
 
