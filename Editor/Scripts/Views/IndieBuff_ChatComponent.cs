@@ -189,19 +189,12 @@ namespace IndieBuff.Editor
         {
             addContextButton = root.Q<Button>("AddContextButton");
             clearContextButton = root.Q<Button>("ClearContextButton");
-            clearContextButton.style.visibility = Visibility.Hidden;
-
-            IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += () =>
-            {
-                if (IndieBuff_UserSelectedContext.Instance.UserContextObjects.Count > 0 || IndieBuff_UserSelectedContext.Instance.ConsoleLogs.Count > 0)
-                {
-                    clearContextButton.style.visibility = Visibility.Visible;
-                }
-                else
-                {
-                    clearContextButton.style.visibility = Visibility.Hidden;
-                }
-            };
+            
+            // Initial state check
+            UpdateClearButtonVisibility();
+            
+            // Subscribe to context updates
+            IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += UpdateClearButtonVisibility;
 
             addContextComponent = new IndieBuff_AddContextComponent();
 
@@ -214,6 +207,13 @@ namespace IndieBuff.Editor
             {
                 addContextComponent.ClearContextItems();
             };
+        }
+
+        private void UpdateClearButtonVisibility()
+        {
+            var context = IndieBuff_UserSelectedContext.Instance;
+            bool hasContent = context.UserContextObjects.Count > 0 || context.ConsoleLogs.Count > 0;
+            clearContextButton.style.visibility = hasContent ? Visibility.Visible : Visibility.Hidden;
         }
 
         private void ShowPopup(VisualElement popup, VisualElement trigger, bool followTrigger = false)
