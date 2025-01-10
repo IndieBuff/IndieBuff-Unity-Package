@@ -18,7 +18,7 @@ namespace IndieBuff.Editor
             IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += OnContextUpdated;
         }
 
-        private void OnContextUpdated()
+        public void OnContextUpdated()
         {
             userContextItemsContainer.Clear();
             DisplaySelectedContextItems();
@@ -102,7 +102,7 @@ namespace IndieBuff.Editor
         {
             if (index >= 0 && index < IndieBuff_UserSelectedContext.Instance.ConsoleLogs.Count)
             {
-                //IndieBuff_UserSelectedContext.Instance.RemoveConsoleLog(index);
+                IndieBuff_UserSelectedContext.Instance.RemoveConsoleLog(index);
             }
         }
 
