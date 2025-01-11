@@ -410,7 +410,7 @@ namespace IndieBuff.Editor
                     asset = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(assetPath);
                     break;
                 case ".physicmaterial":
-                    asset = AssetDatabase.LoadAssetAtPath<PhysicMaterial>(assetPath);
+                    asset = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(assetPath);
                     break;
                 default:
                     return $"Unsupported asset type: {extension}";
