@@ -1,3 +1,9 @@
+## [2.1.1] - 2025-01-11
+
+### Fixed
+
+- Fixed IndieBuff plugin conflicting with other plugins
+
 ## [2.1.0] - 2025-01-10
 
 ### Feature
