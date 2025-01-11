@@ -6,7 +6,6 @@ namespace IndieBuff.Editor
 
         // private static readonly string BackendBaseUrl = "http://localhost:3000/api/v1";
         // private static readonly string FrontendBaseUrl = "http://localhost:5173";
-
         private static readonly string BackendBaseUrl = "https://api.indiebuff.ai/api/v1";
         private static readonly string FrontendBaseUrl = "https://app.indiebuff.ai";
         private static readonly int[] LocalServerPorts = { 8080, 8081, 8082, 8083, 8084 };
