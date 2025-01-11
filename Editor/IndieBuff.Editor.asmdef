@@ -9,12 +9,13 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "Microsoft.CodeAnalysis.dll",
-        "Microsoft.CodeAnalysis.CSharp.dll",
-        "System.Collections.Immutable.dll",
-        "Newtonsoft.Json.dll",
-        "System.Runtime.CompilerServices.Unsafe.dll",
-        "QuikGraph.dll"
+        "IndieBuff.Microsoft.CodeAnalysis.CSharp.dll",
+        "IndieBuff.Microsoft.CodeAnalysis.dll",
+        "IndieBuff.System.Collections.Immutable.dll",
+        "IndieBuff.System.Reflection.Metadata.dll",
+        "IndieBuff.QuikGraph.dll",
+        "IndieBuff.Newtonsoft.Json.dll",
+        "IndieBuff.System.Runtime.CompilerServices.Unsafe.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [],
