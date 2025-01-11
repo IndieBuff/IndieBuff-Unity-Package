@@ -2,20 +2,12 @@
     "name": "IndieBuff.Editor",
     "rootNamespace": "IndieBuff",
     "references": [],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "IndieBuff.Microsoft.CodeAnalysis.CSharp.dll",
-        "IndieBuff.Microsoft.CodeAnalysis.dll",
-        "IndieBuff.System.Collections.Immutable.dll",
-        "IndieBuff.System.Reflection.Metadata.dll",
-        "IndieBuff.QuikGraph.dll",
-        "IndieBuff.Newtonsoft.Json.dll",
-        "IndieBuff.System.Runtime.CompilerServices.Unsafe.dll"
+        "IndieBuff.Dependencies.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [],
