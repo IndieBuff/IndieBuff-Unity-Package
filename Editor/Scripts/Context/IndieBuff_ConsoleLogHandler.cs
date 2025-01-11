@@ -81,24 +81,37 @@ namespace IndieBuff.Editor
                                         {
                                             int modeValue = (int)value;
                                             
-                                            // Check against the flag combinations in LogType enum order (0-4)
-                                            if ((modeValue & (1 << 8)) != 0)  // kScriptingError
+                                            // Error types (mode 0)
+                                            if ((modeValue & (1 << 0)) != 0 ||      // kError
+                                                (modeValue & (1 << 4)) != 0 ||      // kFatal
+                                                (modeValue & (1 << 6)) != 0 ||      // kAssetImportError
+                                                (modeValue & (1 << 8)) != 0 ||      // kScriptingError
+                                                (modeValue & (1 << 11)) != 0)       // kScriptCompileError
                                             {
                                                 mode = 0;  // Error
                                             }
-                                            else if ((modeValue & (1 << 21)) != 0)  // kScriptingAssertion
+                                            // Assert types (mode 1)
+                                            else if ((modeValue & (1 << 1)) != 0 || // kAssert
+                                                     (modeValue & (1 << 21)) != 0)   // kScriptingAssertion
                                             {
                                                 mode = 1;  // Assert
                                             }
-                                            else if ((modeValue & (1 << 9)) != 0)  // kScriptingWarning
+                                            // Warning types (mode 2)
+                                            else if ((modeValue & (1 << 7)) != 0 ||  // kAssetImportWarning
+                                                     (modeValue & (1 << 9)) != 0 ||   // kScriptingWarning
+                                                     (modeValue & (1 << 12)) != 0)    // kScriptCompileWarning
                                             {
                                                 mode = 2;  // Warning
                                             }
-                                            else if ((modeValue & (1 << 10)) != 0)  // kScriptingLog
+                                            // Log types (mode 3)
+                                            else if ((modeValue & (1 << 2)) != 0 ||  // kLog
+                                                     (modeValue & (1 << 10)) != 0 ||  // kScriptingLog
+                                                     (modeValue & (1 << 13)) != 0)    // kStickyLog
                                             {
                                                 mode = 3;  // Log
                                             }
-                                            else if ((modeValue & (1 << 17)) != 0)  // kScriptingException
+                                            // Exception types (mode 4)
+                                            else if ((modeValue & (1 << 17)) != 0)   // kScriptingException
                                             {
                                                 mode = 4;  // Exception
                                             }
