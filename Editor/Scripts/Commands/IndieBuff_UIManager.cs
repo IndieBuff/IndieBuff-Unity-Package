@@ -330,6 +330,7 @@ namespace IndieBuff.Editor
             string hierarchyPath = parameters.ContainsKey("hierarchy_path") ? parameters["hierarchy_path"] : null;
             string spritePath = parameters.ContainsKey("sprite_path") ? parameters["sprite_path"] : null;
             string imageType = parameters.ContainsKey("image_type") ? parameters["image_type"] : "Simple";
+            string color = parameters.ContainsKey("color") ? parameters["color"] : null;
 
             GameObject element = GameObject.Find(hierarchyPath);
             if (element == null)
@@ -379,6 +380,29 @@ namespace IndieBuff.Editor
                 if (System.Enum.TryParse<Image.Type>(imageType, true, out Image.Type type))
                 {
                     imageComponent.type = type;
+                }
+            }
+
+            // Set color if provided
+            if (!string.IsNullOrEmpty(color))
+            {
+                Color newColor;
+                if (ColorUtility.TryParseHtmlString(color.StartsWith("#") ? color : $"#{color}", out newColor))
+                {
+                    imageComponent.color = newColor;
+                }
+                else
+                {
+                    // Try getting color from Color struct using reflection
+                    var colorProperty = typeof(Color).GetProperty(color);
+                    if (colorProperty != null)
+                    {
+                        imageComponent.color = (Color)colorProperty.GetValue(null);
+                    }
+                    else
+                    {
+                        return $"Invalid color format or name: {color}";
+                    }
                 }
             }
 
