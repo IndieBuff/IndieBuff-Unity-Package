@@ -235,16 +235,11 @@ namespace IndieBuff.Editor
                 }
                 else if (obj is Shader shader)
                 {
-                    for (int i = 0; i < shader.GetPropertyCount(); i++)
-                    {
-                        Debug.Log(shader.GetPropertyName(i));
-                        var property = shader.GetPropertyAttributes(i);
-                        foreach (var attribute in property)
-                        {
-                            Debug.Log(attribute);
-                        }
-                    }
-                    //assetData.Properties = shader.GetPropertyAttributes(0);
+                    assetData.Properties = GetShaderProperties(shader);
+                }
+                else if (obj is Texture2D texture)
+                {
+                    assetData.Properties = GetTextureProperties(texture);
                 }
                 else
                 {
@@ -364,7 +359,7 @@ namespace IndieBuff.Editor
                     Type = component.GetType().Name,
                     PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
                     PrefabAssetName = gameObject.name,
-                    Properties = GetSerializedProperties(component),
+                    Properties = GetComponentsData(component),
                     Siblings = siblingKeys  // Add the sibling components list
                 };
 
@@ -385,49 +380,55 @@ namespace IndieBuff.Editor
             return path;
         }
 
-        private Dictionary<string, object> GetComponentsData(GameObject gameObject)
+        private Dictionary<string, object> GetComponentsData(Component component)
         {
-            var componentsData = new Dictionary<string, object>();
-            var components = gameObject.GetComponents<Component>();
-
-            foreach (var component in components.Where(c => c != null))
+            var componentData = new Dictionary<string, object>
             {
-                try
-                {
-                    var componentData = new Dictionary<string, object>
-                    {
-                        ["type"] = component.GetType().Name
-                    };
+                ["type"] = component.GetType().Name
+            };
 
-                    // Handle MonoBehaviour scripts
-                    if (component is MonoBehaviour script)
-                    {
-                        var scriptData = ProcessMonoBehaviourScript(script);
-                        foreach (var kvp in scriptData)
-                        {
-                            componentData[kvp.Key] = kvp.Value;
-                        }
-                    }
-                    else if (component is Animator animator)
-                    {
-                        // Custom handling for Animator component
-                        componentData["properties"] = GetAnimatorProperties(animator);
-                    }
-                    else
-                    {
-                        // Handle built-in components
-                        componentData["properties"] = GetSerializedProperties(component);
-                    }
-
-                    componentsData[component.GetType().Name] = componentData;
-                }
-                catch (Exception)
+            try
+            {
+                // Special handling for MeshRenderer or skinnedMeshRenderer
+                if (component is MeshRenderer meshRenderer || component is SkinnedMeshRenderer skinnedMeshRenderer)
                 {
-                    //Debug.LogWarning($"Skipped component {component.GetType().Name}: {e.Message}");
+                    var properties = GetSerializedProperties(component);
+                    var renderer = component as Renderer;  // Both MeshRenderer and SkinnedMeshRenderer inherit from Renderer
+                    
+                    // Replace materials list and remove data property
+                    properties["m_Materials"] = renderer.sharedMaterials.Select(m => m != null ? m.name : "null").ToList();
+                    properties.Remove("data");
+                    
+                    componentData["properties"] = properties;
                 }
+                // Handle other component types as before
+                else if (component is MonoBehaviour script)
+                {
+                    var scriptData = ProcessMonoBehaviourScript(script);
+                    foreach (var kvp in scriptData)
+                    {
+                        componentData[kvp.Key] = kvp.Value;
+                    }
+                }
+                else if (component is Animator animator)
+                {
+                    // Custom handling for Animator component
+                    componentData["properties"] = GetAnimatorProperties(animator);
+                }
+                else
+                {
+                    // Handle built-in components
+                    componentData["properties"] = GetSerializedProperties(component);
+                }
+
+                componentData[component.GetType().Name] = componentData;
+            }
+            catch (Exception)
+            {
+                //Debug.LogWarning($"Skipped component {component.GetType().Name}: {e.Message}");
             }
 
-            return componentsData;
+            return componentData;
         }
 
         private Dictionary<string, object> ProcessMonoBehaviourScript(MonoBehaviour script)
@@ -485,6 +486,7 @@ namespace IndieBuff.Editor
 
         private void ProcessSerializedPropertyInner(Dictionary<string, object> properties, SerializedProperty current)
         {
+
             // THIS MIGHT BE NEEDED. prevents infinite loop i think but I removed it and its working. Commented out for now because was blocking some properties from being processed.
             /*if (current.depth < m_CurrentDepth)
             {
@@ -501,6 +503,7 @@ namespace IndieBuff.Editor
             {
                 return;
             }
+
 
             var key = UseDisplayName ? current.displayName : current.name;
             var type = current.propertyType.ToString();
@@ -613,15 +616,13 @@ namespace IndieBuff.Editor
                     properties[key] = current.intValue;
                     break;
                 case SerializedPropertyType.Enum:
+                    if (current.enumValueIndex >= 0 && current.enumValueIndex < current.enumDisplayNames.Length)
                     {
-                        if (current.enumValueIndex >= 0 && current.enumValueIndex < current.enumDisplayNames.Length)
-                        {
-                            properties[key] = current.enumDisplayNames[current.enumValueIndex];
-                        }
-                        else
-                        {
-                            properties[key] = current.enumValueFlag;
-                        }
+                        properties[key] = current.enumDisplayNames[current.enumValueIndex];
+                    }
+                    else
+                    {
+                        properties[key] = current.enumValueFlag;
                     }
                     break;
                 case SerializedPropertyType.Vector2:
@@ -1050,6 +1051,41 @@ namespace IndieBuff.Editor
                 Debug.LogError($"Error getting material properties: {e.Message}");
             }
             
+            return properties;
+        }
+    
+        private Dictionary<string, object> GetShaderProperties(Shader shader)
+        {
+            var properties = new Dictionary<string, object>();
+            
+            int propertyCount = shader.GetPropertyCount();
+            for(int i = 0; i < propertyCount; i++)
+            {
+                string propertyName = shader.GetPropertyName(i);
+                switch (propertyName)
+                {
+                    case "_Color":
+                        properties["Color"] = shader.GetPropertyDefaultVectorValue(i).ToString();
+                        break;
+                    case "_MainTex":
+                        properties["MainTexture"] = shader.GetPropertyTextureDefaultName(i);
+                        break;
+                    case "_Glossiness":
+                        properties["Glossiness"] = shader.GetPropertyDefaultFloatValue(i);
+                        break;
+                    case "_Metallic":
+                        properties["Metallic"] = shader.GetPropertyDefaultFloatValue(i);
+                        break;
+                }
+            }
+            return properties;
+        }
+
+        private Dictionary<string, object> GetTextureProperties(Texture2D texture)
+        {
+            var properties = new Dictionary<string, object>();
+            properties["m_Width"] = texture.width;
+            properties["m_Height"] = texture.height;
             return properties;
         }
     }
