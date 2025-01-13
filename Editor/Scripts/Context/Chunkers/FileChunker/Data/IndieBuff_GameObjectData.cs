@@ -5,7 +5,7 @@ using UnityEngine;
 namespace IndieBuff.Editor
 {
     [Serializable]
-    public class IndieBuff_GameObjectData
+    public class IndieBuff_GameObjectData : IndieBuff_Asset
     {
         private readonly string docType = "gameobject";
         public string HierarchyPath { get; set; }

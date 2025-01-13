@@ -44,13 +44,24 @@ namespace IndieBuff.Editor
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 var projectPath = Application.dataPath;
-                var files = Directory.GetFiles(projectPath, "*.cs", SearchOption.AllDirectories).ToList();
+                // ignore the directories that conatin the word "IndieBuff"
+                var ignoreDirectories = new string[] { "IndieBuff" };
+
+                var files = Directory.GetFiles(projectPath, "*.cs", SearchOption.AllDirectories)
+                    .Where(file => !ignoreDirectories.Any(dir => file.Contains(dir)))
+                    .ToList();
 
                 var projectScanner = new IndieBuff_CsharpProcessor();
                 codeData = await projectScanner.ScanFiles(files, projectPath);
 
+                var jsonSettings = new JsonSerializerSettings
+                {
+                    Formatting = Formatting.Indented
+                };
+
+
                 // Save scan data to file
-                var json = JsonConvert.SerializeObject(codeData);
+                var json = JsonConvert.SerializeObject(codeData, jsonSettings);
                 File.WriteAllText(scanOutputPath, json);
             }
             catch (Exception ex)

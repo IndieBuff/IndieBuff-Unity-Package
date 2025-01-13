@@ -11,6 +11,27 @@ namespace IndieBuff.Editor
 {
     internal class IndieBuff_AssetProcessor
     {
+        private static IndieBuff_AssetProcessor instance;
+        public static IndieBuff_AssetProcessor Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new IndieBuff_AssetProcessor(
+                        AssetDatabase.FindAssets("t:Object")
+                            .Select(guid => AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(AssetDatabase.GUIDToAssetPath(guid)))
+                            .Where(obj => obj != null)
+                            .ToList()
+                    );
+                }
+                return instance;
+            }
+        }
+
+        public bool IsScanning => isProcessing;
+        public Dictionary<string, IndieBuff_Asset> AssetData => assetData;
+
         private Dictionary<string, object> contextData;
         private bool isProcessing = false;
         private Queue<GameObject> objectsToProcess;
@@ -29,10 +50,12 @@ namespace IndieBuff.Editor
         private bool OutputType = false;
         private int m_ObjectDepth = 0;
         private TaskCompletionSource<Dictionary<string, object>> _completionSource;
+        private Dictionary<string, IndieBuff_Asset> assetData;
 
         public IndieBuff_AssetProcessor(List<UnityEngine.Object> contextObjects)
         {
             _contextObjects = contextObjects;
+            assetData = new Dictionary<string, IndieBuff_Asset>();
         }
 
         internal Task<Dictionary<string, object>> StartContextBuild()
@@ -40,6 +63,7 @@ namespace IndieBuff.Editor
             _completionSource = new TaskCompletionSource<Dictionary<string, object>>();
             isProcessing = true;
             contextData = new Dictionary<string, object>();
+            assetData = new Dictionary<string, IndieBuff_Asset>();
             
             objectsToProcess = new Queue<GameObject>();
             processedObjects.Clear();
@@ -48,6 +72,14 @@ namespace IndieBuff.Editor
 
             foreach (var obj in _contextObjects)
             {
+                string assetPath = AssetDatabase.GetAssetPath(obj);
+                // if its a script or its in the package folder then skip it
+                if (assetPath.EndsWith(".cs") || assetPath.StartsWith("Packages"))
+                    continue;
+                
+                if (string.IsNullOrEmpty(assetPath))
+                    continue;
+
                 if (obj is GameObject gameObject)
                 {
                     if (PrefabUtility.IsPartOfPrefabAsset(gameObject))
@@ -88,14 +120,10 @@ namespace IndieBuff.Editor
 
                         objectsToProcess.Enqueue(gameObject);
                     }
-                    else
-                    {
-                        objectsToProcess.Enqueue(gameObject);
-                    }
                 }
                 else
                 {
-                    ProcessGenericUnityObject(obj);
+                    ProcessGenericAsset(obj);
                 }
             }
 
@@ -171,95 +199,69 @@ namespace IndieBuff.Editor
             }
         }
 
-        private void AddToContext(string key, object value)
+        private void AddToContext(string key, IndieBuff_Asset value)
         {
+            assetData[key] = value;
             contextData[key] = value;
         }
 
-
-        private void ProcessGenericUnityObject(UnityEngine.Object obj)
+        private void ProcessGenericAsset(UnityEngine.Object obj)
         {
             if (obj == null || processedObjects.Contains(obj)) return;
 
             try
             {
                 processedObjects.Add(obj);
-                var objectData = new Dictionary<string, object>
+                
+                var assetData = new IndieBuff_AssetData
                 {
-                    ["type"] = obj.GetType().Name,
-                    ["name"] = obj.name,
-                    ["properties"] = GetSerializedProperties(obj),
-                    ["assetPath"] = AssetDatabase.GetAssetPath(obj)
+                    Name = obj.name,
+                    AssetPath = AssetDatabase.GetAssetPath(obj),
+                    FileType = obj.GetType().Name,
                 };
 
-                if (obj is ScriptableObject scriptableObj)
+                // Special handling for different asset types
+                if (obj is Material material)
                 {
-                    // Get the script content if it's a MonoScript
-                    if (obj is MonoScript monoScript)
+                    assetData.Properties = GetMaterialProperties(material);
+                }
+                else if (obj is UnityEditor.Animations.AnimatorController animatorController)
+                {
+                    assetData.Properties = GetAnimatorControllerProperties(animatorController);
+                }
+                else if (obj is Animator animator)
+                {
+                    assetData.Properties = GetAnimatorProperties(animator);
+                }
+                else if (obj is Shader shader)
+                {
+                    for (int i = 0; i < shader.GetPropertyCount(); i++)
                     {
-                        var scriptPath = AssetDatabase.GetAssetPath(monoScript);
-
-                        if (!string.IsNullOrEmpty(scriptPath))
+                        Debug.Log(shader.GetPropertyName(i));
+                        var property = shader.GetPropertyAttributes(i);
+                        foreach (var attribute in property)
                         {
-
-                            objectData["type"] = "MonoScript";
-                            objectData["scriptPath"] = scriptPath;
-                            objectData["scriptContent"] = File.ReadAllLines(scriptPath);
+                            Debug.Log(attribute);
                         }
                     }
+                    //assetData.Properties = shader.GetPropertyAttributes(0);
                 }
-                else if (obj is MonoScript monoScript)
+                else
                 {
-                    var scriptPath = AssetDatabase.GetAssetPath(monoScript);
-                    if (!string.IsNullOrEmpty(scriptPath))
-                    {
-
-                        objectData["type"] = "MonoScript";
-                        objectData["scriptPath"] = scriptPath;
-                        objectData["scriptContent"] = File.ReadAllLines(scriptPath);
-                    }
-                }
-                else if (obj is UnityEditor.Animations.AnimatorController animator)
-                {
-                    objectData["properties"] = GetAnimatorControllerProperties(animator);
-                }
-                // check if its a material. Have to do this differently from animator because animator properties are empty. adding proeprties to material
-                else if (obj is Material material)
-                {
-                    // Add material-specific properties to the existing properties dictionary so ai will be able to focus on it
-                    var oldProperties = (Dictionary<string, object>)objectData["properties"];
-                    var materialProperties = GetMaterialProperties(material);
-
-                    var newProperties = new Dictionary<string, object>(materialProperties);
-
-                    foreach (var kvp in oldProperties)
-                    {
-                        newProperties[kvp.Key] = kvp.Value;
-                    }
-
-                    objectData["properties"] = newProperties;
+                    assetData.Properties = GetSerializedProperties(obj);
                 }
 
-                AddToContext(obj.name, objectData);
+                // Add dependencies
+                string[] dependencies = AssetDatabase.GetDependencies(assetData.AssetPath, false);
+                assetData.Dependencies.AddRange(dependencies);
+
+                AddToContext(obj.name, assetData);
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error processing Unity object {obj.name}: {e.Message}");
+                Debug.LogError($"Error processing asset {obj.name}: {e.Message}");
             }
         }
-
-        private void OnDestroy()
-        {
-
-            foreach (var prefabContent in loadedPrefabContents)
-            {
-                if (prefabContent != null)
-                {
-                    //PrefabUtility.UnloadPrefabContents(prefabContent);
-                }
-            }
-        }
-
 
         private void ProcessGameObject(GameObject gameObject)
         {
@@ -270,92 +272,103 @@ namespace IndieBuff.Editor
                 processedObjects.Add(gameObject);
 
                 bool isPrefabAsset = PrefabUtility.IsPartOfPrefabAsset(gameObject);
-                bool isPrefabInstance = PrefabUtility.IsPartOfPrefabInstance(gameObject);
+                if (!isPrefabAsset) return;
 
-                // If this is a prefab asset, check if we have loaded contents for it
                 GameObject objectToProcess = gameObject;
-                if (isPrefabAsset && prefabContentsMap.ContainsKey(gameObject))
+                if (prefabContentsMap.ContainsKey(gameObject))
                 {
                     objectToProcess = prefabContentsMap[gameObject];
                 }
 
-                string key = GetUniqueGameObjectKey(objectToProcess);
-
-                var gameObjectData = new Dictionary<string, object>
+                var prefabData = new IndieBuff_PrefabGameObjectData
                 {
-                    ["type"] = "GameObject",
-                    ["name"] = objectToProcess.name,
-                    ["hierarchy_path"] = key,
-                    ["parent"] = objectToProcess.transform.parent != null ? objectToProcess.transform.parent.gameObject.name : "null",
-                    ["tag"] = objectToProcess.tag,
-                    ["layer"] = LayerMask.LayerToName(objectToProcess.layer),
-                    ["active"] = objectToProcess.activeSelf,
-                    ["isPrefabAsset"] = isPrefabAsset,
-                    ["isPrefabInstance"] = isPrefabInstance,
-                    ["components"] = GetComponentsData(objectToProcess)
+                    HierarchyPath = GetUniqueGameObjectKey(objectToProcess),
+                    ParentName = objectToProcess.transform.parent != null ? objectToProcess.transform.parent.gameObject.name : "null",
+                    Tag = objectToProcess.tag,
+                    Layer = LayerMask.LayerToName(objectToProcess.layer),
+                    IsActive = objectToProcess.activeSelf,
+                    IsPrefabInstance = false,
+                    PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
+                    PrefabAssetName = gameObject.name
                 };
 
-                if (isPrefabAsset)
+                // Process components
+                var components = objectToProcess.GetComponents<Component>();
+                foreach (var component in components)
                 {
-                    gameObjectData["prefabAssetPath"] = AssetDatabase.GetAssetPath(gameObject);
-                }
-                else if (isPrefabInstance)
-                {
-                    var prefabAsset = PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
-                    if (prefabAsset != null)
+                    if (component != null)
                     {
-                        gameObjectData["prefabAssetPath"] = AssetDatabase.GetAssetPath(prefabAsset);
-                        gameObjectData["prefabAssetName"] = prefabAsset.name;
+                        prefabData.Components.Add(component.GetType().Name);
+                        ProcessPrefabComponent(component, objectToProcess);
                     }
                 }
 
-
-                AddToContext(key, gameObjectData);
-
-
                 // Process children
                 Transform transform = objectToProcess.transform;
-                if (transform != null && transform.childCount > 0)
+                if (transform != null)
                 {
-                    var children = new List<GameObject>();
                     for (int i = 0; i < transform.childCount; i++)
                     {
                         Transform childTransform = transform.GetChild(i);
                         if (childTransform != null)
                         {
                             GameObject child = childTransform.gameObject;
-                            if (child != null && !processedObjects.Contains(child))
+                            if (child != null)
                             {
-                                children.Add(child);
+                                prefabData.Children.Add(child.name);
+                                if (!processedObjects.Contains(child))
+                                {
+                                    objectsToProcess.Enqueue(child);
+                                }
                             }
                         }
                     }
-
-                    gameObjectData["childCount"] = children.Count;
-                    gameObjectData["children"] = children.Select(c => c.name).ToList();
-
-                    foreach (var child in children)
-                    {
-                        if (objectsToProcess.Count < 10000)
-                        {
-                            objectsToProcess.Enqueue(child);
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"Queue limit reached. Skipping remaining children of {objectToProcess.name}");
-                            break;
-                        }
-                    }
+                    prefabData.ChildCount = prefabData.Children.Count;
                 }
-                else
-                {
-                    gameObjectData["childCount"] = 0;
-                    gameObjectData["children"] = new List<string>();
-                }
+
+                AddToContext(prefabData.HierarchyPath, prefabData);
             }
             catch (Exception e)
             {
                 Debug.LogError($"Error processing GameObject {gameObject.name}: {e.Message}\n{e.StackTrace}");
+            }
+        }
+
+        private void ProcessPrefabComponent(Component component, GameObject gameObject)
+        {
+            // Get all sibling components on the same GameObject
+            var allComponents = gameObject.GetComponents<Component>();
+            var siblingKeys = allComponents
+                .Where(c => c != null)
+                .Select(c => $"{gameObject.name}_{c.GetType().Name}")
+                .ToList();
+
+            if (component is MonoBehaviour script)
+            {
+                var scriptData = new IndieBuff_ScriptPrefabComponentData
+                {
+                    Type = component.GetType().Name,
+                    PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
+                    PrefabAssetName = gameObject.name,
+                    ScriptPath = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(script)),
+                    ScriptName = script.GetType().Name,
+                    Siblings = siblingKeys  // Add the sibling components list
+                };
+
+                AddToContext($"{gameObject.name}_{component.GetType().Name}", scriptData);
+            }
+            else
+            {
+                var componentData = new IndieBuff_PrefabComponentData
+                {
+                    Type = component.GetType().Name,
+                    PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
+                    PrefabAssetName = gameObject.name,
+                    Properties = GetSerializedProperties(component),
+                    Siblings = siblingKeys  // Add the sibling components list
+                };
+
+                AddToContext($"{gameObject.name}_{component.GetType().Name}", componentData);
             }
         }
 

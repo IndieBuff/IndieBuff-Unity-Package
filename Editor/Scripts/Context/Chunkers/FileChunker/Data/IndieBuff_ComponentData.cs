@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace IndieBuff.Editor
 {
     [Serializable]
-    public class IndieBuff_ComponentData
+    public class IndieBuff_ComponentData : IndieBuff_Asset
     {
         public string Type { get; set; }
         public Dictionary<string, object> Properties { get; set; }

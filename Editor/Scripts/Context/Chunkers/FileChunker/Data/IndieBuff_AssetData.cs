@@ -5,7 +5,7 @@ using UnityEngine;
 namespace IndieBuff.Editor
 {
     [Serializable]
-    public class IndieBuff_FileData
+    public class IndieBuff_AssetData : IndieBuff_Asset
     {
         private readonly string docType = "asset";
         public string Name { get; set; }
@@ -14,7 +14,7 @@ namespace IndieBuff.Editor
         public Dictionary<string, object> Properties { get; set; }  // Store type-specific properties
         public List<string> Dependencies { get; set; }
 
-        public IndieBuff_FileData()
+        public IndieBuff_AssetData()
         {
             Properties = new Dictionary<string, object>();
             Dependencies = new List<string>();
