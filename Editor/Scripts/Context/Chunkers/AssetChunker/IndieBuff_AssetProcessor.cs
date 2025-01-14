@@ -282,7 +282,6 @@ namespace IndieBuff.Editor
                     Tag = objectToProcess.tag,
                     Layer = LayerMask.LayerToName(objectToProcess.layer),
                     IsActive = objectToProcess.activeSelf,
-                    IsPrefabInstance = false,
                     PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
                     PrefabAssetName = gameObject.name
                 };
@@ -340,14 +339,31 @@ namespace IndieBuff.Editor
 
             if (component is MonoBehaviour script)
             {
+                string scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(script));
+                
+
+
+                var dependencies = script.GetType()
+                    .GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                    .Where(field => field.IsDefined(typeof(SerializeField), false) || field.IsPublic)
+                    .ToDictionary(
+                        field => field.Name,
+                        field => new Dictionary<string, object>
+                        {
+                            ["type"] = field.FieldType.Name,
+                            ["value"] = field.GetValue(script)?.ToString() ?? "null"
+                        } as object
+                    );
+
                 var scriptData = new IndieBuff_ScriptPrefabComponentData
                 {
                     Type = component.GetType().Name,
                     PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
                     PrefabAssetName = gameObject.name,
-                    ScriptPath = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(script)),
+                    ScriptPath = scriptPath,
                     ScriptName = script.GetType().Name,
-                    Siblings = siblingKeys  // Add the sibling components list
+                    Siblings = siblingKeys,
+                    Properties = dependencies
                 };
 
                 AddToContext($"{gameObject.name}_{component.GetType().Name}", scriptData);

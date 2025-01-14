@@ -7,7 +7,7 @@ namespace IndieBuff.Editor
     [Serializable]
     public class IndieBuff_AssetData : IndieBuff_Asset
     {
-        private readonly string docType = "asset";
+        private const string DOC_TYPE = "asset";
         public string Name { get; set; }
         public string AssetPath { get; set; }
         public string FileType { get; set; }  // e.g., "prefab", "scene", "texture", etc.
