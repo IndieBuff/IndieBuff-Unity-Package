@@ -518,52 +518,31 @@ namespace IndieBuff.Editor
                 return $"Failed to load prefab at path: {prefabPath}";
             }
 
-            if (string.IsNullOrEmpty(localPosition))
+            Vector2 position = prefabAsset.transform.position;
+
+            if (!string.IsNullOrEmpty(localPosition))
             {
-                return "When setting transform position value is empty" + prefabPath;
-            }
+                string[] positionValues = localPosition.Split(',').Select(x => x.Trim()).ToArray();
 
-            string[] positionValues = localPosition.Split(',').Select(x => x.Trim()).ToArray();
-
-            if (positionValues.Length != 2)
-            {
-                return "When setting transform position value is empty" + prefabPath;
-            }
-
-            Vector2 position;
-            if (float.TryParse(positionValues[0], out float x) &&
+                if (float.TryParse(positionValues[0], out float x) &&
                 float.TryParse(positionValues[1], out float y))
-            {
-                position = new Vector3(x, y);
-            }
-            else
-            {
-                return "When setting transform position value is empty" + prefabPath;
+                {
+                    position = new Vector3(x, y);
+                }
             }
 
-
-            if (string.IsNullOrEmpty(localScale))
+            Vector2 scale = prefabAsset.transform.localScale;
+            if (!string.IsNullOrEmpty(localScale))
             {
-                return "When setting transform position value is empty" + prefabPath;
-            }
+                string[] scaleValues = localScale.Split(',').Select(x => x.Trim()).ToArray();
 
-            string[] scaleValues = localScale.Split(',').Select(x => x.Trim()).ToArray();
+                
+                if (float.TryParse(scaleValues[0], out float x3) &&
+                    float.TryParse(scaleValues[1], out float y3))
+                {
+                    scale = new Vector3(x3, y3);
+                }
 
-            if (scaleValues.Length != 2)
-            {
-                return "When setting transform position value is empty" + prefabPath;
-            }
-
-
-            Vector2 scale;
-            if (float.TryParse(scaleValues[0], out float x3) &&
-                float.TryParse(scaleValues[1], out float y3))
-            {
-                scale = new Vector3(x3, y3);
-            }
-            else
-            {
-                return "When setting transform scale value is empty" + prefabPath;
             }
 
             Transform prefabTransform = prefabAsset.transform;
@@ -731,6 +710,13 @@ namespace IndieBuff.Editor
             }
 
             // Check if prefab already exists
+            string tmpPrefabPath = prefabPath;
+            // if tmpPrefabPath is not empty, assign prefabpath to it else dont
+            if (!string.IsNullOrEmpty(tmpPrefabPath))
+            {
+                prefabPath = tmpPrefabPath;
+            }
+
             prefabPath = AssetDatabase.GenerateUniqueAssetPath(prefabPath);
 
             // Try package path first
@@ -890,6 +876,8 @@ namespace IndieBuff.Editor
             }
 
             // Create directory if it doesn't exist
+
+            
             Directory.CreateDirectory(Path.GetDirectoryName(prefabPath));
 
             // Create the sprite GameObject

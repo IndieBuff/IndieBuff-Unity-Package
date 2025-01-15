@@ -18,15 +18,6 @@ namespace IndieBuff.Editor
         {
             get
             {
-                if (instance == null)
-                {
-                    instance = new IndieBuff_SceneProcessor(
-                        AssetDatabase.FindAssets("t:Object")
-                            .Select(guid => AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(AssetDatabase.GUIDToAssetPath(guid)))
-                            .Where(obj => obj != null)
-                            .ToList()
-                    );
-                }
                 return instance;
             }
         }
@@ -53,10 +44,11 @@ namespace IndieBuff.Editor
         private int m_ObjectDepth = 0;
         private TaskCompletionSource<Dictionary<string, object>> _completionSource;
         private Dictionary<string, IndieBuff_Asset> assetData;
+        private List<Scene> loadedScenesForProcessing;
+        private Scene activeSceneForProcessing;
 
-        public IndieBuff_SceneProcessor(List<UnityEngine.Object> contextObjects)
+        public IndieBuff_SceneProcessor()
         {
-            _contextObjects = contextObjects;
             assetData = new Dictionary<string, IndieBuff_Asset>();
         }
 
@@ -72,10 +64,10 @@ namespace IndieBuff.Editor
 
             // Store the active scene to restore it later
             Scene activeScene = EditorSceneManager.GetActiveScene();
+            List<Scene> loadedScenes = new List<Scene>();
 
             // Get all scene paths in the project
             var sceneGuids = AssetDatabase.FindAssets("t:Scene");
-            Debug.Log($"Found {sceneGuids.Length} scenes in project");
             
             foreach (var sceneGuid in sceneGuids)
             {
@@ -86,20 +78,16 @@ namespace IndieBuff.Editor
                 
                 try
                 {
-                    // Load the scene additively
-                    Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
-                    if (scene.isLoaded)
+                    Scene loadedScene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+                    loadedScenes.Add(loadedScene);
+                    
+                    GameObject[] rootObjects = loadedScene.GetRootGameObjects();
+                    Debug.Log($"Found {rootObjects.Length} root objects in scene {loadedScene.name}");
+                    
+                    foreach (var obj in rootObjects)
                     {
-                        ProcessLoadedScene(scene);
-                        // Unload the scene if it's not the active scene
-                        if (scene.path != activeScene.path)
-                        {
-                            EditorSceneManager.CloseScene(scene, false);
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError($"Failed to load scene: {scenePath}");
+                        Debug.Log($"Enqueueing object: {obj.name} from scene: {loadedScene.name}");
+                        objectsToProcess.Enqueue(obj);
                     }
                 }
                 catch (Exception e)
@@ -109,37 +97,33 @@ namespace IndieBuff.Editor
             }
 
             EditorApplication.update += ProcessObjectsQueue;
-            return _completionSource.Task;
-        }
 
-        private void ProcessLoadedScene(Scene scene)
-        {
-            Debug.Log($"Processing scene contents: {scene.path}");
-            var rootObjects = scene.GetRootGameObjects();
-            Debug.Log($"Found {rootObjects.Length} root objects in scene: {scene.path}");
-            
-            foreach (var obj in rootObjects)
-            {
-                objectsToProcess.Enqueue(obj);
-            }
+            // Store the loaded scenes to close them in CompleteProcessing
+            loadedScenesForProcessing = loadedScenes;
+            activeSceneForProcessing = activeScene;
+
+            return _completionSource.Task;
         }
 
         private void ProcessObjectsQueue()
         {
             if (!isProcessing || objectsToProcess == null)
             {
+                Debug.Log("ProcessObjectsQueue: Completing processing");
                 CompleteProcessing();
                 return;
             }
 
             try
             {
+                Debug.Log($"ProcessObjectsQueue: {objectsToProcess.Count} objects remaining to process");
                 int processedThisFrame = 0;
                 while (objectsToProcess.Count > 0 && processedThisFrame < MAX_CHILDREN_PER_FRAME)
                 {
                     var gameObject = objectsToProcess.Dequeue();
                     if (gameObject != null && !processedObjects.Contains(gameObject))
                     {
+                        Debug.Log($"Processing GameObject: {gameObject.name} from scene: {gameObject.scene.name}");
                         ProcessGameObject(gameObject);
                     }
                     processedThisFrame++;
@@ -147,6 +131,7 @@ namespace IndieBuff.Editor
 
                 if (objectsToProcess.Count == 0)
                 {
+                    Debug.Log("ProcessObjectsQueue: Queue empty, completing processing");
                     CompleteProcessing();
                 }
             }
@@ -174,11 +159,22 @@ namespace IndieBuff.Editor
                         {
                             // logic to unload
                         }
-
                     }
                 }
-                _completionSource?.TrySetResult(contextData);
 
+                // Close all the scenes we opened (except the active scene)
+                if (loadedScenesForProcessing != null)
+                {
+                    foreach (var scene in loadedScenesForProcessing)
+                    {
+                        if (scene.path != activeSceneForProcessing.path)
+                        {
+                            EditorSceneManager.CloseScene(scene, true);
+                        }
+                    }
+                }
+
+                _completionSource?.TrySetResult(contextData);
             }
             catch (Exception e)
             {
@@ -189,6 +185,7 @@ namespace IndieBuff.Editor
                 processedObjects.Clear();
                 prefabContentsMap.Clear();
                 loadedPrefabContents.Clear();
+                loadedScenesForProcessing = null;
             }
         }
 
@@ -196,6 +193,27 @@ namespace IndieBuff.Editor
         {
             assetData[key] = value;
             contextData[key] = value;
+        }
+
+        public void GetAllScenesRootObjects(string scenePath)
+        {       
+            // Open the scene in a non-blocking way (without loading it fully)
+            Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+            Debug.Log($"Opened scene: {scene.name} - IsValid: {scene.IsValid()} - Path: {scene.path}");
+
+            // Get the root game objects from the scene
+            GameObject[] rootObjects = scene.GetRootGameObjects();
+            Debug.Log($"Found {rootObjects.Length} root objects in scene {scene.name}");
+
+            foreach (var obj in rootObjects)
+            {
+                Debug.Log($"Enqueueing object: {obj.name} from scene: {scene.name}");
+                objectsToProcess.Enqueue(obj);
+            }
+
+            // Optionally, close the scene if you don't want to keep it open
+            EditorSceneManager.CloseScene(scene, true);
+            Debug.Log($"Closed scene: {scene.name}");
         }
 
         private void ProcessGameObject(GameObject gameObject)
@@ -889,6 +907,51 @@ namespace IndieBuff.Editor
             
             // For any other type, return the simple name
             return type.Name;
+        }
+
+        // code to save the results to a file
+
+        public bool HasResults => AssetData != null && AssetData.Count > 0;
+
+        public string[] GetResultStats()
+        {
+            if (!HasResults) return new string[0];
+
+            var stats = new List<string>();
+            stats.Add($"Total scene objects: {AssetData.Count}");
+
+            var typeGroups = AssetData
+                .GroupBy(kvp => kvp.Value.GetType().Name)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            foreach (var group in typeGroups)
+            {
+                stats.Add($"- {group.Key}: {group.Value}");
+            }
+
+            return stats.ToArray();
+        }
+
+        public void SaveResultsToFile(string outputPath)
+        {
+            try
+            {
+                var jsonSettings = new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    Formatting = Formatting.Indented
+                };
+
+                string json = JsonConvert.SerializeObject(AssetData, jsonSettings);
+                File.WriteAllText(outputPath, json);
+
+                Debug.Log($"Scan results saved to: {outputPath}");
+                AssetDatabase.Refresh();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error saving scan results: {e.Message}");
+            }
         }
     }
 }
