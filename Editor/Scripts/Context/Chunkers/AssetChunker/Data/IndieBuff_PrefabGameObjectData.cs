@@ -7,7 +7,7 @@ namespace IndieBuff.Editor
     [Serializable]
     public class IndieBuff_PrefabGameObjectData : IndieBuff_Asset
     {
-        private const string DOC_TYPE = "prefab";
+        private const string DOC_TYPE = "asset_prefab";
 
         public string HierarchyPath { get; set; }
         public string ParentName { get; set; }
@@ -21,7 +21,7 @@ namespace IndieBuff.Editor
         public string PrefabAssetPath { get; set; }
         public string PrefabAssetName { get; set; }
 
-        public IndieBuff_PrefabGameObjectData()
+        public IndieBuff_PrefabGameObjectData() : base(DOC_TYPE)
         {
             Children = new List<string>();
             Components = new List<string>();

@@ -13,7 +13,7 @@ namespace IndieBuff.Editor
         public string GameObjectName { get; set; }
         public List<string> Siblings { get; set; }
 
-        public IndieBuff_ComponentData()
+        public IndieBuff_ComponentData() : base(DOC_TYPE)
         {
             Properties = new Dictionary<string, object>();
             Siblings = new List<string>();

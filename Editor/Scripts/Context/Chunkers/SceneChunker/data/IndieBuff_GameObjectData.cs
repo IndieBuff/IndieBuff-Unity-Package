@@ -18,7 +18,7 @@ namespace IndieBuff.Editor
         public List<string> Children { get; set; }
         public List<string> Components { get; set; }
 
-        public IndieBuff_GameObjectData()
+        public IndieBuff_GameObjectData() : base(DOC_TYPE)
         {
             Children = new List<string>();
             Components = new List<string>();

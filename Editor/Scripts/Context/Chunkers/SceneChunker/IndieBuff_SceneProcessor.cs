@@ -302,7 +302,7 @@ namespace IndieBuff.Editor
 
                 var scriptData = new IndieBuff_ScriptSceneComponentData
                 {
-                    Type = component.GetType().Name,
+                    //Type = component.GetType().Name,
                     HierarchyPath = GetUniqueGameObjectKey(gameObject),
                     GameObjectName = gameObject.name,
                     ScriptPath = scriptPath,
@@ -317,7 +317,7 @@ namespace IndieBuff.Editor
             {
                 var componentData = new IndieBuff_ComponentData
                 {
-                    Type = component.GetType().Name,
+                    //Type = component.GetType().Name,
                     HierarchyPath = GetUniqueGameObjectKey(gameObject),
                     GameObjectName = gameObject.name,
                     Properties = GetComponentsData(component),

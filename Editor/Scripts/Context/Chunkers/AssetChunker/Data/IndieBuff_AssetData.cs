@@ -14,7 +14,7 @@ namespace IndieBuff.Editor
         public Dictionary<string, object> Properties { get; set; }  // Store type-specific properties
         public List<string> Dependencies { get; set; }
 
-        public IndieBuff_AssetData()
+        public IndieBuff_AssetData() : base(DOC_TYPE)
         {
             Properties = new Dictionary<string, object>();
             Dependencies = new List<string>();

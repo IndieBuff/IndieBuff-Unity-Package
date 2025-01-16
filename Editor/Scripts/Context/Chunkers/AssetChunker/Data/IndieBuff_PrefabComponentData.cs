@@ -6,7 +6,7 @@ namespace IndieBuff.Editor
     [Serializable]
     public class IndieBuff_PrefabComponentData : IndieBuff_Asset
     {
-        private const string DOC_TYPE = "prefab_component";
+        private const string DOC_TYPE = "asset_prefab_component";
         public string Type { get; set; }
         public Dictionary<string, object> Properties { get; set; }
 
@@ -15,7 +15,7 @@ namespace IndieBuff.Editor
         public string PrefabAssetPath { get; set; }
         public string PrefabAssetName { get; set; }
 
-        public IndieBuff_PrefabComponentData()
+        public IndieBuff_PrefabComponentData() : base(DOC_TYPE)
         {
             Properties = new Dictionary<string, object>();
             Siblings = new List<string>();
@@ -24,7 +24,7 @@ namespace IndieBuff.Editor
 
     public class IndieBuff_ScriptPrefabComponentData : IndieBuff_PrefabComponentData
     {
-        private const string DOC_TYPE = "prefab_script_component";
+        private const string DOC_TYPE = "asset_prefab_script_component";
         public string ScriptPath { get; set; }
         public string ScriptName { get; set; }
 
