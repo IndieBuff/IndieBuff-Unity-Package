@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace IndieBuff.Editor
 {
     [Serializable]
-    public class IndieBuff_PrefabComponentData : IndieBuff_Asset
+    public class IndieBuff_PrefabComponentData : IndieBuff_Document
     {
         private const string DOC_TYPE = "asset_prefab_component";
         public string Type { get; set; }

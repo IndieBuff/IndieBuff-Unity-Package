@@ -5,7 +5,7 @@ using UnityEngine;
 namespace IndieBuff.Editor
 {
     [Serializable]
-    public class IndieBuff_AssetData : IndieBuff_Asset
+    public class IndieBuff_AssetData : IndieBuff_Document
     {
         private const string DOC_TYPE = "asset";
         public string Name { get; set; }

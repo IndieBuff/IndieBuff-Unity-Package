@@ -23,7 +23,7 @@ namespace IndieBuff.Editor
         }
 
         public bool IsScanning => isProcessing;
-        public Dictionary<string, IndieBuff_Asset> AssetData => assetData;
+        public Dictionary<string, IndieBuff_Document> AssetData => assetData;
 
         private Dictionary<string, object> contextData;
         private bool isProcessing = false;
@@ -43,13 +43,13 @@ namespace IndieBuff.Editor
         private bool OutputType = false;
         private int m_ObjectDepth = 0;
         private TaskCompletionSource<Dictionary<string, object>> _completionSource;
-        private Dictionary<string, IndieBuff_Asset> assetData;
+        private Dictionary<string, IndieBuff_Document> assetData;
         private List<Scene> loadedScenesForProcessing;
         private Scene activeSceneForProcessing;
 
         public IndieBuff_SceneProcessor()
         {
-            assetData = new Dictionary<string, IndieBuff_Asset>();
+            assetData = new Dictionary<string, IndieBuff_Document>();
         }
 
         internal Task<Dictionary<string, object>> StartContextBuild()
@@ -57,7 +57,7 @@ namespace IndieBuff.Editor
             _completionSource = new TaskCompletionSource<Dictionary<string, object>>();
             isProcessing = true;
             contextData = new Dictionary<string, object>();
-            assetData = new Dictionary<string, IndieBuff_Asset>();
+            assetData = new Dictionary<string, IndieBuff_Document>();
             
             objectsToProcess = new Queue<GameObject>();
             processedObjects.Clear();
@@ -189,7 +189,7 @@ namespace IndieBuff.Editor
             }
         }
 
-        private void AddToContext(string key, IndieBuff_Asset value)
+        private void AddToContext(string key, IndieBuff_Document value)
         {
             assetData[key] = value;
             contextData[key] = value;

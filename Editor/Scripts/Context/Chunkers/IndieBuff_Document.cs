@@ -3,11 +3,11 @@ using System;
 namespace IndieBuff.Editor
 {
     [Serializable]
-    public abstract class IndieBuff_Asset
+    public abstract class IndieBuff_Document
     {
         public string DocType { get; protected set; }
 
-        protected IndieBuff_Asset(string docType)
+        protected IndieBuff_Document(string docType)
         {
             DocType = docType;
         }

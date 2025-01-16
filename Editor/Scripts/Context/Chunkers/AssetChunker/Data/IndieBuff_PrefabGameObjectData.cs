@@ -5,7 +5,7 @@ using UnityEngine;
 namespace IndieBuff.Editor
 {
     [Serializable]
-    public class IndieBuff_PrefabGameObjectData : IndieBuff_Asset
+    public class IndieBuff_PrefabGameObjectData : IndieBuff_Document
     {
         private const string DOC_TYPE = "asset_prefab";
 
