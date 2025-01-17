@@ -1,5 +1,4 @@
 using System;
-using Indiebuff.Editor;
 using IndieBUff.Editor;
 using UnityEngine.UIElements;
 
@@ -19,8 +18,8 @@ namespace IndieBuff.Editor
                 ChatMode.Chat => new ChatResponseHandler(
                     new ChatParser(responseContainer)
                 ),
-                ChatMode.Default => new ChatResponseHandler(
-                    new ChatParser(responseContainer)
+                ChatMode.Default => new DefaultResponseHandler(
+                    new DefaultParser(responseContainer, shouldDiff)
                 ),
                 ChatMode.Prototype => new PrototypeResponseHandler(
                     new PrototypeParser(responseContainer)

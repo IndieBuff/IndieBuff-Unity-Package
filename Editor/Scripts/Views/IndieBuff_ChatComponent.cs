@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Indiebuff.Editor;
 using IndieBUff.Editor;
 using Newtonsoft.Json;
 using UnityEditor;
@@ -189,10 +188,10 @@ namespace IndieBuff.Editor
         {
             addContextButton = root.Q<Button>("AddContextButton");
             clearContextButton = root.Q<Button>("ClearContextButton");
-            
+
             // Initial state check
             UpdateClearButtonVisibility();
-            
+
             // Subscribe to context updates
             IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += UpdateClearButtonVisibility;
 
