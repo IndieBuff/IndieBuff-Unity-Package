@@ -32,6 +32,7 @@ namespace IndieBuff.Editor
 
             foreach (var batch in batches)
             {
+                Debug.Log($"Processing batch of {batch.Count} files");
                 var tasks = batch.Select(async file =>
                 {
                     try

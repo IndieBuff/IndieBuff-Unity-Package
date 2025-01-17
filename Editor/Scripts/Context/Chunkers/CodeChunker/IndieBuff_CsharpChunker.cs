@@ -39,34 +39,52 @@ namespace IndieBuff.Editor
                 return;
             }
             isScanning = true;
-
+            Debug.Log("Scanning project...");
             try
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 var projectPath = Application.dataPath;
-                // ignore the directories that conatin the word "IndieBuff"
-                var ignoreDirectories = new string[] { "IndieBuff" };
+                
+                // Debug the search path
+                Debug.Log($"Searching for .cs files in: {projectPath}");
 
-                var files = Directory.GetFiles(projectPath, "*.cs", SearchOption.AllDirectories)
-                    .Where(file => !ignoreDirectories.Any(dir => file.Contains(dir)))
-                    .ToList();
+                // Get all .cs files
+                var files = Directory.GetFiles(projectPath, "*.cs", SearchOption.AllDirectories);
+                Debug.Log($"Found {files.Length} total .cs files before filtering");
+
+                // Filter out specific directories if needed (optional)
+                var excludePatterns = new[] { 
+                    "/Plugins/",
+                    "/ThirdParty/",
+                    "/Tests/"
+                };
+
+                var filteredFiles = files.Where(file => 
+                    !excludePatterns.Any(pattern => file.Contains(pattern))
+                ).ToList();
+
+                Debug.Log($"After filtering, processing {filteredFiles.Count} files");
 
                 var projectScanner = new IndieBuff_CsharpProcessor();
-                codeData = await projectScanner.ScanFiles(files, projectPath);
+                codeData = await projectScanner.ScanFiles(filteredFiles, projectPath);
+
+                Debug.Log($"Scan completed. Found {codeData?.Count ?? 0} files with code data");
 
                 var jsonSettings = new JsonSerializerSettings
                 {
-                    Formatting = Formatting.Indented
+                    Formatting = Formatting.Indented,
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 };
-
 
                 // Save scan data to file
                 var json = JsonConvert.SerializeObject(codeData, jsonSettings);
                 File.WriteAllText(scanOutputPath, json);
+                Debug.Log($"Saved scan results to: {Path.GetFullPath(scanOutputPath)}");
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Error during project scan: {ex}");
+                Debug.LogError($"Stack trace: {ex.StackTrace}");
             }
             finally
             {
