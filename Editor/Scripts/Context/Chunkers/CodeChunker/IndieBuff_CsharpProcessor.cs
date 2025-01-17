@@ -113,7 +113,7 @@ namespace IndieBuff.Editor
             SyntaxNode root,
             ConcurrentDictionary<string, List<IndieBuff_CodeData>> fileSymbols)
         {
-            const int MaxTokens = 1000;
+            const int MaxTokens = 2000;
             var code = File.ReadAllText(absolutePath);
             var symbols = new List<IndieBuff_CodeData>();
 
@@ -234,8 +234,8 @@ namespace IndieBuff.Editor
             {
                 StartLine = location.StartLinePosition.Line,
                 EndLine = location.EndLinePosition.Line,
-                RelativePath = relativePath,
-                FilePath = absolutePath
+                RelativePath = "Assets/" + relativePath//,
+                //FilePath = absolutePath
             };
 
             switch (node)

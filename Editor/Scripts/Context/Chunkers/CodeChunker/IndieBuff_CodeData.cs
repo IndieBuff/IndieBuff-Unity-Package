@@ -13,7 +13,7 @@ namespace IndieBuff.Editor
         public List<string> Parameters { get; set; }
         public string ReturnType { get; set; }
         public string Visibility { get; set; }
-        public string FilePath { get; set; }
+        //public string FilePath { get; set; }
         public string RelativePath { get; set; }
         public string Content { get; set; }
 
