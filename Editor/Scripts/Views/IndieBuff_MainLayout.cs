@@ -10,8 +10,6 @@ namespace IndieBuff.Editor
 
         private VisualTreeAsset loginComponentAsset;
 
-        private VisualTreeAsset aiResponseBoxAsset;
-
         private IndieBuff_ChatComponent chatComponent;
         private IndieBuff_LoginComponent loginComponent;
 
@@ -27,7 +25,6 @@ namespace IndieBuff.Editor
         {
             chatComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_ChatComponent.uxml");
             loginComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_LoginPage.uxml");
-            aiResponseBoxAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_AIResponse.uxml");
 
 
             ShowLoginComponent();
@@ -81,7 +78,7 @@ namespace IndieBuff.Editor
 
             IndieBuff_UserSelectedContext.Instance.RestoreStateIfNeeded();
 
-            chatComponent = new IndieBuff_ChatComponent(chatUI, aiResponseBoxAsset);
+            chatComponent = new IndieBuff_ChatComponent(chatUI);
             chatComponent.OnLogoutSuccess += ShowLoginComponent;
         }
 

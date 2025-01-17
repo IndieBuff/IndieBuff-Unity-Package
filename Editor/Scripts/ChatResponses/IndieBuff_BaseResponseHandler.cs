@@ -15,7 +15,7 @@ namespace IndieBuff.Editor
             this.parser = parser;
         }
 
-        public async Task HandleResponse(string userMessage, VisualElement responseContainer, CancellationToken token)
+        public virtual async Task HandleResponse(string userMessage, VisualElement responseContainer, CancellationToken token)
         {
             var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
             var messageLabel = messageContainer.Q<TextField>();

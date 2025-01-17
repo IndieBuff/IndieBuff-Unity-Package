@@ -75,7 +75,7 @@ namespace IndieBuff.Editor
         private ResponseHandlerFactory handlerFactory;
         private IResponseHandler currentResponseHandler;
 
-        public IndieBuff_ChatComponent(VisualElement root, VisualTreeAsset aiResponseAsset)
+        public IndieBuff_ChatComponent(VisualElement root)
         {
             this.root = root;
             responseArea = root.Q<ScrollView>("ReponseArea");
@@ -101,7 +101,7 @@ namespace IndieBuff.Editor
             SetupProfileSettings();
             SetupAddContext();
 
-            AIResponseBoxAsset = aiResponseAsset;
+            AIResponseBoxAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_AIResponse.uxml");
 
             chatHistoryComponent = new IndieBuff_ChatHistoryComponent(chatHistoryPanel, OnChatHistoryClicked);
             chatSettingsComponent = new IndieBuff_ChatSettingsComponent(chatSettingsBar);
@@ -316,13 +316,27 @@ namespace IndieBuff.Editor
             await Task.Delay(50);
             responseArea.ScrollTo(responseContainer);
 
+            if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Default)
+            {
+                await HandleDefaultResponse(userMessage, responseContainer);
+            }
+            else
+            {
+                currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer, IndieBuff_UserInfo.ShouldUseDiffFormat(IndieBuff_UserInfo.Instance.selectedModel));
 
+                cts = new CancellationTokenSource();
 
-            currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer, IndieBuff_UserInfo.ShouldUseDiffFormat(IndieBuff_UserInfo.Instance.selectedModel));
+                await currentResponseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
+            }
+        }
+
+        private async Task HandleDefaultResponse(string userMessage, VisualElement responseContainer)
+        {
+            ChatParser parser = new ChatParser(responseContainer);
+            DefaultResponseHandler responseHandler = new DefaultResponseHandler(parser, IndieBuff_UserInfo.ShouldUseDiffFormat(IndieBuff_UserInfo.Instance.selectedModel), responseArea);
 
             cts = new CancellationTokenSource();
-
-            await currentResponseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
+            await responseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
         }
 
         private async void onMessagesLoaded()
