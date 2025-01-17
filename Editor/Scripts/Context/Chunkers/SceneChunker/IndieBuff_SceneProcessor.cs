@@ -300,6 +300,9 @@ namespace IndieBuff.Editor
                         } as object
                     );
 
+                // add the type to the properties
+                properties["type"] = "MonoBehaviour";
+
                 var scriptData = new IndieBuff_ScriptSceneComponentData
                 {
                     //Type = component.GetType().Name,

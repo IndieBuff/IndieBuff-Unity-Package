@@ -8,12 +8,10 @@ namespace IndieBuff.Editor
     public class IndieBuff_PrefabGameObjectData : IndieBuff_Document
     {
         private const string DOC_TYPE = "asset_prefab";
-
         public string HierarchyPath { get; set; }
         public string ParentName { get; set; }
         public string Tag { get; set; }
         public string Layer { get; set; }
-        public bool IsActive { get; set; }
         public int ChildCount { get; set; }
         public List<string> Children { get; set; }
         public List<string> Components { get; set; }

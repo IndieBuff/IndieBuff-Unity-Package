@@ -241,6 +241,10 @@ namespace IndieBuff.Editor
                 {
                     assetData.Properties = GetTextureProperties(texture);
                 }
+                else if (obj is DefaultAsset defaultAsset)
+                {
+                    return;
+                }
                 else
                 {
                     assetData.Properties = GetSerializedProperties(obj);
@@ -281,7 +285,6 @@ namespace IndieBuff.Editor
                     ParentName = objectToProcess.transform.parent != null ? objectToProcess.transform.parent.gameObject.name : "null",
                     Tag = objectToProcess.tag,
                     Layer = LayerMask.LayerToName(objectToProcess.layer),
-                    IsActive = objectToProcess.activeSelf,
                     PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
                     PrefabAssetName = gameObject.name
                 };
