@@ -19,6 +19,9 @@ namespace IndieBuff.Editor
                 ChatMode.Chat => new ChatResponseHandler(
                     new ChatParser(responseContainer)
                 ),
+                ChatMode.Default => new ChatResponseHandler(
+                    new ChatParser(responseContainer)
+                ),
                 ChatMode.Prototype => new PrototypeResponseHandler(
                     new PrototypeParser(responseContainer)
                 ),
