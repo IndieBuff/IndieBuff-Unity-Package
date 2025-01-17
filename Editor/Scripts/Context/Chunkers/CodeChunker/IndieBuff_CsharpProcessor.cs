@@ -113,14 +113,21 @@ namespace IndieBuff.Editor
             SyntaxNode root,
             ConcurrentDictionary<string, List<IndieBuff_CodeData>> fileSymbols)
         {
-            const int MaxTokens = 1000; // Adjust this value based on your needs
+            const int MaxTokens = 1000;
             var code = File.ReadAllText(absolutePath);
             var symbols = new List<IndieBuff_CodeData>();
 
-            // Process all top-level declarations
+            // Process all declarations
             foreach (var node in root.DescendantNodes())
             {
-                if (node.Parent == root && (node is ClassDeclarationSyntax || node is MethodDeclarationSyntax))
+                // Process classes at root level
+                if (node.Parent == root && node is ClassDeclarationSyntax)
+                {
+                    var chunks = ProcessFileNodes(node, code, relativePath, absolutePath, MaxTokens).Result;
+                    symbols.AddRange(chunks);
+                }
+                // Process methods within classes
+                else if (node.Parent is ClassDeclarationSyntax && node is MethodDeclarationSyntax)
                 {
                     var chunks = ProcessFileNodes(node, code, relativePath, absolutePath, MaxTokens).Result;
                     symbols.AddRange(chunks);
@@ -197,15 +204,10 @@ namespace IndieBuff.Editor
             string code,
             int maxTokens)
         {
-            var body = node.Body ?? (SyntaxNode)node.ExpressionBody;
-            if (body == null) return node.ToFullString();
-
-            var headerText = code.Substring(
-                node.SpanStart, 
-                body.SpanStart - node.SpanStart
-            );
+            // Get the full method text including body
+            var methodText = node.ToFullString();
             
-            // If method is inside a class, include class context
+            // If method is inside a class, include just the class header
             if (node.Parent is ClassDeclarationSyntax classNode)
             {
                 var classHeader = code.Substring(
@@ -213,11 +215,11 @@ namespace IndieBuff.Editor
                     classNode.OpenBraceToken.SpanStart - classNode.SpanStart
                 ).Trim();
                 
-                var indent = new string(' ', node.GetLocation().GetLineSpan().StartLinePosition.Character);
-                return $"{classHeader}\n{COLLAPSED_CONTENT}\n\n{indent}{headerText}{COLLAPSED_BLOCK}";
+                // Return class header + method with full body
+                return $"{classHeader}\n{COLLAPSED_CONTENT}\n\n{methodText}";
             }
 
-            return $"{headerText}{COLLAPSED_BLOCK}";
+            return methodText;
         }
 
         private async Task<IndieBuff_CodeData> ProcessNodeToChunk(
