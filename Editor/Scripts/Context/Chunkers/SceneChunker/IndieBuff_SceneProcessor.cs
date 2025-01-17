@@ -63,7 +63,8 @@ namespace IndieBuff.Editor
             processedObjects.Clear();
 
             // Store the active scene to restore it later
-            activeSceneForProcessing = EditorSceneManager.GetActiveScene();
+            Scene activeScene = EditorSceneManager.GetActiveScene();
+            List<Scene> loadedScenes = new List<Scene>();
 
             // Get all scene paths in the project
             var sceneGuids = AssetDatabase.FindAssets("t:Scene");
@@ -77,23 +78,16 @@ namespace IndieBuff.Editor
                 
                 try
                 {
-                    // Open the scene additively
                     Scene loadedScene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+                    loadedScenes.Add(loadedScene);
                     
-                    // Get root objects and enqueue them
                     GameObject[] rootObjects = loadedScene.GetRootGameObjects();
                     Debug.Log($"Found {rootObjects.Length} root objects in scene {loadedScene.name}");
                     
-                    // Create a copy of the root objects (to maintain references after scene close)
                     foreach (var obj in rootObjects)
                     {
+                        Debug.Log($"Enqueueing object: {obj.name} from scene: {loadedScene.name}");
                         objectsToProcess.Enqueue(obj);
-                    }
-
-                    // Close the scene immediately if it's not the active scene
-                    if (loadedScene.path != activeSceneForProcessing.path)
-                    {
-                        EditorSceneManager.CloseScene(loadedScene, true);
                     }
                 }
                 catch (Exception e)
@@ -103,6 +97,10 @@ namespace IndieBuff.Editor
             }
 
             EditorApplication.update += ProcessObjectsQueue;
+
+            // Store the loaded scenes to close them in CompleteProcessing
+            loadedScenesForProcessing = loadedScenes;
+            activeSceneForProcessing = activeScene;
 
             return _completionSource.Task;
         }
@@ -115,16 +113,17 @@ namespace IndieBuff.Editor
                 CompleteProcessing();
                 return;
             }
-            //
 
             try
             {
+                Debug.Log($"ProcessObjectsQueue: {objectsToProcess.Count} objects remaining to process");
                 int processedThisFrame = 0;
                 while (objectsToProcess.Count > 0 && processedThisFrame < MAX_CHILDREN_PER_FRAME)
                 {
                     var gameObject = objectsToProcess.Dequeue();
                     if (gameObject != null && !processedObjects.Contains(gameObject))
                     {
+                        Debug.Log($"Processing GameObject: {gameObject.name} from scene: {gameObject.scene.name}");
                         ProcessGameObject(gameObject);
                     }
                     processedThisFrame++;
@@ -132,6 +131,7 @@ namespace IndieBuff.Editor
 
                 if (objectsToProcess.Count == 0)
                 {
+                    Debug.Log("ProcessObjectsQueue: Queue empty, completing processing");
                     CompleteProcessing();
                 }
             }
@@ -162,6 +162,18 @@ namespace IndieBuff.Editor
                     }
                 }
 
+                // Close all the scenes we opened (except the active scene)
+                if (loadedScenesForProcessing != null)
+                {
+                    foreach (var scene in loadedScenesForProcessing)
+                    {
+                        if (scene.path != activeSceneForProcessing.path)
+                        {
+                            EditorSceneManager.CloseScene(scene, true);
+                        }
+                    }
+                }
+
                 _completionSource?.TrySetResult(contextData);
             }
             catch (Exception e)
@@ -173,6 +185,7 @@ namespace IndieBuff.Editor
                 processedObjects.Clear();
                 prefabContentsMap.Clear();
                 loadedPrefabContents.Clear();
+                loadedScenesForProcessing = null;
             }
         }
 
@@ -194,6 +207,7 @@ namespace IndieBuff.Editor
 
             foreach (var obj in rootObjects)
             {
+                Debug.Log($"Enqueueing object: {obj.name} from scene: {scene.name}");
                 objectsToProcess.Enqueue(obj);
             }
 

@@ -1055,12 +1055,9 @@ namespace IndieBuff.Editor
             
             try
             {
-                // Check if material has color property before accessing it
-                if (material.HasProperty("_Color"))
-                {
-                    Color mainColor = material.color;
-                    properties["color"] = $"({mainColor.r:F3}, {mainColor.g:F3}, {mainColor.b:F3}, {mainColor.a:F3})";
-                }
+                // Get the main color as a string to avoid serialization issues
+                Color mainColor = material.color;
+                properties["color"] = $"({mainColor.r:F3}, {mainColor.g:F3}, {mainColor.b:F3}, {mainColor.a:F3})";
                 
                 // Add shader name
                 properties["shader"] = material.shader != null ? material.shader.name : "null";
@@ -1070,7 +1067,7 @@ namespace IndieBuff.Editor
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"Error getting material properties for {material.name}: {e.Message}");
+                Debug.LogError($"Error getting material properties: {e.Message}");
             }
             
             return properties;
