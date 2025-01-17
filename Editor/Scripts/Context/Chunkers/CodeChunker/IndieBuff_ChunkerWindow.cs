@@ -22,6 +22,7 @@ namespace IndieBuff.Editor
             EditorGUI.BeginDisabledGroup(IndieBuff_CsharpChunker.Instance.IsScanning);
             if (GUILayout.Button("Scan Project"))
             {
+                Debug.Log("Starting project scan...");
                 IndieBuff_CsharpChunker.Instance.ScanProject();
             }
             EditorGUI.EndDisabledGroup();
@@ -38,6 +39,12 @@ namespace IndieBuff.Editor
                 EditorGUILayout.Space(10);
                 EditorGUILayout.LabelField("Scan Results", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Files Scanned: {IndieBuff_CsharpChunker.Instance.CodeData.Count}");
+                
+                // Add debug information
+                if (IndieBuff_CsharpChunker.Instance.CodeData.Count == 0)
+                {
+                    EditorGUILayout.HelpBox("No files were found during scan. This might indicate an issue with the file search process.", MessageType.Warning);
+                }
             }
         }
     }

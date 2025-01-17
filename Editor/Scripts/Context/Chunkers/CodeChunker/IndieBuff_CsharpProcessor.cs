@@ -15,9 +15,103 @@ namespace IndieBuff.Editor
 {
     public class IndieBuff_CsharpProcessor
     {
-        private const int BatchSize = 200;
         private const string COLLAPSED_BLOCK = "{ ... }";
         private const string COLLAPSED_CONTENT = "...";
+        private const int DEFAULT_MAX_TOKENS = 500;
+
+        private const int BatchSize = 200;
+
+        private static readonly SyntaxKind[] FUNCTION_BLOCK_NODE_TYPES = new[]
+        {
+            SyntaxKind.Block
+        };
+
+        private static readonly SyntaxKind[] FUNCTION_DECLARATION_NODE_TYPES = new[]
+        {
+            SyntaxKind.MethodDeclaration,
+            SyntaxKind.LocalFunctionStatement,
+            SyntaxKind.DelegateDeclaration,
+            SyntaxKind.AnonymousMethodExpression
+        };
+
+        private readonly Dictionary<SyntaxKind, Func<SyntaxNode, string, int, Task<string>>> collapsedNodeConstructors;
+
+        public IndieBuff_CsharpProcessor()
+        {
+            collapsedNodeConstructors = new Dictionary<SyntaxKind, Func<SyntaxNode, string, int, Task<string>>>
+            {
+                { SyntaxKind.ClassDeclaration, ConstructClassDefinitionChunk },
+                { SyntaxKind.MethodDeclaration, ConstructFunctionDefinitionChunk },
+                { SyntaxKind.LocalFunctionStatement, ConstructFunctionDefinitionChunk },
+                { SyntaxKind.DelegateDeclaration, ConstructFunctionDefinitionChunk },
+                { SyntaxKind.AnonymousMethodExpression, ConstructFunctionDefinitionChunk }
+            };
+        }
+
+        private async Task<IndieBuff_CodeData?> MaybeYieldChunk(
+            SyntaxNode node, 
+            string code, 
+            string relativePath,
+            int maxTokens,
+            bool root = true)
+        {
+            if (root || collapsedNodeConstructors.ContainsKey(node.Kind()))
+            {
+                var tokenCount = CountTokens(node.ToFullString());
+                if (tokenCount < maxTokens)
+                {
+                    return new IndieBuff_CodeData
+                    {
+                        Content = node.ToFullString(),
+                        StartLine = node.GetLocation().GetLineSpan().StartLinePosition.Line,
+                        EndLine = node.GetLocation().GetLineSpan().EndLinePosition.Line,
+                        RelativePath = "Assets/" + relativePath
+                    };
+                }
+            }
+            return null;
+        }
+
+        private async Task<IEnumerable<IndieBuff_CodeData>> GetSmartCollapsedChunks(
+            SyntaxNode node,
+            string code,
+            string relativePath,
+            int maxTokens,
+            bool root = true)
+        {
+            var results = new List<IndieBuff_CodeData>();
+            
+            var chunk = await MaybeYieldChunk(node, code, relativePath, maxTokens, root);
+            if (chunk != null)
+            {
+                results.Add(chunk);
+                return results;
+            }
+
+            if (collapsedNodeConstructors.TryGetValue(node.Kind(), out var constructor))
+            {
+                var location = node.GetLocation().GetLineSpan();
+                results.Add(new IndieBuff_CodeData
+                {
+                    Content = await constructor(node, code, maxTokens),
+                    StartLine = location.StartLinePosition.Line,
+                    EndLine = location.EndLinePosition.Line,
+                    RelativePath = "Assets/" + relativePath
+                });
+            }
+
+            foreach (var child in node.ChildNodes())
+            {
+                results.AddRange(await GetSmartCollapsedChunks(child, code, relativePath, maxTokens, false));
+            }
+
+            return results;
+        }
+
+        private int CountTokens(string text)
+        {
+            return (int)Math.Ceiling(text.Length / 4.0);
+        }
 
         public async Task<Dictionary<string, List<IndieBuff_CodeData>>> ScanFiles(List<string> files, string projectPath)
         {
@@ -32,6 +126,7 @@ namespace IndieBuff.Editor
 
             foreach (var batch in batches)
             {
+                Debug.Log($"Processing batch of {batch.Count} files");
                 var tasks = batch.Select(async file =>
                 {
                     try
@@ -55,58 +150,6 @@ namespace IndieBuff.Editor
             return new Dictionary<string, List<IndieBuff_CodeData>>(fileSymbols);
         }
 
-        private int CountTokens(string text)
-        {
-            return (int)Math.Ceiling(text.Length / 4.0);
-        }
-
-        private async Task<IEnumerable<IndieBuff_CodeData>> ProcessFileNodes(
-            SyntaxNode node,
-            string code,
-            string relativePath,
-            string absolutePath,
-            int maxTokens,
-            bool isRoot = true)
-        {
-            var results = new List<IndieBuff_CodeData>();
-            
-            // Try to process the full node first
-            if (isRoot || node is ClassDeclarationSyntax || node is MethodDeclarationSyntax)
-            {
-                var tokenCount = CountTokens(node.ToFullString());
-                if (tokenCount < maxTokens)
-                {
-                    var chunk = await ProcessNodeToChunk(node, code, relativePath, absolutePath, maxTokens);
-                    if (chunk != null)
-                    {
-                        results.Add(chunk);
-                        return results;
-                    }
-                }
-            }
-
-            // If node is too large, process it with collapsing
-            if (node is ClassDeclarationSyntax classNode)
-            {
-                var chunk = await ProcessNodeToChunk(node, code, relativePath, absolutePath, maxTokens);
-                results.Add(chunk);
-
-                // Also process all children independently
-                foreach (var member in classNode.Members)
-                {
-                    var childResults = await ProcessFileNodes(member, code, relativePath, absolutePath, maxTokens, false);
-                    results.AddRange(childResults);
-                }
-            }
-            else if (node is MethodDeclarationSyntax methodNode)
-            {
-                var chunk = await ProcessNodeToChunk(node, code, relativePath, absolutePath, maxTokens);
-                results.Add(chunk);
-            }
-
-            return results;
-        }
-
         private void ProcessFile(
             string absolutePath,
             string relativePath,
@@ -117,24 +160,62 @@ namespace IndieBuff.Editor
             var code = File.ReadAllText(absolutePath);
             var symbols = new List<IndieBuff_CodeData>();
 
-            // Process all declarations
             foreach (var node in root.DescendantNodes())
             {
-                // Process classes at root level
                 if (node.Parent == root && node is ClassDeclarationSyntax)
                 {
-                    var chunks = ProcessFileNodes(node, code, relativePath, absolutePath, MaxTokens).Result;
+                    var chunks = GetSmartCollapsedChunks(node, code, relativePath, MaxTokens).Result;
                     symbols.AddRange(chunks);
                 }
-                // Process methods within classes
                 else if (node.Parent is ClassDeclarationSyntax && node is MethodDeclarationSyntax)
                 {
-                    var chunks = ProcessFileNodes(node, code, relativePath, absolutePath, MaxTokens).Result;
+                    var chunks = GetSmartCollapsedChunks(node, code, relativePath, MaxTokens).Result;
                     symbols.AddRange(chunks);
                 }
             }
 
             fileSymbols.TryAdd(relativePath, symbols);
+        }
+
+        private async Task<string> ConstructClassDefinitionChunk(
+            SyntaxNode node,
+            string code,
+            int maxChunkSize)
+        {
+            return await CollapseChildren(
+                node,
+                code,
+                FUNCTION_BLOCK_NODE_TYPES,
+                FUNCTION_DECLARATION_NODE_TYPES,
+                maxChunkSize
+            );
+        }
+
+        private async Task<string> ConstructFunctionDefinitionChunk(
+            SyntaxNode node,
+            string code,
+            int maxChunkSize)
+        {
+            var bodyNode = node.ChildNodes().Last();
+            var funcText = code.Substring(node.SpanStart, bodyNode.SpanStart - node.SpanStart) + 
+                          COLLAPSED_BLOCK;
+
+            if (node.Parent != null && 
+                node.Parent.IsKind(SyntaxKind.Block) &&
+                node.Parent.Parent != null &&
+                (node.Parent.Parent.IsKind(SyntaxKind.ClassDeclaration)))
+            {
+                var classNode = node.Parent.Parent;
+                var classBlock = node.Parent;
+                var classHeader = code.Substring(
+                    classNode.SpanStart,
+                    classBlock.SpanStart - classNode.SpanStart
+                );
+                
+                return $"{classHeader}{COLLAPSED_CONTENT}\n\n{new string(' ', node.GetLocation().GetLineSpan().StartLinePosition.Character)}{funcText}";
+            }
+            
+            return funcText;
         }
 
         private async Task<string> CollapseChildren(
@@ -145,122 +226,81 @@ namespace IndieBuff.Editor
             int maxTokens)
         {
             var nodeText = code.Substring(node.SpanStart, node.Span.Length);
-            var collapsedChildren = new List<(int start, int length, string replacement)>();
+            var collapsedChildren = new List<(int start, int length, string replacement, string fullText)>();
 
-            // Find collapsible children
-            foreach (var child in node.DescendantNodes())
+            var block = node.DescendantNodes()
+                .FirstOrDefault(n => blockTypes.Contains(n.Kind()));
+
+            if (block != null)
             {
-                if (collapseTypes.Contains(child.Kind()))
+                var childrenToCollapse = block.ChildNodes()
+                    .Where(child => collapseTypes.Contains(child.Kind()))
+                    .Reverse();
+
+                foreach (var child in childrenToCollapse)
                 {
-                    var block = child.DescendantNodes()
+                    var grandChild = child.DescendantNodes()
                         .FirstOrDefault(n => blockTypes.Contains(n.Kind()));
-                    
-                    if (block != null)
+
+                    if (grandChild != null)
                     {
+                        var start = grandChild.SpanStart - node.SpanStart;
+                        var length = grandChild.Span.Length;
                         var replacement = COLLAPSED_BLOCK;
-                        collapsedChildren.Add((
-                            block.SpanStart, 
-                            block.Span.Length, 
-                            replacement
-                        ));
+                        var fullChildText = code.Substring(
+                            child.SpanStart - node.SpanStart,
+                            child.Span.Length
+                        );
+
+                        collapsedChildren.Add((start, length, replacement, fullChildText));
                     }
                 }
             }
 
-            // Apply replacements from end to start
-            foreach (var (start, length, replacement) in collapsedChildren.OrderByDescending(x => x.start))
+            var removedChild = false;
+            while (CountTokens(nodeText) > maxTokens && collapsedChildren.Any())
             {
-                var relativeStart = start - node.SpanStart;
-                nodeText = nodeText.Substring(0, relativeStart) + 
-                          replacement + 
-                          nodeText.Substring(relativeStart + length);
-            }
-
-            // TODO: Add token counting and further collapse if needed
-            return nodeText;
-        }
-
-        private async Task<string> ConstructClassDefinitionChunk(
-            ClassDeclarationSyntax node,
-            string code,
-            int maxTokens)
-        {
-            var blockTypes = new[] { 
-                SyntaxKind.Block,
-                SyntaxKind.ClassDeclaration
-            };
-            
-            var collapseTypes = new[] {
-                SyntaxKind.MethodDeclaration,
-                SyntaxKind.PropertyDeclaration,
-                SyntaxKind.ConstructorDeclaration
-            };
-
-            return await CollapseChildren(node, code, blockTypes, collapseTypes, maxTokens);
-        }
-
-        private async Task<string> ConstructMethodDefinitionChunk(
-            MethodDeclarationSyntax node,
-            string code,
-            int maxTokens)
-        {
-            // Get the full method text including body
-            var methodText = node.ToFullString();
-            
-            // If method is inside a class, include just the class header
-            if (node.Parent is ClassDeclarationSyntax classNode)
-            {
-                var classHeader = code.Substring(
-                    classNode.SpanStart,
-                    classNode.OpenBraceToken.SpanStart - classNode.SpanStart
-                ).Trim();
+                removedChild = true;
+                var lastChild = collapsedChildren[collapsedChildren.Count - 1];
+                var index = nodeText.LastIndexOf(lastChild.fullText);
                 
-                // Return class header + method with full body
-                return $"{classHeader}\n{COLLAPSED_CONTENT}\n\n{methodText}";
+                if (index >= 0)
+                {
+                    nodeText = nodeText.Substring(0, index) + 
+                              nodeText.Substring(index + lastChild.fullText.Length);
+                }
+                
+                collapsedChildren.RemoveAt(collapsedChildren.Count - 1);
             }
 
-            return methodText;
-        }
-
-        private async Task<IndieBuff_CodeData> ProcessNodeToChunk(
-            SyntaxNode node,
-            string code,
-            string relativePath,
-            string absolutePath,
-            int maxTokens)
-        {
-            var location = node.GetLocation().GetLineSpan();
-            var chunk = new IndieBuff_CodeData
+            if (removedChild)
             {
-                StartLine = location.StartLinePosition.Line,
-                EndLine = location.EndLinePosition.Line,
-                RelativePath = "Assets/" + relativePath//,
-                //FilePath = absolutePath
-            };
+                var lines = nodeText.Split('\n').ToList();
+                var i = lines.Count - 1;
+                var firstWhitespaceInGroup = -1;
 
-            switch (node)
-            {
-                case ClassDeclarationSyntax classNode:
-                    chunk.Name = classNode.Identifier.Text;
-                    chunk.Kind = "class";
-                    chunk.Visibility = string.Join(" ", classNode.Modifiers);
-                    chunk.Content = await ConstructClassDefinitionChunk(classNode, code, maxTokens);
-                    break;
-
-                case MethodDeclarationSyntax methodNode:
-                    chunk.Name = methodNode.Identifier.Text;
-                    chunk.Kind = "method";
-                    chunk.ReturnType = methodNode.ReturnType.ToString();
-                    chunk.Visibility = string.Join(" ", methodNode.Modifiers);
-                    chunk.Content = await ConstructMethodDefinitionChunk(methodNode, code, maxTokens);
-                    foreach (var param in methodNode.ParameterList.Parameters)
+                while (i >= 0)
+                {
+                    if (string.IsNullOrWhiteSpace(lines[i]))
                     {
-                        chunk.Parameters.Add($"{param.Type} {param.Identifier.Text}");
+                        if (firstWhitespaceInGroup < 0)
+                            firstWhitespaceInGroup = i;
                     }
-                    break;
+                    else
+                    {
+                        if (firstWhitespaceInGroup - i > 1)
+                        {
+                            lines.RemoveRange(i + 1, firstWhitespaceInGroup - i - 1);
+                        }
+                        firstWhitespaceInGroup = -1;
+                    }
+                    i--;
+                }
+
+                nodeText = string.Join("\n", lines);
             }
 
-            return chunk;
+            return nodeText;
         }
     }
 }
