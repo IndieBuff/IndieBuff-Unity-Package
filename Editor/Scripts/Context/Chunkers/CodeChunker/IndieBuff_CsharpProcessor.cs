@@ -42,7 +42,7 @@ namespace IndieBuff.Editor
                         var root = await tree.GetRootAsync();
                         var relativePath = Path.GetRelativePath(projectPath, file);
 
-                        ProcessFile(file, relativePath, root, fileSymbols);
+                        await ProcessFile(file, relativePath, root, fileSymbols);
                     }
                     catch (Exception ex)
                     {
@@ -86,13 +86,17 @@ namespace IndieBuff.Editor
                 }
             }
 
-            // If node is too large, process it with collapsing
+            // If node is too large, process it with collapsing AND its children independently
             if (node is ClassDeclarationSyntax classNode)
             {
+                // Add collapsed version of the class
                 var chunk = await ProcessNodeToChunk(node, code, relativePath, absolutePath, maxTokens);
-                results.Add(chunk);
+                if (chunk != null)
+                {
+                    results.Add(chunk);
+                }
 
-                // Also process all children independently
+                // Process all children independently
                 foreach (var member in classNode.Members)
                 {
                     var childResults = await ProcessFileNodes(member, code, relativePath, absolutePath, maxTokens, false);
@@ -101,14 +105,96 @@ namespace IndieBuff.Editor
             }
             else if (node is MethodDeclarationSyntax methodNode)
             {
+                // Add collapsed version of the method
                 var chunk = await ProcessNodeToChunk(node, code, relativePath, absolutePath, maxTokens);
-                results.Add(chunk);
+                if (chunk != null)
+                {
+                    results.Add(chunk);
+                }
+
+                // If method is still too large, process its blocks recursively
+                var tokenCount = CountTokens(methodNode.Body?.ToFullString() ?? "");
+                if (tokenCount > maxTokens && methodNode.Body != null)
+                {
+                    foreach (var statement in methodNode.Body.Statements)
+                    {
+                        if (statement is BlockSyntax blockStatement)
+                        {
+                            var blockChunk = new IndieBuff_CodeData
+                            {
+                                Name = $"{methodNode.Identifier.Text}_block",
+                                Kind = "method_block",
+                                Content = statement.ToFullString(),
+                                StartLine = statement.GetLocation().GetLineSpan().StartLinePosition.Line,
+                                EndLine = statement.GetLocation().GetLineSpan().EndLinePosition.Line,
+                                RelativePath = "Assets/" + relativePath
+                            };
+                            results.Add(blockChunk);
+                        }
+                    }
+                }
             }
 
             return results;
         }
 
-        private void ProcessFile(
+        private async Task<IndieBuff_CodeData?> MaybeYieldChunk(
+            SyntaxNode node,
+            string code,
+            string relativePath,
+            string absolutePath,
+            int maxTokens,
+            bool root = true)
+        {
+            // Keep entire text if not over size
+            if (root || node.Kind() == SyntaxKind.ClassDeclaration || node.Kind() == SyntaxKind.MethodDeclaration)
+            {
+                var tokenCount = CountTokens(node.ToFullString());
+                if (tokenCount < maxTokens)
+                {
+                    return await ProcessNodeToChunk(node, code, relativePath, absolutePath, maxTokens);
+                }
+            }
+            return null;
+        }
+
+        private async IAsyncEnumerable<IndieBuff_CodeData> GetSmartCollapsedChunks(
+            SyntaxNode node,
+            string code,
+            string relativePath,
+            string absolutePath,
+            int maxTokens,
+            bool root = true)
+        {
+            // Try to yield the whole chunk first
+            var chunk = await MaybeYieldChunk(node, code, relativePath, absolutePath, maxTokens, root);
+            if (chunk != null)
+            {
+                yield return chunk;
+                yield break;
+            }
+
+            // If a collapsed form is defined, use that
+            if (collapsedNodeConstructors.ContainsKey(node.Kind()))
+            {
+                var collapsedChunk = await ProcessNodeToChunk(node, code, relativePath, absolutePath, maxTokens);
+                if (collapsedChunk != null)
+                {
+                    yield return collapsedChunk;
+                }
+            }
+
+            // Recurse (because even if collapsed version was shown, want to show the children in full somewhere)
+            foreach (var child in node.ChildNodes())
+            {
+                await foreach (var childChunk in GetSmartCollapsedChunks(child, code, relativePath, absolutePath, maxTokens, false))
+                {
+                    yield return childChunk;
+                }
+            }
+        }
+
+        private async Task ProcessFile(
             string absolutePath,
             string relativePath,
             SyntaxNode root,
@@ -118,24 +204,31 @@ namespace IndieBuff.Editor
             var code = File.ReadAllText(absolutePath);
             var symbols = new List<IndieBuff_CodeData>();
 
-            // Process all declarations
-            foreach (var node in root.DescendantNodes())
+            // Get both the collapsed overviews and the detailed chunks
+            var overviews = GetSmartCollapsedChunks(root, code, relativePath, absolutePath, MaxTokens);
+            var details = await ProcessFileNodes(root, code, relativePath, absolutePath, MaxTokens);
+            
+            await foreach (var chunk in overviews)
             {
-                // Process classes at root level
-                if (node.Parent == root && node is ClassDeclarationSyntax)
-                {
-                    var chunks = ProcessFileNodes(node, code, relativePath, absolutePath, MaxTokens).Result;
-                    symbols.AddRange(chunks);
-                }
-                // Process methods within classes
-                else if (node.Parent is ClassDeclarationSyntax && node is MethodDeclarationSyntax)
-                {
-                    var chunks = ProcessFileNodes(node, code, relativePath, absolutePath, MaxTokens).Result;
-                    symbols.AddRange(chunks);
-                }
+                symbols.Add(chunk);
             }
+            symbols.AddRange(details);
 
             fileSymbols.TryAdd(relativePath, symbols);
+        }
+
+        private string CollapsedReplacement(SyntaxNode node)
+        {
+            if (node is BlockSyntax)
+            {
+                return "{ ... }";
+            }
+            return "...";
+        }
+
+        private SyntaxNode FirstChild(SyntaxNode node, IEnumerable<SyntaxKind> grammarTypes)
+        {
+            return node.ChildNodes().FirstOrDefault(child => grammarTypes.Contains(child.Kind()));
         }
 
         private async Task<string> CollapseChildren(
@@ -143,61 +236,109 @@ namespace IndieBuff.Editor
             string code,
             IEnumerable<SyntaxKind> blockTypes,
             IEnumerable<SyntaxKind> collapseTypes,
+            IEnumerable<SyntaxKind> collapseBlockTypes,
             int maxTokens)
         {
-            var nodeText = code.Substring(node.SpanStart, node.Span.Length);
-            var collapsedChildren = new List<(int start, int length, string replacement)>();
+            code = code.Substring(0, node.Span.End);
+            var block = FirstChild(node, blockTypes);
+            var collapsedChildren = new List<string>();
 
-            // Find collapsible children
-            foreach (var child in node.DescendantNodes())
+            if (block != null)
             {
-                if (collapseTypes.Contains(child.Kind()))
+                var childrenToCollapse = block.ChildNodes()
+                    .Where(child => collapseTypes.Contains(child.Kind()))
+                    .Reverse();
+
+                foreach (var child in childrenToCollapse)
                 {
-                    var block = child.DescendantNodes()
-                        .FirstOrDefault(n => blockTypes.Contains(n.Kind()));
-                    
-                    if (block != null)
+                    var grandChild = FirstChild(child, collapseBlockTypes);
+                    if (grandChild != null)
                     {
-                        var replacement = COLLAPSED_BLOCK;
-                        collapsedChildren.Add((
-                            block.SpanStart, 
-                            block.Span.Length, 
-                            replacement
-                        ));
+                        var start = grandChild.SpanStart;
+                        var end = grandChild.Span.End;
+                        var collapsedChild = code.Substring(child.SpanStart, start - child.SpanStart) +
+                                           CollapsedReplacement(grandChild);
+                        code = code.Substring(0, start) +
+                               CollapsedReplacement(grandChild) +
+                               code.Substring(end);
+
+                        collapsedChildren.Insert(0, collapsedChild);
                     }
                 }
             }
 
-            // Apply replacements from end to start
-            foreach (var (start, length, replacement) in collapsedChildren.OrderByDescending(x => x.start))
+            code = code.Substring(node.SpanStart);
+            bool removedChild = false;
+
+            while (CountTokens(code.Trim()) > maxTokens && collapsedChildren.Count > 0)
             {
-                var relativeStart = start - node.SpanStart;
-                nodeText = nodeText.Substring(0, relativeStart) + 
-                          replacement + 
-                          nodeText.Substring(relativeStart + length);
+                removedChild = true;
+                var childCode = collapsedChildren[collapsedChildren.Count - 1];
+                collapsedChildren.RemoveAt(collapsedChildren.Count - 1);
+                var index = code.LastIndexOf(childCode);
+                if (index > 0)
+                {
+                    code = code.Substring(0, index) + code.Substring(index + childCode.Length);
+                }
             }
 
-            // TODO: Add token counting and further collapse if needed
-            return nodeText;
+            if (removedChild)
+            {
+                // Remove extra blank lines
+                var lines = code.Split('\n').ToList();
+                var firstWhiteSpaceInGroup = -1;
+                for (int i = lines.Count - 1; i >= 0; i--)
+                {
+                    if (string.IsNullOrWhiteSpace(lines[i]))
+                    {
+                        if (firstWhiteSpaceInGroup < 0)
+                        {
+                            firstWhiteSpaceInGroup = i;
+                        }
+                    }
+                    else
+                    {
+                        if (firstWhiteSpaceInGroup - i > 1)
+                        {
+                            // Remove the extra lines
+                            lines = lines.Take(i + 1)
+                                .Concat(lines.Skip(firstWhiteSpaceInGroup + 1))
+                                .ToList();
+                        }
+                        firstWhiteSpaceInGroup = -1;
+                    }
+                }
+
+                code = string.Join("\n", lines);
+            }
+
+            return code;
         }
 
+        private static readonly SyntaxKind[] FUNCTION_BLOCK_NODE_TYPES = new[]
+        {
+            SyntaxKind.Block
+        };
+
+        private static readonly SyntaxKind[] FUNCTION_DECLARATION_NODE_TYPES = new[]
+        {
+            SyntaxKind.MethodDeclaration,
+            SyntaxKind.LocalFunctionStatement
+        };
+
         private async Task<string> ConstructClassDefinitionChunk(
-            ClassDeclarationSyntax node,
+            SyntaxNode node,
             string code,
             int maxTokens)
         {
-            var blockTypes = new[] { 
-                SyntaxKind.Block,
-                SyntaxKind.ClassDeclaration
-            };
-            
-            var collapseTypes = new[] {
-                SyntaxKind.MethodDeclaration,
-                SyntaxKind.PropertyDeclaration,
-                SyntaxKind.ConstructorDeclaration
-            };
-
-            return await CollapseChildren(node, code, blockTypes, collapseTypes, maxTokens);
+            return await CollapseChildren(
+                node,
+                code,
+                new[] { SyntaxKind.Block },
+                FUNCTION_DECLARATION_NODE_TYPES,
+                FUNCTION_BLOCK_NODE_TYPES,
+                maxTokens
+            );
         }
 
         private async Task<string> ConstructMethodDefinitionChunk(
@@ -205,22 +346,33 @@ namespace IndieBuff.Editor
             string code,
             int maxTokens)
         {
-            // Get the full method text including body
-            var methodText = node.ToFullString();
-            
-            // If method is inside a class, include just the class header
-            if (node.Parent is ClassDeclarationSyntax classNode)
-            {
-                var classHeader = code.Substring(
-                    classNode.SpanStart,
-                    classNode.OpenBraceToken.SpanStart - classNode.SpanStart
-                ).Trim();
-                
-                // Return class header + method with full body
-                return $"{classHeader}\n{COLLAPSED_CONTENT}\n\n{methodText}";
-            }
+            var bodyNode = node.ChildNodes().Last();
+            var funcText = code.Substring(node.SpanStart, bodyNode.SpanStart - node.SpanStart) +
+                          CollapsedReplacement(bodyNode);
 
-            return methodText;
+            if (node.Parent is BlockSyntax && 
+                node.Parent.Parent is ClassDeclarationSyntax classNode)
+            {
+                // If inside a class, include the class header
+                var classBlock = node.Parent;
+                return $"{code.Substring(classNode.SpanStart, classBlock.SpanStart - classNode.SpanStart)}...\n\n{new string(' ', node.GetLocation().GetLineSpan().StartLinePosition.Character)}{funcText}";
+            }
+            return funcText;
+        }
+
+        private readonly Dictionary<SyntaxKind, Func<SyntaxNode, string, int, Task<string>>> collapsedNodeConstructors;
+
+        public IndieBuff_CsharpProcessor()
+        {
+            collapsedNodeConstructors = new Dictionary<SyntaxKind, Func<SyntaxNode, string, int, Task<string>>>
+            {
+                // Classes
+                { SyntaxKind.ClassDeclaration, ConstructClassDefinitionChunk },
+                
+                // Methods
+                { SyntaxKind.MethodDeclaration, (node, code, maxTokens) => 
+                    ConstructMethodDefinitionChunk((MethodDeclarationSyntax)node, code, maxTokens) }
+            };
         }
 
         private async Task<IndieBuff_CodeData> ProcessNodeToChunk(
