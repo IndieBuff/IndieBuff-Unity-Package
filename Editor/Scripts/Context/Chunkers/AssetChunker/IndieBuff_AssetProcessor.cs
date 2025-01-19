@@ -18,12 +18,7 @@ namespace IndieBuff.Editor
             {
                 if (instance == null)
                 {
-                    instance = new IndieBuff_AssetProcessor(
-                        AssetDatabase.FindAssets("t:Object")
-                            .Select(guid => AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(AssetDatabase.GUIDToAssetPath(guid)))
-                            .Where(obj => obj != null)
-                            .ToList()
-                    );
+                    instance = new IndieBuff_AssetProcessor();
                 }
                 return instance;
             }
@@ -52,122 +47,217 @@ namespace IndieBuff.Editor
         private TaskCompletionSource<Dictionary<string, object>> _completionSource;
         private Dictionary<string, IndieBuff_Document> assetData;
 
-        public IndieBuff_AssetProcessor(List<UnityEngine.Object> contextObjects)
+        // Batch processing constants
+        private const int PATH_BATCH_SIZE = 25;  // Reduced batch size for paths
+        private const int ASSETS_PER_BATCH = 10;  // Reduced batch size for regular assets
+        private const int GAMEOBJECTS_PER_BATCH = 5;  // Even smaller batch for GameObjects
+        
+        private Queue<UnityEngine.Object> _assetsToProcess;
+        private bool _isBatchProcessing = false;
+
+        private string[] _pendingPaths;
+        private int _currentPathIndex = 0;
+
+        public IndieBuff_AssetProcessor()
         {
-            _contextObjects = contextObjects;
+            _contextObjects = new List<UnityEngine.Object>();
             assetData = new Dictionary<string, IndieBuff_Document>();
         }
 
-        internal Task<Dictionary<string, object>> StartContextBuild()
+        internal Task<Dictionary<string, object>> StartContextBuild(bool runInBackground = true)
         {
             _completionSource = new TaskCompletionSource<Dictionary<string, object>>();
             isProcessing = true;
             contextData = new Dictionary<string, object>();
             assetData = new Dictionary<string, IndieBuff_Document>();
             
+            _assetsToProcess = new Queue<UnityEngine.Object>();
             objectsToProcess = new Queue<GameObject>();
             processedObjects.Clear();
             prefabContentsMap.Clear();
             loadedPrefabContents.Clear();
 
-            foreach (var obj in _contextObjects)
-            {
-                string assetPath = AssetDatabase.GetAssetPath(obj);
-                // if its a script or its in the package folder then skip it
-                if (assetPath.EndsWith(".cs") || assetPath.StartsWith("Packages"))
-                    continue;
-                
-                if (string.IsNullOrEmpty(assetPath))
-                    continue;
+            // Move the asset loading to the first batch
+            EditorApplication.update += LoadInitialAssets;
 
-                if (obj is GameObject gameObject)
-                {
-                    if (PrefabUtility.IsPartOfPrefabAsset(gameObject))
-                    {
-                        string prefabPath = AssetDatabase.GetAssetPath(gameObject);
-
-                        if (prefabPath.EndsWith(".fbx", System.StringComparison.OrdinalIgnoreCase))
-                        {
-
-                            GameObject fbxRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-
-                            if (fbxRoot != null)
-                            {
-                                loadedPrefabContents.Add(fbxRoot);
-                                prefabContentsMap[gameObject] = fbxRoot;
-                            }
-                            else
-                            {
-                                Debug.LogError($"Failed to load FBX asset at path: {fbxRoot}");
-                            }
-                        }
-                        else if (prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Load prefab contents if it's a valid prefab file
-                            //GameObject prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
-                            GameObject prefabRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-
-                            if (prefabRoot != null)
-                            {
-                                loadedPrefabContents.Add(prefabRoot);
-                                prefabContentsMap[gameObject] = prefabRoot;
-                            }
-                            else
-                            {
-                                Debug.LogError($"Failed to load prefab contents at path: {prefabPath}");
-                            }
-                        }
-
-                        objectsToProcess.Enqueue(gameObject);
-                    }
-                }
-                else
-                {
-                    ProcessGenericAsset(obj);
-                }
-            }
-
-            EditorApplication.update += ProcessObjectsQueue;
             return _completionSource.Task;
         }
 
-        private void ProcessObjectsQueue()
+        private void LoadInitialAssets()
         {
-            if (!isProcessing || objectsToProcess == null)
+            EditorApplication.update -= LoadInitialAssets;
+            
+            // Get all asset paths directly
+            _pendingPaths = AssetDatabase.GetAllAssetPaths()
+                .Where(path => !path.EndsWith(".cs") && 
+                              !path.StartsWith("Packages") && 
+                              !string.IsNullOrEmpty(path))
+                .ToArray();
+            
+            _currentPathIndex = 0;
+            _contextObjects = new List<UnityEngine.Object>();
+
+            // Start the batch processing
+            EditorApplication.update += ProcessNextBatch;
+        }
+
+        private void ProcessNextBatch()
+        {
+            if (!isProcessing)
             {
                 CompleteProcessing();
                 return;
             }
 
+            // Only process one type of batch at a time
+            if (_pendingPaths != null)
+            {
+                ProcessPathBatch();
+                return;
+            }
+
+            if (_assetsToProcess.Count > 0)
+            {
+                ProcessAssetBatch();
+                return;
+            }
+
+            if (objectsToProcess.Count > 0)
+            {
+                ProcessGameObjectBatch();
+                return;
+            }
+
+            // If we get here, we're done
+            CompleteProcessing();
+        }
+
+        private void ProcessPathBatch()
+        {
+            int endIndex = Math.Min(_currentPathIndex + PATH_BATCH_SIZE, _pendingPaths.Length);
+            
+            // Process a batch of paths
+            for (int i = _currentPathIndex; i < endIndex; i++)
+            {
+                string path = _pendingPaths[i];
+                var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+                
+                if (obj != null)
+                {
+                    if (obj is GameObject gameObject)
+                    {
+                        if (PrefabUtility.IsPartOfPrefabAsset(gameObject))
+                        {
+                            PreparePrefabForProcessing(gameObject);
+                            objectsToProcess.Enqueue(gameObject);
+                        }
+                    }
+                    else
+                    {
+                        _assetsToProcess.Enqueue(obj);
+                    }
+                    _contextObjects.Add(obj);
+                }
+            }
+
+            _currentPathIndex = endIndex;
+
+            // If we've processed all paths, clear the paths array
+            if (_currentPathIndex >= _pendingPaths.Length)
+            {
+                _pendingPaths = null;
+            }
+        }
+
+        private void ProcessAssetBatch()
+        {
+            int assetsProcessed = 0;
+            while (_assetsToProcess.Count > 0 && assetsProcessed < ASSETS_PER_BATCH)
+            {
+                var asset = _assetsToProcess.Dequeue();
+                if (asset != null && !processedObjects.Contains(asset))
+                {
+                    ProcessGenericAsset(asset);
+                }
+                assetsProcessed++;
+            }
+        }
+
+        private void ProcessGameObjectBatch()
+        {
+            int gameObjectsProcessed = 0;
+            while (objectsToProcess.Count > 0 && gameObjectsProcessed < GAMEOBJECTS_PER_BATCH)
+            {
+                var gameObject = objectsToProcess.Dequeue();
+                if (gameObject != null && !processedObjects.Contains(gameObject))
+                {
+                    ProcessGameObject(gameObject);
+                }
+                gameObjectsProcessed++;
+            }
+        }
+
+        private void PreparePrefabForProcessing(GameObject gameObject)
+        {
+            string prefabPath = AssetDatabase.GetAssetPath(gameObject);
+
+            if (prefabPath.EndsWith(".fbx", System.StringComparison.OrdinalIgnoreCase))
+            {
+                GameObject fbxRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                if (fbxRoot != null)
+                {
+                    loadedPrefabContents.Add(fbxRoot);
+                    prefabContentsMap[gameObject] = fbxRoot;
+                }
+            }
+            else if (prefabPath.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase))
+            {
+                GameObject prefabRoot = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                if (prefabRoot != null)
+                {
+                    loadedPrefabContents.Add(prefabRoot);
+                    prefabContentsMap[gameObject] = prefabRoot;
+                }
+            }
+        }
+
+        private void ProcessAllAssetsImmediately()
+        {
             try
             {
-                int processedThisFrame = 0;
-                while (objectsToProcess.Count > 0 && processedThisFrame < MAX_CHILDREN_PER_FRAME)
+                while (_assetsToProcess.Count > 0)
+                {
+                    var asset = _assetsToProcess.Dequeue();
+                    if (asset != null && !processedObjects.Contains(asset))
+                    {
+                        ProcessGenericAsset(asset);
+                    }
+                }
+
+                while (objectsToProcess.Count > 0)
                 {
                     var gameObject = objectsToProcess.Dequeue();
                     if (gameObject != null && !processedObjects.Contains(gameObject))
                     {
                         ProcessGameObject(gameObject);
                     }
-                    processedThisFrame++;
                 }
 
-                if (objectsToProcess.Count == 0)
-                {
-                    CompleteProcessing();
-                }
+                CompleteProcessing();
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error in ProcessObjectsQueue: {e.Message}\n{e.StackTrace}");
+                Debug.LogError($"Error in ProcessAllAssetsImmediately: {e.Message}\n{e.StackTrace}");
                 CompleteProcessing();
             }
         }
 
         private void CompleteProcessing()
         {
+            if (!isProcessing) return;
+
             isProcessing = false;
-            EditorApplication.update -= ProcessObjectsQueue;
+            EditorApplication.update -= ProcessNextBatch;
 
             try
             {
@@ -181,15 +271,15 @@ namespace IndieBuff.Editor
                         {
                             // logic to unload
                         }
-
                     }
                 }
+                
                 _completionSource?.TrySetResult(contextData);
-
             }
             catch (Exception e)
             {
                 Debug.LogError($"Error completing context processing: {e.Message}\n{e.StackTrace}");
+                _completionSource?.TrySetException(e);
             }
             finally
             {

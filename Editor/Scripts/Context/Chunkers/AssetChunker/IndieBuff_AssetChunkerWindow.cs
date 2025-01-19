@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
+using System;
 
 namespace IndieBuff.Editor
 {
@@ -18,6 +19,20 @@ namespace IndieBuff.Editor
             window.Show();
         }
 
+        private async void StartScan()
+        {
+            try
+            {
+                await IndieBuff_AssetProcessor.Instance.StartContextBuild(runInBackground: true);
+                // Results are now available in IndieBuff_AssetProcessor.Instance.AssetData
+                Repaint(); // Refresh the window to show results
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error during asset scan: {e.Message}");
+            }
+        }
+
         private void OnGUI()
         {
             EditorGUILayout.Space(10);
@@ -29,7 +44,7 @@ namespace IndieBuff.Editor
             EditorGUI.BeginDisabledGroup(IndieBuff_AssetProcessor.Instance.IsScanning);
             if (GUILayout.Button("Scan Assets"))
             {
-                IndieBuff_AssetProcessor.Instance.StartContextBuild();
+                StartScan();
             }
             EditorGUI.EndDisabledGroup();
 
