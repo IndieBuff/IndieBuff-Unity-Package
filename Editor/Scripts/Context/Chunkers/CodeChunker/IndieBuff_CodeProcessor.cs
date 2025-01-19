@@ -1,82 +1,14 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System;
 using System.IO;
 using UnityEngine;
+using System.Text;
 
-public class Span
+public class IndieBuff_CodeProcessor
 {
-    // Represents a slice of a string
-    public int Start { get; set; } = 0;
-    public int End { get; set; } = 0;
-
-    public Span(int start = 0, int? end = null)
-    {
-        Start = start;
-        End = end ?? start;
-    }
-
-    public string Extract(string s)
-    {
-        // Grab the corresponding substring of string s by bytes
-        return s.Substring(Start, End - Start);
-    }
-
-    public string ExtractLines(string s)
-    {
-        // Split the string into an array of lines
-        string[] lines = s.Split('\n');
-        
-        // Get the subset of lines from start to end index
-        // and join them back together with newlines
-        return string.Join("\n", lines.Skip(Start).Take(End - Start));
-    }
-
-    public static Span operator +(Span a, Span b)
-    {
-        // Span + Span behavior (concatenation)
-        if (a.Length() == 0) return b;
-        if (b.Length() == 0) return a;
-        return new Span(a.Start, b.End);
-    }
-
-    public static Span operator +(Span a, int offset)
-    {
-        // Span + int behavior (shifting both start and end)
-        return new Span(a.Start + offset, a.End + offset);
-    }
-
-    public int Length()
-    {
-        // i.e. Span(a, b) = b - a
-        return End - Start;
-    }
-}
-
-public class CodeChunker
-{
-    private string PrettyNode(SyntaxNode node)
-    {
-        return $"{node.Kind()}:{node.Span.Start}-{node.Span.End}";
-    }
-
-    private void PrintTree(SyntaxNode node, string indent = "")
-    {
-        // Using Regex to remove whitespace, similar to Python's re.sub
-        var nodeText = Regex.Replace(node.ToString(), @"\s", "");
-        if (nodeText.Length < 100)
-            return;
-            
-        Console.WriteLine(indent + PrettyNode(node));
-        foreach (var child in node.ChildNodes())
-        {
-            PrintTree(child, indent + "  ");
-        }
-    }
-
     public static int GetLineNumber(int index, string sourceCode)
     {
         int totalChars = 0;
@@ -236,42 +168,61 @@ public class CodeChunker
         return lineChunks.Where(chunk => chunk.Length() > 0).ToList();
     }
 
-    public static void DebugPrintNodeStructure(SyntaxNode node, string indent = "")
+    public static List<IndieBuff_CodeChunk> ProcessScript()
     {
-        Debug.Log($"{indent}Node: {node.Kind()} ({node.Span.Start}-{node.Span.End})");
-        Debug.Log($"{indent}Text: '{node.ToString()}'");
-        
-        foreach (var child in node.ChildNodes())
+
+        var projectPath = Application.dataPath;
+        Debug.Log($"Searching for .cs files in: {projectPath}");
+
+        // Get all .cs files
+        var files = Directory.GetFiles(projectPath, "*.cs", SearchOption.AllDirectories);
+        Debug.Log($"Found {files.Length} total .cs files before filtering");
+
+        // Filter out Packages and other directories if needed
+        var excludePatterns = new[] { 
+            "/Packages/",
+            "/Plugins/",
+            "/ThirdParty/"
+        };
+
+        var filteredFiles = files.Where(file => 
+            !excludePatterns.Any(pattern => file.Contains(pattern))
+        ).ToList();
+
+        Debug.Log($"After filtering, processing {filteredFiles.Count} files");
+
+        List<IndieBuff_CodeChunk> allChunks = new List<IndieBuff_CodeChunk>();
+
+        foreach (var file in filteredFiles)
         {
-            DebugPrintNodeStructure(child, indent + "  ");
+            var code = File.ReadAllText(file, Encoding.UTF8);
+            var chunker = new IndieBuff_CodeProcessor();
+            var tree = CSharpSyntaxTree.ParseText(code);
+            var root = tree.GetRoot();
+
+            // get relative path
+            var relativePath = file.Replace(projectPath, "").Replace("\\", "/");
+
+            var chunks = chunker.Chunker(root, code);
+            
+            List<string> chunkStrings = chunks.Select(chunk => chunk.ExtractLines(code)).ToList();
+            
+            // Add file path information to help identify source
+            var fileChunks = new List<IndieBuff_CodeChunk>();
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                fileChunks.Add(new IndieBuff_CodeChunk(
+                    chunkStrings[i], 
+                    chunks[i].Start, 
+                    chunks[i].End,
+                    "Assets" + relativePath
+                ));
+            }
+
+            allChunks.AddRange(fileChunks);
+            Debug.Log($"Processed {file} - Found {chunks.Count} chunks");
         }
-    }
-}
 
-public class ChunkWithLineNumber
-{   
-    public string chunk;
-    public int startLine;
-    public int endLine;
-    public string filePath;
-
-    public ChunkWithLineNumber(string chunk, int startLine, int endLine, string filePath)
-    {
-        this.chunk = chunk;
-        this.startLine = startLine;
-        this.endLine = endLine;
-        this.filePath = filePath;
-    }
-}
-
-public class LineNumber
-{   
-    public int startLine;
-    public int endLine;
-
-    public LineNumber(int startLine, int endLine)
-    {
-        this.startLine = startLine;
-        this.endLine = endLine;
+        return allChunks;
     }
 }
