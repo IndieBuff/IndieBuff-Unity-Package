@@ -4,7 +4,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using IndieBUff.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -62,13 +61,12 @@ namespace IndieBuff.Editor
 
         public void ProcessChunk(string chunk)
         {
-
+            bool swapped = false;
             foreach (char c in chunk)
             {
                 if (c == '\n')
                 {
-                    Debug.Log(currentBuffer.ToString());
-                    HandleModeSwap(currentBuffer.ToString());
+                    swapped = HandleModeSwap(currentBuffer.ToString());
                     currentBuffer.Clear();
                 }
                 else
@@ -76,15 +74,19 @@ namespace IndieBuff.Editor
                     currentBuffer.Append(c);
                 }
             }
-            parser.ParseChunk(chunk);
+
+            if (!swapped)
+            {
+                parser.ParseChunk(chunk);
+            }
         }
 
-        public void HandleModeSwap(string line)
+        public bool HandleModeSwap(string line)
         {
             string pattern = @"<(SCRIPT|CHAT|PROTOTYPE)>";
             var matches = Regex.Matches(line, pattern);
 
-            if (matches.Count == 0) return;
+            if (matches.Count == 0) return false;
 
             if (isFirstResponse)
             {
@@ -94,6 +96,7 @@ namespace IndieBuff.Editor
             {
                 VisualElement tempContainer = CreateAIChatResponseBox("");
                 responseArea.Add(tempContainer);
+                tempContainer.style.visibility = Visibility.Hidden;
                 currentResponseContainer = tempContainer;
 
             }
@@ -108,7 +111,6 @@ namespace IndieBuff.Editor
                         parser.HandleLastLine();
                     }
                     parser = tempParser;
-                    Debug.Log("swap to chat");
                     break;
                 case "<SCRIPT>":
                     tempParser = shouldDiff ? new DiffScriptParser(currentResponseContainer) : new WholeScriptParser(currentResponseContainer);
@@ -117,7 +119,6 @@ namespace IndieBuff.Editor
                         parser.HandleLastLine();
                     }
                     parser = tempParser;
-                    Debug.Log("swap to script");
                     break;
                 case "<PROTOTYPE>":
                     tempParser = new PrototypeParser(currentResponseContainer);
@@ -126,7 +127,6 @@ namespace IndieBuff.Editor
                         parser.HandleLastLine();
                     }
                     parser = tempParser;
-                    Debug.Log("swap to prototype");
                     break;
                 default:
                     break;
@@ -135,6 +135,11 @@ namespace IndieBuff.Editor
             if (tempParser != null)
             {
                 allParsers.Add(tempParser);
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -249,6 +254,7 @@ namespace IndieBuff.Editor
                     default:
                         break;
                 }
+                currParser.TrimMessageEndings();
             }
 
         }
