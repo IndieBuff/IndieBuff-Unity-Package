@@ -79,6 +79,11 @@ namespace IndieBuff.Editor
                 {
                     SaveResultsToFile();
                 }
+
+                if (GUILayout.Button("Print Merkle Tree"))
+                {
+                    IndieBuff_AssetProcessor.Instance.PrintMerkleTree();
+                }
             }
         }
 

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using Newtonsoft.Json;
 
 namespace IndieBuff.Editor
 {
@@ -23,6 +23,28 @@ namespace IndieBuff.Editor
         {
             Children = new List<string>();
             Components = new List<string>();
+        }
+
+        public override string ToString()
+        {
+            var jsonStructure = new Dictionary<string, object>
+            {
+                ["HierarchyPath"] = HierarchyPath,
+                ["ParentName"] = ParentName,
+                ["Tag"] = Tag,
+                ["Layer"] = Layer,
+                ["ChildCount"] = ChildCount,
+                ["Children"] = Children,
+                ["Components"] = Components,
+                ["PrefabAssetPath"] = PrefabAssetPath,
+                ["PrefabAssetName"] = PrefabAssetName,
+                ["DocType"] = DOC_TYPE
+            };
+
+            return JsonConvert.SerializeObject(jsonStructure, Formatting.None, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
         }
     }
 } 

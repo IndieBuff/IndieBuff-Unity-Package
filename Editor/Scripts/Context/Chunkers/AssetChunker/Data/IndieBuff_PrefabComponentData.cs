@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace IndieBuff.Editor
 {
@@ -20,6 +23,24 @@ namespace IndieBuff.Editor
             Properties = new Dictionary<string, object>();
             Siblings = new List<string>();
         }
+
+        public override string ToString()
+        {
+            var jsonStructure = new Dictionary<string, object>
+            {
+                ["Type"] = Type,
+                ["Properties"] = Properties,
+                ["Siblings"] = Siblings,
+                ["PrefabAssetPath"] = PrefabAssetPath,
+                ["PrefabAssetName"] = PrefabAssetName,
+                ["DocType"] = DOC_TYPE
+            };
+
+            return JsonConvert.SerializeObject(jsonStructure, Formatting.None, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
+        }
     }
 
     public class IndieBuff_ScriptPrefabComponentData : IndieBuff_PrefabComponentData
@@ -32,6 +53,26 @@ namespace IndieBuff.Editor
         {
             Properties = null;  // Scripts won't use properties
             Siblings = new List<string>();
+        }
+
+        public override string ToString()
+        {
+            var jsonStructure = new Dictionary<string, object>
+            {
+                ["Type"] = Type,
+                ["Properties"] = Properties,
+                ["Siblings"] = Siblings,
+                ["PrefabAssetPath"] = PrefabAssetPath,
+                ["PrefabAssetName"] = PrefabAssetName,
+                ["ScriptPath"] = ScriptPath,
+                ["ScriptName"] = ScriptName,
+                ["DocType"] = DOC_TYPE
+            };
+
+            return JsonConvert.SerializeObject(jsonStructure, Formatting.None, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
         }
     }
 } 

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using Newtonsoft.Json;
 
 namespace IndieBuff.Editor
 {
@@ -18,6 +18,24 @@ namespace IndieBuff.Editor
         {
             Properties = new Dictionary<string, object>();
             Dependencies = new List<string>();
+        }
+
+        public override string ToString()
+        {
+            var jsonStructure = new Dictionary<string, object>
+            {
+                ["Name"] = Name,
+                ["AssetPath"] = AssetPath,
+                ["FileType"] = FileType,
+                ["Properties"] = Properties,
+                ["Dependencies"] = Dependencies,
+                ["DocType"] = DOC_TYPE
+            };
+
+            return JsonConvert.SerializeObject(jsonStructure, Formatting.None, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
         }
     }
 } 

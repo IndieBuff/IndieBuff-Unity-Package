@@ -7,6 +7,8 @@ namespace IndieBuff.Editor
     {
         public string DocType { get; protected set; }
 
+        public string Hash { get; set; }
+
         protected IndieBuff_Document(string docType)
         {
             DocType = docType;
