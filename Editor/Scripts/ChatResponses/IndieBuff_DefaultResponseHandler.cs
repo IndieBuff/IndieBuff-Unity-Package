@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -17,12 +18,14 @@ namespace IndieBuff.Editor
         private bool shouldDiff;
         private VisualElement currentResponseContainer;
         private bool isFirstResponse;
+        private List<IMarkdownParser> allParsers;
 
         public DefaultResponseHandler(IMarkdownParser parser, bool shouldDiff, ScrollView responseArea) : base(parser)
         {
             this.responseArea = responseArea;
             this.shouldDiff = shouldDiff;
             currentBuffer = new StringBuilder();
+            allParsers = new List<IMarkdownParser>();
             isFirstResponse = true;
         }
 
@@ -44,11 +47,9 @@ namespace IndieBuff.Editor
                     return;
                 }
 
-                //await HandleResponseMetadata(userMessage, parser);
+                await HandleParsersMetadata(userMessage);
 
-                await OnProcessingComplete();
-
-                //parser.TrimMessageEndings();
+                HandleParsersFinish();
             }
             catch (Exception e)
             {
@@ -88,7 +89,6 @@ namespace IndieBuff.Editor
             if (isFirstResponse)
             {
                 isFirstResponse = false;
-                return;
             }
             else
             {
@@ -98,22 +98,43 @@ namespace IndieBuff.Editor
 
             }
 
+            IMarkdownParser tempParser = null;
             switch (line)
             {
                 case "<CHAT>":
-                    parser = new ChatParser(currentResponseContainer);
+                    tempParser = new ChatParser(currentResponseContainer);
+                    if (parser.HasContentInBuffer())
+                    {
+                        parser.HandleLastLine();
+                    }
+                    parser = tempParser;
                     Debug.Log("swap to chat");
                     break;
                 case "<SCRIPT>":
-                    parser = shouldDiff ? new DiffScriptParser(currentResponseContainer) : new WholeScriptParser(currentResponseContainer);
+                    tempParser = shouldDiff ? new DiffScriptParser(currentResponseContainer) : new WholeScriptParser(currentResponseContainer);
+                    if (parser.HasContentInBuffer())
+                    {
+                        parser.HandleLastLine();
+                    }
+                    parser = tempParser;
                     Debug.Log("swap to script");
                     break;
                 case "<PROTOTYPE>":
-                    parser = new PrototypeParser(currentResponseContainer);
+                    tempParser = new PrototypeParser(currentResponseContainer);
+                    if (parser.HasContentInBuffer())
+                    {
+                        parser.HandleLastLine();
+                    }
+                    parser = tempParser;
                     Debug.Log("swap to prototype");
                     break;
                 default:
                     break;
+            }
+
+            if (tempParser != null)
+            {
+                allParsers.Add(tempParser);
             }
         }
 
@@ -142,6 +163,94 @@ namespace IndieBuff.Editor
             }
 
             return aiMessageContainer;
+        }
+
+        private async Task AddAIResponseToDB(string aiMessage, string summaryMessage = "", ChatMode chatMode = ChatMode.Chat)
+        {
+            IndieBuff_UserInfo.Instance.lastUsedMode = chatMode;
+            IndieBuff_UserInfo.Instance.lastUsedModel = IndieBuff_UserInfo.Instance.selectedModel;
+            if (!string.IsNullOrWhiteSpace(summaryMessage))
+            {
+                await IndieBuff_ConvoHandler.Instance.AddMessage("summary", summaryMessage, chatMode, IndieBuff_UserInfo.Instance.lastUsedModel);
+            }
+            await IndieBuff_ConvoHandler.Instance.AddMessage("assistant", aiMessage, chatMode, IndieBuff_UserInfo.Instance.lastUsedModel);
+        }
+
+        private async Task HandleParsersMetadata(string userMessage)
+        {
+            await IndieBuff_ConvoHandler.Instance.AddMessage("user", userMessage, ChatMode.Default, IndieBuff_UserInfo.Instance.lastUsedModel);
+
+            foreach (IMarkdownParser currParser in allParsers)
+            {
+
+                int splitIndex = currParser.GetFullMessage().LastIndexOf('\n');
+                string aiMessage;
+                string summaryMessage;
+                ChatMode chatMode;
+
+                if (splitIndex != -1)
+                {
+                    try
+                    {
+                        aiMessage = currParser.GetFullMessage().Substring(0, splitIndex);
+                        string jsonInput = currParser.GetFullMessage().Substring(splitIndex + 1).Trim();
+                        var parsedJson = JsonUtility.FromJson<IndieBuff_SummaryResponse>(jsonInput);
+                        summaryMessage = parsedJson.content;
+                    }
+                    catch (Exception)
+                    {
+                        aiMessage = currParser.GetFullMessage();
+                        summaryMessage = "";
+                    }
+
+                }
+                else
+                {
+                    aiMessage = currParser.GetFullMessage();
+                    summaryMessage = "";
+                }
+
+                switch (currParser)
+                {
+                    case ChatParser:
+                        chatMode = ChatMode.Chat;
+                        break;
+                    case ScriptParser:
+                        chatMode = ChatMode.Script;
+                        break;
+                    case PrototypeParser:
+                        chatMode = ChatMode.Prototype;
+                        break;
+                    default:
+                        chatMode = ChatMode.Chat;
+                        break;
+                }
+
+                await AddAIResponseToDB(aiMessage, summaryMessage, chatMode);
+            }
+
+            await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
+        }
+
+        private void HandleParsersFinish()
+        {
+            foreach (IMarkdownParser currParser in allParsers)
+            {
+                switch (currParser)
+                {
+                    case ChatParser:
+                        break;
+                    case ScriptParser scriptParser:
+                        scriptParser.FinishParsing();
+                        break;
+                    case PrototypeParser prototypeParser:
+                        prototypeParser.FinishParsing();
+                        break;
+                    default:
+                        break;
+                }
+            }
+
         }
 
 
