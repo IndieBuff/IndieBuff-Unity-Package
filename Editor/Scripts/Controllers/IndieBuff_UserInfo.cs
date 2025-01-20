@@ -37,8 +37,8 @@ namespace IndieBuff.Editor
             }
         }
 
-        private ChatMode _currentMode = ChatMode.Chat;
-        public ChatMode lastUsedMode = ChatMode.Chat;
+        private ChatMode _currentMode = ChatMode.Default;
+        public ChatMode lastUsedMode = ChatMode.Default;
         public Action onChatModeChanged;
 
         public ChatMode currentMode
@@ -64,7 +64,7 @@ namespace IndieBuff.Editor
 
         public void GetStoredMode()
         {
-            _currentMode = (ChatMode)SessionState.GetInt(CurrentChatModeKey, (int)ChatMode.Chat);
+            _currentMode = (ChatMode)SessionState.GetInt(CurrentChatModeKey, (int)ChatMode.Default);
             onChatModeChanged?.Invoke();
         }
 
@@ -102,7 +102,7 @@ namespace IndieBuff.Editor
         public void NewConversation()
         {
             lastUsedModel = "";
-            lastUsedMode = ChatMode.Chat;
+            lastUsedMode = ChatMode.Default;
         }
 
         public static bool ShouldUseDiffFormat(string aiModel)

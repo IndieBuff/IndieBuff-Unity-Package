@@ -1,3 +1,9 @@
+## [2.2.0] - 2025-01-20
+
+### Feature
+
+- Added /default slash command to simplify creation process
+
 ## [2.1.1] - 2025-01-11
 
 ### Fixed
