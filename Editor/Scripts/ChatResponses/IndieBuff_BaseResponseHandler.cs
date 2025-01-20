@@ -9,7 +9,7 @@ namespace IndieBuff.Editor
 {
     public abstract class BaseResponseHandler : IResponseHandler
     {
-        protected readonly IMarkdownParser parser;
+        protected IMarkdownParser parser;
         protected BaseResponseHandler(IMarkdownParser parser)
         {
             this.parser = parser;
@@ -73,7 +73,7 @@ namespace IndieBuff.Editor
 
         }
 
-        private async Task HandleChatDatabase(string userMessage, string aiMessage, string summaryMessage = "")
+        protected virtual async Task HandleChatDatabase(string userMessage, string aiMessage, string summaryMessage = "")
         {
             IndieBuff_UserInfo.Instance.lastUsedMode = IndieBuff_UserInfo.Instance.currentMode;
             IndieBuff_UserInfo.Instance.lastUsedModel = IndieBuff_UserInfo.Instance.selectedModel;
@@ -87,7 +87,7 @@ namespace IndieBuff.Editor
             await IndieBuff_ConvoHandler.Instance.RefreshConvoList();
         }
 
-        protected async Task HandleResponseMetadata(string userMessage, IMarkdownParser parser)
+        protected virtual async Task HandleResponseMetadata(string userMessage, IMarkdownParser parser)
         {
             int splitIndex = parser.GetFullMessage().LastIndexOf('\n');
             string aiMessage;
