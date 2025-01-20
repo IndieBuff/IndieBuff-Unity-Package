@@ -38,7 +38,8 @@ namespace IndieBuff.Editor
                 ["Components"] = Components,
                 ["PrefabAssetPath"] = PrefabAssetPath,
                 ["PrefabAssetName"] = PrefabAssetName,
-                ["DocType"] = DOC_TYPE
+                ["DocType"] = DOC_TYPE,
+                ["Hash"] = Hash
             };
 
             return JsonConvert.SerializeObject(jsonStructure, Formatting.None, new JsonSerializerSettings

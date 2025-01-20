@@ -4,6 +4,7 @@ using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 
 namespace IndieBuff.Editor
 {
@@ -91,23 +92,21 @@ namespace IndieBuff.Editor
         {
             try
             {
-
-                // Serialize and write to file
                 var jsonSettings = new JsonSerializerSettings
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                     Formatting = Formatting.Indented
                 };
 
-                string json = JsonConvert.SerializeObject(IndieBuff_AssetProcessor.Instance.AssetData, jsonSettings);
+                string json = JsonConvert.SerializeObject(IndieBuff_AssetProcessor.Instance.ContextData, jsonSettings);
                 File.WriteAllText(outputPath, json);
 
-                Debug.Log($"Scan results saved to: {outputPath}");
+                Debug.Log($"Merkle tree saved to: {outputPath}");
                 AssetDatabase.Refresh();
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"Error saving scan results: {e.Message}");
+                Debug.LogError($"Error saving merkle tree: {e.Message}");
             }
         }
     }

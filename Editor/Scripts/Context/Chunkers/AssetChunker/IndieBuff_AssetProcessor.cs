@@ -30,6 +30,8 @@ namespace IndieBuff.Editor
         public Dictionary<string, IndieBuff_Document> AssetData => assetData;
 
         private Dictionary<string, object> contextData;
+
+        public Dictionary<string, object> ContextData => contextData;
         private bool isProcessing = false;
         private Queue<GameObject> objectsToProcess;
         private HashSet<UnityEngine.Object> processedObjects = new HashSet<UnityEngine.Object>();
@@ -61,7 +63,7 @@ namespace IndieBuff.Editor
         private int _currentPathIndex = 0;
 
         // Add to existing fields
-        private IndieBuff_MerkleNode _rootNode;
+        public IndieBuff_MerkleNode _rootNode;
         private Dictionary<string, IndieBuff_MerkleNode> _pathToNodeMap;
         private Queue<string> _pendingDirectories;
 
@@ -288,37 +290,6 @@ namespace IndieBuff.Editor
             }
         }
 
-        private void ProcessAllAssetsImmediately()
-        {
-            try
-            {
-                while (_assetsToProcess.Count > 0)
-                {
-                    var asset = _assetsToProcess.Dequeue();
-                    if (asset != null && !processedObjects.Contains(asset))
-                    {
-                        ProcessGenericAsset(asset);
-                    }
-                }
-
-                while (objectsToProcess.Count > 0)
-                {
-                    var gameObject = objectsToProcess.Dequeue();
-                    if (gameObject != null && !processedObjects.Contains(gameObject))
-                    {
-                        ProcessGameObject(gameObject);
-                    }
-                }
-
-                CompleteProcessing();
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Error in ProcessAllAssetsImmediately: {e.Message}\n{e.StackTrace}");
-                CompleteProcessing();
-            }
-        }
-
         private void CompleteProcessing()
         {
             if (!isProcessing) return;
@@ -341,10 +312,14 @@ namespace IndieBuff.Editor
                     }
                 }
                 
-                // Add merkle tree data to context
-                contextData["merkleRoot"] = _rootNode.Hash;
-                contextData["merkleTree"] = SerializeMerkleTree(_rootNode);
+                // Instead of adding to context, create tree structure
+                var treeStructure = new Dictionary<string, object>
+                {
+                    ["rootHash"] = _rootNode.Hash,
+                    ["tree"] = SerializeMerkleTree(_rootNode)
+                };
                 
+                contextData = treeStructure;
                 _completionSource?.TrySetResult(contextData);
             }
             catch (Exception e)
@@ -361,17 +336,37 @@ namespace IndieBuff.Editor
             }
         }
 
-        private Dictionary<string, object> SerializeMerkleTree(IndieBuff_MerkleNode node)
+        public Dictionary<string, object> SerializeMerkleTree(IndieBuff_MerkleNode node)
         {
-            var result = new Dictionary<string, object>
+            var nodeData = new Dictionary<string, object>
             {
                 ["hash"] = node.Hash,
                 ["path"] = node.Path,
-                ["isDirectory"] = node.IsDirectory,
-                ["metadata"] = node.Metadata,
-                ["children"] = node.Children.Select(child => SerializeMerkleTree(child)).ToList()
+                ["isDirectory"] = node.IsDirectory
             };
-            return result;
+
+            // Add metadata (IndieBuff_Document) if it exists
+            if (node.Metadata != null)
+            {
+                // Look for any IndieBuff_Document in the metadata
+                var document = node.Metadata.Values
+                    .OfType<IndieBuff_Document>()
+                    .FirstOrDefault();
+                    
+                if (document != null)
+                {
+                    nodeData["document"] = document;
+                }
+                
+            }
+
+            // Add children recursively
+            if (node.Children.Any())
+            {
+                nodeData["children"] = node.Children.Select(child => SerializeMerkleTree(child)).ToList();
+            }
+
+            return nodeData;
         }
 
         private void AddToContext(string key, IndieBuff_Document value)
@@ -541,6 +536,7 @@ namespace IndieBuff.Editor
                         prefabData.ChildCount = prefabData.Children.Count;
                     }
 
+                    prefabData.Hash = prefabNode.Hash;
                     AddToContext(prefabData.HierarchyPath, prefabData);
                 }
             }

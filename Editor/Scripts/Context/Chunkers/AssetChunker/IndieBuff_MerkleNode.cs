@@ -58,8 +58,8 @@ namespace IndieBuff.Editor
                 // Add metadata - now using ToString() which handles recursion
                 foreach (var kvp in Metadata)
                 {
-                    Debug.Log("kvp.Key: " + kvp.Key);
-                    Debug.Log("kvp.Value: " + kvp.Value);
+                    //Debug.Log("kvp.Key: " + kvp.Key);
+                    //Debug.Log("kvp.Value: " + kvp.Value);
                     builder.Append(kvp.Value?.ToString() ?? "null");
                     builder.Append("|");
                 }

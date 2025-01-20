@@ -29,7 +29,8 @@ namespace IndieBuff.Editor
                 ["FileType"] = FileType,
                 ["Properties"] = Properties,
                 ["Dependencies"] = Dependencies,
-                ["DocType"] = DOC_TYPE
+                ["DocType"] = DOC_TYPE,
+                ["Hash"] = Hash
             };
 
             return JsonConvert.SerializeObject(jsonStructure, Formatting.None, new JsonSerializerSettings
