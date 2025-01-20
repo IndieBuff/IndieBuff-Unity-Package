@@ -455,6 +455,9 @@ namespace IndieBuff.Editor
                     });
 
                     node.AddChild(assetNode);
+                    
+                    // Set the hash from the MerkleNode to the document
+                    assetData.Hash = assetNode.Hash;
                     AddToContext(obj.name, assetData);
                 }
             }
@@ -556,9 +559,8 @@ namespace IndieBuff.Editor
                 .Select(c => $"{gameObject.name}_{c.GetType().Name}")
                 .ToList();
 
-            string componentNodePath = $"{parentNode.Path}/Components/{component.GetType().Name}";
-            var componentNode = new IndieBuff_MerkleNode(componentNodePath);
-
+            string path = AssetDatabase.GetAssetPath(gameObject);
+            
             if (component is MonoBehaviour script)
             {
                 string scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(script));
@@ -577,7 +579,7 @@ namespace IndieBuff.Editor
                 var scriptData = new IndieBuff_ScriptPrefabComponentData
                 {
                     Type = component.GetType().Name,
-                    PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
+                    PrefabAssetPath = path,
                     PrefabAssetName = gameObject.name,
                     ScriptPath = scriptPath,
                     ScriptName = script.GetType().Name,
@@ -585,13 +587,16 @@ namespace IndieBuff.Editor
                     Properties = dependencies
                 };
 
-                componentNode.SetMetadata(new Dictionary<string, object>
+                var scriptNode = new IndieBuff_MerkleNode($"{path}/Components/{component.GetType().Name}");
+                scriptNode.SetMetadata(new Dictionary<string, object>
                 {
                     ["scriptData"] = scriptData,
                     ["type"] = "MonoBehaviour",
                     ["name"] = script.GetType().Name
                 });
 
+                parentNode.AddChild(scriptNode);
+                scriptData.Hash = scriptNode.Hash;
                 AddToContext($"{gameObject.name}_{component.GetType().Name}", scriptData);
             }
             else
@@ -599,12 +604,13 @@ namespace IndieBuff.Editor
                 var componentData = new IndieBuff_PrefabComponentData
                 {
                     Type = component.GetType().Name,
-                    PrefabAssetPath = AssetDatabase.GetAssetPath(gameObject),
+                    PrefabAssetPath = path,
                     PrefabAssetName = gameObject.name,
                     Properties = GetComponentsData(component),
                     Siblings = siblingKeys
                 };
 
+                var componentNode = new IndieBuff_MerkleNode($"{path}/Components/{component.GetType().Name}");
                 componentNode.SetMetadata(new Dictionary<string, object>
                 {
                     ["componentData"] = componentData,
@@ -612,10 +618,10 @@ namespace IndieBuff.Editor
                     ["name"] = component.GetType().Name
                 });
 
+                parentNode.AddChild(componentNode);
+                componentData.Hash = componentNode.Hash;
                 AddToContext($"{gameObject.name}_{component.GetType().Name}", componentData);
             }
-
-            parentNode.AddChild(componentNode);
         }
 
         private string GetUniqueGameObjectKey(GameObject obj)

@@ -35,6 +35,14 @@ namespace IndieBuff.Editor
         {
             Metadata = metadata;
             UpdateHash();
+
+            // If the metadata contains an IndieBuff_Document, update its hash
+            if (metadata != null && 
+                metadata.ContainsKey("assetData") && 
+                metadata["assetData"] is IndieBuff_Document doc)
+            {
+                doc.Hash = Hash;  // Sync the document hash with the merkle node hash
+            }
         }
 
         private void UpdateHash()
