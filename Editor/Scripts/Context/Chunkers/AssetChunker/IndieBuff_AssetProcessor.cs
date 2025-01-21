@@ -418,71 +418,87 @@ namespace IndieBuff.Editor
                 }
 
                 string path = AssetDatabase.GetAssetPath(gameObject);
-                if (!_pathToNodeMap.ContainsKey(path))
+                
+                // First ensure we have the prefab root node
+                IndieBuff_MerkleNode prefabNode;
+                if (!_pathToNodeMap.TryGetValue(path, out prefabNode))
                 {
-                    // Create the document with all necessary data
-                    var prefabData = new IndieBuff_PrefabGameObjectData
+                    // Create basic prefab asset document
+                    var prefabAssetDoc = new IndieBuff_AssetData
                     {
-                        HierarchyPath = GetUniqueGameObjectKey(gameObject),
-                        ParentName = gameObject.transform.parent?.gameObject.name ?? "null",
-                        Tag = gameObject.tag,
-                        Layer = LayerMask.LayerToName(gameObject.layer),
-                        PrefabAssetPath = path,
-                        PrefabAssetName = gameObject.name,
-                        Components = new List<string>(),
-                        Children = new List<string>()
+                        Name = Path.GetFileNameWithoutExtension(path),
+                        AssetPath = path,
+                        FileType = "Prefab"
                     };
-
-                    // Create node with document
-                    var prefabNode = new IndieBuff_MerkleNode(path);
-                    prefabNode.SetMetadata(new Dictionary<string, object> { ["document"] = prefabData });
                     
-                    string parentPath = Path.GetDirectoryName(path);
-                    if (_pathToNodeMap.TryGetValue(parentPath, out var parentNode))
+                    prefabNode = new IndieBuff_MerkleNode(path);
+                    prefabNode.SetMetadata(new Dictionary<string, object> { ["document"] = prefabAssetDoc });
+                    
+                    string directoryPath = Path.GetDirectoryName(path);
+                    if (_pathToNodeMap.TryGetValue(directoryPath, out var dirNode))
                     {
-                        parentNode.AddChild(prefabNode);
+                        dirNode.AddChild(prefabNode);
                     }
-                    
                     _pathToNodeMap.Add(path, prefabNode);
+                }
 
-                    // Process components
-                    var components = objectToProcess.GetComponents<Component>();
-                    foreach (var component in components)
+                // Create GameObject document
+                var gameObjectDoc = new IndieBuff_PrefabGameObjectData
+                {
+                    HierarchyPath = GetUniqueGameObjectKey(objectToProcess),
+                    ParentName = objectToProcess.transform.parent?.gameObject.name ?? "null",
+                    Tag = objectToProcess.tag,
+                    Layer = LayerMask.LayerToName(objectToProcess.layer),
+                    PrefabAssetPath = path,
+                    PrefabAssetName = gameObject.name,
+                    Components = new List<string>(),
+                    Children = new List<string>()
+                };
+
+                // Create GameObject node
+                string goPath = $"{path}/{GetUniqueGameObjectKey(gameObject)}";
+                var goNode = new IndieBuff_MerkleNode(goPath);
+                goNode.SetMetadata(new Dictionary<string, object> { ["document"] = gameObjectDoc });
+                prefabNode.AddChild(goNode);
+                _pathToNodeMap.Add(goPath, goNode);
+
+                // Process components
+                var components = objectToProcess.GetComponents<Component>();
+                foreach (var component in components)
+                {
+                    if (component != null)
                     {
-                        if (component != null)
-                        {
-                            prefabData.Components.Add(component.GetType().Name);
-                            ProcessPrefabComponent(component, objectToProcess, prefabNode);
-                        }
+                        gameObjectDoc.Components.Add(component.GetType().Name);
+                        ProcessPrefabComponent(component, objectToProcess, goNode);
                     }
+                }
 
-                    // Process children
-                    Transform transform = objectToProcess.transform;
-                    if (transform != null)
+                // Queue children for processing
+                Transform transform = objectToProcess.transform;
+                if (transform != null)
+                {
+                    for (int i = 0; i < transform.childCount; i++)
                     {
-                        for (int i = 0; i < transform.childCount; i++)
+                        Transform childTransform = transform.GetChild(i);
+                        if (childTransform != null)
                         {
-                            Transform childTransform = transform.GetChild(i);
-                            if (childTransform != null)
+                            GameObject child = childTransform.gameObject;
+                            if (child != null)
                             {
-                                GameObject child = childTransform.gameObject;
-                                if (child != null)
+                                gameObjectDoc.Children.Add(child.name);
+                                if (!processedObjects.Contains(child))
                                 {
-                                    prefabData.Children.Add(child.name);
-                                    if (!processedObjects.Contains(child))
-                                    {
-                                        objectsToProcess.Enqueue(child);
-                                    }
+                                    objectsToProcess.Enqueue(child);
                                 }
                             }
                         }
-                        prefabData.ChildCount = prefabData.Children.Count;
                     }
+                    gameObjectDoc.ChildCount = gameObjectDoc.Children.Count;
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error processing GameObject {gameObject.name}: {e.Message}");
+                Debug.LogError($"Error processing GameObject {gameObject.name}: {e.Message}\n{e.StackTrace}");
             }
         }
 
