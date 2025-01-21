@@ -13,18 +13,8 @@ namespace IndieBuff.Editor
 {
     internal class IndieBuff_AssetProcessor
     {
-        private static IndieBuff_AssetProcessor instance;
-        public static IndieBuff_AssetProcessor Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = new IndieBuff_AssetProcessor();
-                }
-                return instance;
-            }
-        }
+        private static IndieBuff_AssetProcessor _instance;
+        public static IndieBuff_AssetProcessor Instance => _instance ??= new IndieBuff_AssetProcessor();
 
         public bool IsScanning => isProcessing;
 
@@ -56,8 +46,8 @@ namespace IndieBuff.Editor
         private Queue<string> _pendingDirectories;
 
         // Batch processing constants
-        private const int PATH_BATCH_SIZE = 25;  // Reduced batch size for paths
-        private const int ASSETS_PER_BATCH = 10;  // Reduced batch size for regular assets
+        private const int PATH_BATCH_SIZE = 25;
+        private const int ASSETS_PER_BATCH = 10;
         private const int GAMEOBJECTS_PER_BATCH = 5;  // Even smaller batch for GameObjects
         
         public IndieBuff_AssetProcessor()
@@ -96,7 +86,7 @@ namespace IndieBuff.Editor
         {
             EditorApplication.update -= LoadInitialAssets;
             
-            // Get all asset paths and organize directories
+            // Get all asset paths
             _pendingPaths = AssetDatabase.GetAllAssetPaths()
                 .Where(path => !path.EndsWith(".cs") && 
                               path.StartsWith("Assets/") && 
@@ -187,34 +177,6 @@ namespace IndieBuff.Editor
             }
         }
 
-        // New helper method to ensure parent directories exist
-        private void EnsureParentDirectoryExists(string dirPath)
-        {
-            if (dirPath == "Assets" || string.IsNullOrEmpty(dirPath)) return;
-            
-            if (_merkleTree.GetNode(dirPath) == null)
-            {
-                string parentPath = Path.GetDirectoryName(dirPath);
-                // Recursively ensure parent exists first
-                EnsureParentDirectoryExists(parentPath);
-                
-                // Create directory document
-                var dirDocument = new IndieBuff_DirectoryData
-                {
-                    DirectoryPath = dirPath,
-                    DirectoryName = Path.GetFileName(dirPath),
-                    ParentPath = parentPath
-                };
-
-                // Create node with document
-                var dirNode = new IndieBuff_MerkleNode(dirPath, true);
-                dirNode.SetMetadata(new Dictionary<string, object> { ["document"] = dirDocument });
-                
-                // Add to parent
-                _merkleTree.AddNode(parentPath, dirNode);
-            }
-        }
-
         private void ProcessPathBatch()
         {
             int endIndex = Math.Min(_currentPathIndex + PATH_BATCH_SIZE, _pendingPaths.Length);
@@ -224,22 +186,17 @@ namespace IndieBuff.Editor
                 string path = _pendingPaths[i];
                 var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
                 
-                if (obj != null && _merkleTree.GetNode(path) == null)
+                if (obj != null && !processedObjects.Contains(obj))
                 {
-                    // Queue the asset for processing without creating a node yet
-                    if (obj is GameObject gameObject)
-                    {
-                        if (PrefabUtility.IsPartOfPrefabAsset(gameObject))
-                        {
-                            PreparePrefabForProcessing(gameObject);
-                            objectsToProcess.Enqueue(gameObject);
-                        }
-                    }
-                    else
-                    {
-                        _assetsToProcess.Enqueue(obj);
-                    }
+                    // Queue the main asset
+                    _assetsToProcess.Enqueue(obj);
                     _contextObjects.Add(obj);
+
+                    // If it's a prefab, queue all its children and components
+                    if (obj is GameObject gameObject && PrefabUtility.IsPartOfPrefabAsset(gameObject))
+                    {
+                        QueuePrefabContents(gameObject);
+                    }
                 }
             }
 
@@ -249,39 +206,30 @@ namespace IndieBuff.Editor
             {
                 _pendingPaths = null;
                 EditorApplication.update -= ProcessPathBatch;
-                EditorApplication.update += ProcessNextBatch;
+                EditorApplication.update += ProcessAssetBatch;
             }
         }
 
-        private void ProcessNextBatch()
+        private void QueuePrefabContents(GameObject prefab)
         {
-            if (!isProcessing)
+            // Queue all components on this GameObject
+            foreach (var component in prefab.GetComponents<Component>())
             {
-                CompleteProcessing();
-                return;
+                if (component != null && !processedObjects.Contains(component))
+                {
+                    _assetsToProcess.Enqueue(component);
+                }
             }
 
-            // Only process one type of batch at a time
-            if (_pendingPaths != null)
+            // Queue all child GameObjects and their components
+            foreach (Transform child in prefab.transform)
             {
-                ProcessPathBatch();
-                return;
+                if (child != null && !processedObjects.Contains(child.gameObject))
+                {
+                    _assetsToProcess.Enqueue(child.gameObject);
+                    QueuePrefabContents(child.gameObject);
+                }
             }
-
-            if (_assetsToProcess.Count > 0)
-            {
-                ProcessAssetBatch();
-                return;
-            }
-
-            if (objectsToProcess.Count > 0)
-            {
-                ProcessPrefabBatch();
-                return;
-            }
-
-            // If we get here, we're done
-            CompleteProcessing();
         }
 
         private void ProcessAssetBatch()
@@ -292,9 +240,15 @@ namespace IndieBuff.Editor
                 var asset = _assetsToProcess.Dequeue();
                 if (asset != null && !processedObjects.Contains(asset))
                 {
-                    ProcessGenericAsset(asset);
+                    ProcessAsset(asset);
                 }
                 assetsProcessed++;
+            }
+
+            // If no more assets to process, complete
+            if (_assetsToProcess.Count == 0)
+            {
+                CompleteProcessing();
             }
         }
 
@@ -341,7 +295,7 @@ namespace IndieBuff.Editor
             if (!isProcessing) return;
 
             isProcessing = false;
-            EditorApplication.update -= ProcessNextBatch;
+            EditorApplication.update -= ProcessPathBatch;
 
             try
             {
@@ -366,56 +320,45 @@ namespace IndieBuff.Editor
             }
         }
 
-
-
-        private void ProcessGenericAsset(UnityEngine.Object obj)
+        private void ProcessAsset(UnityEngine.Object asset)
         {
-            if (obj == null || processedObjects.Contains(obj)) return;
+            if (asset == null || processedObjects.Contains(asset)) return;
 
             try
             {
-                processedObjects.Add(obj);
-                string path = AssetDatabase.GetAssetPath(obj);
+                processedObjects.Add(asset);
+                string path = AssetDatabase.GetAssetPath(asset);
                 
-                if (_merkleTree.GetNode(path) == null)
-                {
-                    // Create document for the asset
-                    var assetDocument = new IndieBuff_AssetData
-                    {
-                        Name = obj.name,
-                        AssetPath = path,
-                        FileType = obj.GetType().Name,
-                        Properties = IndieBuff_AssetPropertyHelper.GetPropertiesForAsset(obj)
-                    };
+                // Create document using our unified method
+                var document = ProcessAssetToDocument(asset, path);
+                if (document == null) return;
 
-                    // Create node with document
-                    var assetNode = new IndieBuff_MerkleNode(path);
-                    assetNode.SetMetadata(new Dictionary<string, object> { ["document"] = assetDocument });
-                    
-                    // Add to parent directory through merkle tree
-                    string parentPath = Path.GetDirectoryName(path);
-                    if (string.IsNullOrEmpty(parentPath))
-                    {
-                        parentPath = "Assets";
-                    }
-                    
-                    try
-                    {
-                        _merkleTree.AddNode(parentPath, assetNode);
-                    }
-                    catch (ArgumentException e)
-                    {
-                        Debug.LogError($"Failed to add asset node {path}: {e.Message}");
-                        // Ensure parent directory exists
-                        EnsureParentDirectoryExists(parentPath);
-                        // Try adding the node again
-                        _merkleTree.AddNode(parentPath, assetNode);
-                    }
+                // Create node with document
+                var assetNode = new IndieBuff_MerkleNode(path);
+                assetNode.SetMetadata(new Dictionary<string, object> { ["document"] = document });
+                
+                // Add to parent directory through merkle tree
+                string parentPath = Path.GetDirectoryName(path);
+                if (string.IsNullOrEmpty(parentPath))
+                {
+                    parentPath = "Assets";
+                }
+                
+                try
+                {
+                    _merkleTree.AddNode(parentPath, assetNode);
+                }
+                catch (ArgumentException)
+                {
+                    // Ensure parent directory exists
+                    EnsureParentDirectoryExists(parentPath);
+                    // Try adding the node again
+                    _merkleTree.AddNode(parentPath, assetNode);
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error processing asset {obj.name}: {e.Message}");
+                Debug.LogError($"Error processing asset {asset.name}: {e.Message}");
             }
         }
 
@@ -677,10 +620,193 @@ namespace IndieBuff.Editor
             return scriptData;
         }
 
-
         private Dictionary<string, object> GetSerializedProperties(object obj)
         {
             return serializedPropertyHelper.GetSerializedProperties(obj as UnityEngine.Object);
+        }
+
+        // New public method to expose document creation
+        public IndieBuff_Document ProcessAssetToDocument(UnityEngine.Object asset, string path)
+        {
+            try
+            {
+                if (asset == null) return null;
+
+                // Handle GameObject/Prefab assets
+                if (asset is GameObject gameObject)
+                {
+                    if (!PrefabUtility.IsPartOfPrefabAsset(gameObject)) return null;
+
+                    var prefabDoc = new IndieBuff_AssetData
+                    {
+                        Name = Path.GetFileNameWithoutExtension(path),
+                        AssetPath = path,
+                        FileType = "Prefab",
+                        Properties = new Dictionary<string, object>()
+                    };
+
+                    // Process GameObject hierarchy
+                    var hierarchyData = ProcessGameObjectHierarchy(gameObject);
+                    prefabDoc.Properties["hierarchy"] = hierarchyData;
+
+                    return prefabDoc;
+                }
+                // Handle MonoBehaviour scripts
+                else if (asset is MonoBehaviour script)
+                {
+                    string scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(script));
+                    var dependencies = GetScriptDependencies(script);
+
+                    return new IndieBuff_ScriptPrefabComponentData
+                    {
+                        Type = asset.GetType().Name,
+                        ScriptPath = scriptPath,
+                        ScriptName = script.GetType().Name,
+                        Properties = dependencies
+                    };
+                }
+                // Handle Components
+                else if (asset is Component component)
+                {
+                    return ProcessComponent(component);
+                }
+                // Handle generic assets
+                else
+                {
+                    return new IndieBuff_AssetData
+                    {
+                        Name = asset.name,
+                        AssetPath = path,
+                        FileType = asset.GetType().Name,
+                        Properties = IndieBuff_AssetPropertyHelper.GetPropertiesForAsset(asset)
+                    };
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error processing asset {asset?.name}: {e.Message}");
+                return null;
+            }
+        }
+
+        private Dictionary<string, object> ProcessGameObjectHierarchy(GameObject gameObject)
+        {
+            var hierarchyData = new Dictionary<string, object>();
+            
+            // Basic GameObject data
+            hierarchyData["name"] = gameObject.name;
+            hierarchyData["tag"] = gameObject.tag;
+            hierarchyData["layer"] = LayerMask.LayerToName(gameObject.layer);
+
+            // Process components
+            var components = new List<Dictionary<string, object>>();
+            foreach (var component in gameObject.GetComponents<Component>())
+            {
+                if (component != null)
+                {
+                    var componentDoc = ProcessComponent(component) as IndieBuff_PrefabComponentData;
+                    if (componentDoc != null)
+                    {
+                        components.Add(new Dictionary<string, object>
+                        {
+                            ["type"] = componentDoc.Type,
+                            ["properties"] = componentDoc.Properties
+                        });
+                    }
+                }
+            }
+            hierarchyData["components"] = components;
+
+            // Process children
+            var children = new List<Dictionary<string, object>>();
+            foreach (Transform child in gameObject.transform)
+            {
+                children.Add(ProcessGameObjectHierarchy(child.gameObject));
+            }
+            hierarchyData["children"] = children;
+
+            return hierarchyData;
+        }
+
+        private IndieBuff_Document ProcessComponent(Component component)
+        {
+            if (component == null) return null;
+
+            // Special handling for renderers
+            if (component is Renderer renderer)
+            {
+                var properties = serializedPropertyHelper.GetSerializedProperties(renderer);
+                properties["m_Materials"] = renderer.sharedMaterials.Select(m => m?.name ?? "null").ToList();
+                properties.Remove("data");
+
+                return new IndieBuff_PrefabComponentData
+                {
+                    Type = component.GetType().Name,
+                    Properties = properties
+                };
+            }
+            // Special handling for Animator
+            else if (component is Animator animator)
+            {
+                return new IndieBuff_PrefabComponentData
+                {
+                    Type = "Animator",
+                    Properties = IndieBuff_AssetPropertyHelper.GetPropertiesForAsset(animator)
+                };
+            }
+            // Default component handling
+            else
+            {
+                return new IndieBuff_PrefabComponentData
+                {
+                    Type = component.GetType().Name,
+                    Properties = serializedPropertyHelper.GetSerializedProperties(component)
+                };
+            }
+        }
+
+        private Dictionary<string, object> GetScriptDependencies(MonoBehaviour script)
+        {
+            return script.GetType()
+                .GetFields(System.Reflection.BindingFlags.Instance | 
+                          System.Reflection.BindingFlags.Public | 
+                          System.Reflection.BindingFlags.NonPublic)
+                .Where(field => field.IsDefined(typeof(SerializeField), false) || field.IsPublic)
+                .ToDictionary(
+                    field => field.Name,
+                    field => new Dictionary<string, object>
+                    {
+                        ["type"] = field.FieldType.Name,
+                        ["value"] = field.GetValue(script)?.ToString() ?? "null"
+                    } as object
+                );
+        }
+
+        private void EnsureParentDirectoryExists(string dirPath)
+        {
+            if (dirPath == "Assets" || string.IsNullOrEmpty(dirPath)) return;
+            
+            if (_merkleTree.GetNode(dirPath) == null)
+            {
+                string parentPath = Path.GetDirectoryName(dirPath);
+                // Recursively ensure parent exists first
+                EnsureParentDirectoryExists(parentPath);
+                
+                // Create directory document
+                var dirDocument = new IndieBuff_DirectoryData
+                {
+                    DirectoryPath = dirPath,
+                    DirectoryName = Path.GetFileName(dirPath),
+                    ParentPath = parentPath
+                };
+
+                // Create node with document
+                var dirNode = new IndieBuff_MerkleNode(dirPath, true);
+                dirNode.SetMetadata(new Dictionary<string, object> { ["document"] = dirDocument });
+                
+                // Add to parent
+                _merkleTree.AddNode(parentPath, dirNode);
+            }
         }
     }
 }
