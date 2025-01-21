@@ -112,5 +112,42 @@ namespace IndieBuff.Editor
             _pathToNodeMap.TryGetValue(path, out var node);
             return node;
         }
+
+        public Dictionary<string, object> SerializeMerkleTree(IndieBuff_MerkleNode node)
+        {
+            var nodeData = new Dictionary<string, object>();
+
+            // Add document if it exists
+            if (node.Metadata != null)
+            {
+                var documents = node.Metadata.Values
+                    .Where(v => v is IndieBuff_Document)
+                    .Cast<IndieBuff_Document>()
+                    .ToList();
+                
+                if (documents.Any())
+                {
+                    // Use the document as the primary data source
+                    var document = documents.First();
+                    nodeData["hash"] = document.Hash;
+                    nodeData["document"] = document;
+                }
+                else
+                {
+                    // Only add hash for directory nodes without documents
+                    nodeData["hash"] = node.Hash;
+                }
+            }
+
+            // Add children recursively
+            if (node.Children.Any())
+            {
+                nodeData["children"] = node.Children
+                    .Select(child => SerializeMerkleTree(child))
+                    .ToList();
+            }
+
+            return nodeData;
+        }
     }
 } 

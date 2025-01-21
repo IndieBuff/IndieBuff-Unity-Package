@@ -33,7 +33,7 @@ namespace IndieBuff.Editor
             Debug.Log("Starting tree serialization...");
             return new Dictionary<string, object>
             {
-                ["tree"] = SerializeMerkleTree(_merkleTree.Root)
+                ["tree"] = _merkleTree.SerializeMerkleTree(_merkleTree.Root)
             };
         }
 
@@ -99,7 +99,7 @@ namespace IndieBuff.Editor
             // Get all asset paths and organize directories
             _pendingPaths = AssetDatabase.GetAllAssetPaths()
                 .Where(path => !path.EndsWith(".cs") && 
-                              !path.StartsWith("Packages") && 
+                              path.StartsWith("Assets/") && 
                               !string.IsNullOrEmpty(path))
                 .ToArray();
 
@@ -168,7 +168,7 @@ namespace IndieBuff.Editor
                     }
                     catch (ArgumentException e)
                     {
-                        Debug.LogError($"Failed to add directory node {dirPath}: {e.Message}");
+                        //Debug.LogError($"Failed to add directory node {dirPath}: {e.Message}");
                         // Create any missing parent directories
                         EnsureParentDirectoryExists(parentPath);
                         // Try adding the node again
@@ -366,42 +366,7 @@ namespace IndieBuff.Editor
             }
         }
 
-        private Dictionary<string, object> SerializeMerkleTree(IndieBuff_MerkleNode node)
-        {
-            var nodeData = new Dictionary<string, object>();
 
-            // Add document if it exists
-            if (node.Metadata != null)
-            {
-                var documents = node.Metadata.Values
-                    .Where(v => v is IndieBuff_Document)
-                    .Cast<IndieBuff_Document>()
-                    .ToList();
-                
-                if (documents.Any())
-                {
-                    // Use the document as the primary data source
-                    var document = documents.First();
-                    nodeData["hash"] = document.Hash;
-                    nodeData["document"] = document;
-                }
-                else
-                {
-                    // Only add hash for directory nodes without documents
-                    nodeData["hash"] = node.Hash;
-                }
-            }
-
-            // Add children recursively
-            if (node.Children.Any())
-            {
-                nodeData["children"] = node.Children
-                    .Select(child => SerializeMerkleTree(child))
-                    .ToList();
-            }
-
-            return nodeData;
-        }
 
         private void ProcessGenericAsset(UnityEngine.Object obj)
         {
@@ -716,33 +681,6 @@ namespace IndieBuff.Editor
         private Dictionary<string, object> GetSerializedProperties(object obj)
         {
             return serializedPropertyHelper.GetSerializedProperties(obj as UnityEngine.Object);
-        }
-
-        private List<IndieBuff_Document> GetDocumentsFromMerkleTree()
-        {
-            var documents = new List<IndieBuff_Document>();
-            if (_merkleTree.Root != null)
-            {
-                CollectDocumentsFromNode(_merkleTree.Root, documents);
-            }
-            return documents;
-        }
-
-        private void CollectDocumentsFromNode(IndieBuff_MerkleNode node, List<IndieBuff_Document> documents)
-        {
-            // Check this node's metadata for document
-            if (node.Metadata != null && 
-                node.Metadata.TryGetValue("document", out var docObj) && 
-                docObj is IndieBuff_Document doc)
-            {
-                documents.Add(doc);
-            }
-
-            // Recursively check children
-            foreach (var child in node.Children)
-            {
-                CollectDocumentsFromNode(child, documents);
-            }
         }
     }
 }
