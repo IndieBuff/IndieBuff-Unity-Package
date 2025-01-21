@@ -10,15 +10,22 @@ namespace IndieBuff.Editor
     {
         public static Dictionary<string, object> GetPropertiesForAsset(UnityEngine.Object obj)
         {
-            return obj switch
+            switch(obj)
             {
-                Animator animator => GetAnimatorProperties(animator),
-                Material material => GetMaterialProperties(material),
-                Shader shader => GetShaderProperties(shader),
-                Texture2D texture => GetTextureProperties(texture),
-                AnimatorController controller => GetAnimatorControllerProperties(controller),
-                _ => new Dictionary<string, object>()
-            };
+                case Animator animator:
+                    return GetAnimatorProperties(animator);
+                case Material material:
+                    return GetMaterialProperties(material);
+                case Shader shader:
+                    return GetShaderProperties(shader);
+                case Texture2D texture:
+                    return GetTextureProperties(texture);
+                case AnimatorController controller:
+                    return GetAnimatorControllerProperties(controller);
+                default:
+                    IndieBuff_SerializedPropertyHelper serializedPropertyHelper = new IndieBuff_SerializedPropertyHelper();
+                    return serializedPropertyHelper.GetSerializedProperties(obj);
+            }
         }
 
         private static Dictionary<string, object> GetAnimatorProperties(Animator animator)

@@ -31,12 +31,9 @@ namespace IndieBuff.Editor
         public Dictionary<string, object> GetTreeData()
         {
             Debug.Log("Starting tree serialization...");
-            var treeData = SerializeMerkleTree(_rootNode);
-            
             return new Dictionary<string, object>
             {
-                ["rootHash"] = _rootNode.Hash,
-                ["tree"] = treeData
+                ["tree"] = SerializeMerkleTree(_rootNode)
             };
         }
 
@@ -67,6 +64,7 @@ namespace IndieBuff.Editor
         public IndieBuff_AssetProcessor()
         {
             _contextObjects = new List<UnityEngine.Object>();
+            serializedPropertyHelper = new IndieBuff_SerializedPropertyHelper();
         }
 
         internal Task<Dictionary<string, object>> StartContextBuild(bool runInBackground = true)
@@ -103,6 +101,16 @@ namespace IndieBuff.Editor
                               !string.IsNullOrEmpty(path))
                 .ToArray();
 
+            // Initialize root node with document
+            _rootNode = new IndieBuff_MerkleNode("Assets");
+            var rootDocument = new IndieBuff_DirectoryData
+            {
+                DirectoryPath = "Assets",
+                DirectoryName = "Assets",
+                ParentPath = null
+            };
+            _rootNode.SetMetadata(new Dictionary<string, object> { ["document"] = rootDocument });
+            
             // Queue all unique directories
             HashSet<string> directories = new HashSet<string>();
             foreach (var path in _pendingPaths)
@@ -114,6 +122,9 @@ namespace IndieBuff.Editor
                     _pendingDirectories.Enqueue(directory);
                 }
             }
+            
+            _pathToNodeMap = new Dictionary<string, IndieBuff_MerkleNode>();
+            _pathToNodeMap.Add("Assets", _rootNode);
             
             _currentPathIndex = 0;
             _contextObjects = new List<UnityEngine.Object>();
@@ -132,9 +143,20 @@ namespace IndieBuff.Editor
                 string dirPath = _pendingDirectories.Dequeue();
                 if (!_pathToNodeMap.ContainsKey(dirPath))
                 {
-                    var dirNode = new IndieBuff_MerkleNode(dirPath, true);
-                    string parentPath = Path.GetDirectoryName(dirPath);
+                    // Create directory document
+                    var dirDocument = new IndieBuff_DirectoryData
+                    {
+                        DirectoryPath = dirPath,
+                        DirectoryName = Path.GetFileName(dirPath),
+                        ParentPath = Path.GetDirectoryName(dirPath)
+                    };
+
+                    // Create node with document
+                    var dirNode = new IndieBuff_MerkleNode(dirPath);
+                    dirNode.SetMetadata(new Dictionary<string, object> { ["document"] = dirDocument });
                     
+                    // Add to parent if exists
+                    string parentPath = Path.GetDirectoryName(dirPath);
                     if (_pathToNodeMap.TryGetValue(parentPath, out var parentNode))
                     {
                         parentNode.AddChild(dirNode);
@@ -164,17 +186,7 @@ namespace IndieBuff.Editor
                 
                 if (obj != null && !_pathToNodeMap.ContainsKey(path))
                 {
-                    // Create merkle node for the asset
-                    var assetNode = new IndieBuff_MerkleNode(path);
-                    string parentPath = Path.GetDirectoryName(path);
-                    
-                    if (_pathToNodeMap.TryGetValue(parentPath, out var parentNode))
-                    {
-                        parentNode.AddChild(assetNode);
-                    }
-                    
-                    _pathToNodeMap.Add(path, assetNode);
-
+                    // Queue the asset for processing without creating a node yet
                     if (obj is GameObject gameObject)
                     {
                         if (PrefabUtility.IsPartOfPrefabAsset(gameObject))
@@ -293,30 +305,10 @@ namespace IndieBuff.Editor
 
             try
             {
-                Debug.Log($"Completing processing. PathToNodeMap count: {_pathToNodeMap?.Count ?? 0}");
-                Debug.Log($"Root node children count: {_rootNode?.Children?.Count ?? 0}");
+                // Create tree structure
+                var treeStructure = GetTreeData();
                 
-                // Unload all prefab contents
-                foreach (var prefabContent in loadedPrefabContents)
-                {
-                    if (prefabContent != null)
-                    {
-                        string prefabPath = AssetDatabase.GetAssetPath(prefabContent);
-                        if (prefabPath.EndsWith(".PREFAB", System.StringComparison.OrdinalIgnoreCase))
-                        {
-                            // logic to unload
-                        }
-                    }
-                }
-                
-                // Instead of adding to context, create tree structure
-                var treeStructure = new Dictionary<string, object>
-                {
-                    ["rootHash"] = _rootNode.Hash,
-                    ["tree"] = SerializeMerkleTree(_rootNode)
-                };
-                
-                Debug.Log($"Tree structure created. Document count: {treeStructure.Count}");
+                Debug.Log($"Processing complete. Tree structure created.");
                 
                 _completionSource?.TrySetResult(treeStructure);
             }
@@ -327,21 +319,16 @@ namespace IndieBuff.Editor
             }
             finally
             {
+                // Clean up
                 processedObjects.Clear();
                 prefabContentsMap.Clear();
                 loadedPrefabContents.Clear();
-                // Don't clear _pathToNodeMap here as it's needed for AssetData
             }
         }
 
         private Dictionary<string, object> SerializeMerkleTree(IndieBuff_MerkleNode node)
         {
-            var nodeData = new Dictionary<string, object>
-            {
-                ["hash"] = node.Hash,
-                ["path"] = node.Path,
-                ["isDirectory"] = node.IsDirectory
-            };
+            var nodeData = new Dictionary<string, object>();
 
             // Add document if it exists
             if (node.Metadata != null)
@@ -353,7 +340,15 @@ namespace IndieBuff.Editor
                 
                 if (documents.Any())
                 {
-                    nodeData["document"] = documents.First();
+                    // Use the document as the primary data source
+                    var document = documents.First();
+                    nodeData["hash"] = document.Hash;
+                    nodeData["document"] = document;
+                }
+                else
+                {
+                    // Only add hash for directory nodes without documents
+                    nodeData["hash"] = node.Hash;
                 }
             }
 
@@ -377,35 +372,34 @@ namespace IndieBuff.Editor
                 processedObjects.Add(obj);
                 string path = AssetDatabase.GetAssetPath(obj);
                 
-                if (_pathToNodeMap.TryGetValue(path, out var node))
+                if (!_pathToNodeMap.ContainsKey(path))
                 {
-                    // 1. Create document
-                    var document = new IndieBuff_AssetData
+                    // Create document for the asset
+                    var assetDocument = new IndieBuff_AssetData
                     {
                         Name = obj.name,
                         AssetPath = path,
                         FileType = obj.GetType().Name,
-                        Properties = GetPropertiesForAsset(obj)
+                        Properties = IndieBuff_AssetPropertyHelper.GetPropertiesForAsset(obj)
                     };
 
-                    // 2. Create node and establish Merkle tree relationship
+                    // Create node with document
                     var assetNode = new IndieBuff_MerkleNode(path);
-                    node.AddChild(assetNode);  // This triggers hash update
-
-                    // 3. Store document and sync hash
-                    assetNode.SetMetadata(new Dictionary<string, object> { ["document"] = document });
-                    // Hash is updated in SetMetadata
+                    assetNode.SetMetadata(new Dictionary<string, object> { ["document"] = assetDocument });
+                    
+                    string parentPath = Path.GetDirectoryName(path);
+                    if (_pathToNodeMap.TryGetValue(parentPath, out var parentNode))
+                    {
+                        parentNode.AddChild(assetNode);
+                    }
+                    
+                    _pathToNodeMap.Add(path, assetNode);
                 }
             }
             catch (Exception e)
             {
                 Debug.LogError($"Error processing asset {obj.name}: {e.Message}");
             }
-        }
-
-        private Dictionary<string, object> GetPropertiesForAsset(UnityEngine.Object obj)
-        {
-            return IndieBuff_AssetPropertyHelper.GetPropertiesForAsset(obj);
         }
 
         private void ProcessPrefab(GameObject gameObject)
@@ -424,9 +418,9 @@ namespace IndieBuff.Editor
                 }
 
                 string path = AssetDatabase.GetAssetPath(gameObject);
-                if (_pathToNodeMap.TryGetValue(path, out var prefabNode))
+                if (!_pathToNodeMap.ContainsKey(path))
                 {
-                    // Create the document
+                    // Create the document with all necessary data
                     var prefabData = new IndieBuff_PrefabGameObjectData
                     {
                         HierarchyPath = GetUniqueGameObjectKey(gameObject),
@@ -434,18 +428,22 @@ namespace IndieBuff.Editor
                         Tag = gameObject.tag,
                         Layer = LayerMask.LayerToName(gameObject.layer),
                         PrefabAssetPath = path,
-                        PrefabAssetName = gameObject.name
+                        PrefabAssetName = gameObject.name,
+                        Components = new List<string>(),
+                        Children = new List<string>()
                     };
 
-                    // Create node and store document
-                    var goNode = new IndieBuff_MerkleNode($"{path}/{gameObject.name}");
-                    goNode.SetMetadata(new Dictionary<string, object>
-                    {
-                        ["document"] = prefabData
-                    });
+                    // Create node with document
+                    var prefabNode = new IndieBuff_MerkleNode(path);
+                    prefabNode.SetMetadata(new Dictionary<string, object> { ["document"] = prefabData });
                     
-                    prefabNode.AddChild(goNode);
-                    prefabData.Hash = goNode.Hash;
+                    string parentPath = Path.GetDirectoryName(path);
+                    if (_pathToNodeMap.TryGetValue(parentPath, out var parentNode))
+                    {
+                        parentNode.AddChild(prefabNode);
+                    }
+                    
+                    _pathToNodeMap.Add(path, prefabNode);
 
                     // Process components
                     var components = objectToProcess.GetComponents<Component>();
@@ -454,7 +452,7 @@ namespace IndieBuff.Editor
                         if (component != null)
                         {
                             prefabData.Components.Add(component.GetType().Name);
-                            ProcessPrefabComponent(component, objectToProcess, goNode);
+                            ProcessPrefabComponent(component, objectToProcess, prefabNode);
                         }
                     }
 
@@ -480,8 +478,6 @@ namespace IndieBuff.Editor
                         }
                         prefabData.ChildCount = prefabData.Children.Count;
                     }
-
-                    prefabData.Hash = goNode.Hash;
                 }
             }
             catch (Exception e)
@@ -492,7 +488,8 @@ namespace IndieBuff.Editor
 
         private void ProcessPrefabComponent(Component component, GameObject gameObject, IndieBuff_MerkleNode parentNode)
         {
-            // Get all sibling components on the same GameObject
+            if (component == null) return;
+
             var allComponents = gameObject.GetComponents<Component>();
             var siblingKeys = allComponents
                 .Where(c => c != null)
@@ -500,65 +497,61 @@ namespace IndieBuff.Editor
                 .ToList();
 
             string path = AssetDatabase.GetAssetPath(gameObject);
+            string componentPath = $"{path}/Components/{component.GetType().Name}";
             
-            if (component is MonoBehaviour script)
+            if (!_pathToNodeMap.ContainsKey(componentPath))
             {
-                string scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(script));
-                var dependencies = script.GetType()
-                    .GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
-                    .Where(field => field.IsDefined(typeof(SerializeField), false) || field.IsPublic)
-                    .ToDictionary(
-                        field => field.Name,
-                        field => new Dictionary<string, object>
-                        {
-                            ["type"] = field.FieldType.Name,
-                            ["value"] = field.GetValue(script)?.ToString() ?? "null"
-                        } as object
-                    );
-
-                var scriptData = new IndieBuff_ScriptPrefabComponentData
+                if (component is MonoBehaviour script)
                 {
-                    Type = component.GetType().Name,
-                    PrefabAssetPath = path,
-                    PrefabAssetName = gameObject.name,
-                    ScriptPath = scriptPath,
-                    ScriptName = script.GetType().Name,
-                    Siblings = siblingKeys,
-                    Properties = dependencies
-                };
+                    string scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(script));
+                    var dependencies = script.GetType()
+                        .GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                        .Where(field => field.IsDefined(typeof(SerializeField), false) || field.IsPublic)
+                        .ToDictionary(
+                            field => field.Name,
+                            field => new Dictionary<string, object>
+                            {
+                                ["type"] = field.FieldType.Name,
+                                ["value"] = field.GetValue(script)?.ToString() ?? "null"
+                            } as object
+                        );
 
-                var scriptNode = new IndieBuff_MerkleNode($"{path}/Components/{component.GetType().Name}");
-                scriptNode.SetMetadata(new Dictionary<string, object>
+                    // Create document with all necessary data
+                    var scriptData = new IndieBuff_ScriptPrefabComponentData
+                    {
+                        Type = component.GetType().Name,
+                        PrefabAssetPath = path,
+                        PrefabAssetName = gameObject.name,
+                        ScriptPath = scriptPath,
+                        ScriptName = script.GetType().Name,
+                        Siblings = siblingKeys,
+                        Properties = dependencies
+                    };
+
+                    // Create node with document
+                    var scriptNode = new IndieBuff_MerkleNode(componentPath);
+                    scriptNode.SetMetadata(new Dictionary<string, object> { ["document"] = scriptData });
+                    parentNode.AddChild(scriptNode);
+                    _pathToNodeMap.Add(componentPath, scriptNode);
+                }
+                else
                 {
-                    ["document"] = scriptData,
-                    ["type"] = "MonoBehaviour",
-                    ["name"] = script.GetType().Name
-                });
+                    // Create document with all necessary data
+                    var componentData = new IndieBuff_PrefabComponentData
+                    {
+                        Type = component.GetType().Name,
+                        PrefabAssetPath = path,
+                        PrefabAssetName = gameObject.name,
+                        Properties = GetComponentsData(component),
+                        Siblings = siblingKeys
+                    };
 
-                parentNode.AddChild(scriptNode);
-                scriptData.Hash = scriptNode.Hash;
-            }
-            else
-            {
-                var componentData = new IndieBuff_PrefabComponentData
-                {
-                    Type = component.GetType().Name,
-                    PrefabAssetPath = path,
-                    PrefabAssetName = gameObject.name,
-                    Properties = GetComponentsData(component),
-                    Siblings = siblingKeys
-                };
-
-                var componentNode = new IndieBuff_MerkleNode($"{path}/Components/{component.GetType().Name}");
-                componentNode.SetMetadata(new Dictionary<string, object>
-                {
-                    ["document"] = componentData,
-                    ["type"] = component.GetType().Name,
-                    ["name"] = component.GetType().Name
-                });
-
-                parentNode.AddChild(componentNode);
-                componentData.Hash = componentNode.Hash;
+                    // Create node with document
+                    var componentNode = new IndieBuff_MerkleNode(componentPath);
+                    componentNode.SetMetadata(new Dictionary<string, object> { ["document"] = componentData });
+                    parentNode.AddChild(componentNode);
+                    _pathToNodeMap.Add(componentPath, componentNode);
+                }
             }
         }
 
@@ -661,6 +654,33 @@ namespace IndieBuff.Editor
         private Dictionary<string, object> GetSerializedProperties(object obj)
         {
             return serializedPropertyHelper.GetSerializedProperties(obj as UnityEngine.Object);
+        }
+
+        private List<IndieBuff_Document> GetDocumentsFromMerkleTree()
+        {
+            var documents = new List<IndieBuff_Document>();
+            if (_rootNode != null)
+            {
+                CollectDocumentsFromNode(_rootNode, documents);
+            }
+            return documents;
+        }
+
+        private void CollectDocumentsFromNode(IndieBuff_MerkleNode node, List<IndieBuff_Document> documents)
+        {
+            // Check this node's metadata for document
+            if (node.Metadata != null && 
+                node.Metadata.TryGetValue("document", out var docObj) && 
+                docObj is IndieBuff_Document doc)
+            {
+                documents.Add(doc);
+            }
+
+            // Recursively check children
+            foreach (var child in node.Children)
+            {
+                CollectDocumentsFromNode(child, documents);
+            }
         }
     }
 }

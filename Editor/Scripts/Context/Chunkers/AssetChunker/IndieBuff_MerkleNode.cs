@@ -79,22 +79,5 @@ namespace IndieBuff.Editor
                 Parent?.UpdateHash();
             }
         }
-
-        // Helper class to serialize dictionary
-        [Serializable]
-        private class SerializableDict<TKey, TValue>
-        {
-            public List<TKey> keys = new List<TKey>();
-            public List<TValue> values = new List<TValue>();
-
-            public SerializableDict(Dictionary<TKey, TValue> dict)
-            {
-                foreach (KeyValuePair<TKey, TValue> kvp in dict)
-                {
-                    keys.Add(kvp.Key);
-                    values.Add(kvp.Value);
-                }
-            }
-        }
     }
 } 
