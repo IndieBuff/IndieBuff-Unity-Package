@@ -27,58 +27,52 @@ namespace IndieBuff.Editor
         }
 
         public bool IsScanning => isProcessing;
-        public Dictionary<string, IndieBuff_Document> AssetData => assetData;
 
-        private Dictionary<string, object> contextData;
+        public Dictionary<string, object> GetTreeData()
+        {
+            Debug.Log("Starting tree serialization...");
+            var treeData = SerializeMerkleTree(_rootNode);
+            
+            return new Dictionary<string, object>
+            {
+                ["rootHash"] = _rootNode.Hash,
+                ["tree"] = treeData
+            };
+        }
 
-        public Dictionary<string, object> ContextData => contextData;
         private bool isProcessing = false;
         private Queue<GameObject> objectsToProcess;
         private HashSet<UnityEngine.Object> processedObjects = new HashSet<UnityEngine.Object>();
         private Dictionary<GameObject, GameObject> prefabContentsMap = new Dictionary<GameObject, GameObject>();
         private List<GameObject> loadedPrefabContents = new List<GameObject>();
         private List<UnityEngine.Object> _contextObjects;
-        private const int MAX_CHILDREN_PER_FRAME = 10;
-        private HashSet<long> m_VisitedObjects = new HashSet<long>();
-        private HashSet<long> m_VisitedNodes = new HashSet<long>();
-        private int m_MaxObjectDepth = -1;
-        private int m_CurrentDepth;
-        private Stack<int> m_Depths = new Stack<int>();
-        private bool IgnorePrefabInstance = false;
-        private bool UseDisplayName = false;
-        private bool OutputType = false;
-        private int m_ObjectDepth = 0;
+
+        public IndieBuff_SerializedPropertyHelper serializedPropertyHelper = new IndieBuff_SerializedPropertyHelper();
         private TaskCompletionSource<Dictionary<string, object>> _completionSource;
-        private Dictionary<string, IndieBuff_Document> assetData;
+        private Queue<UnityEngine.Object> _assetsToProcess;
+        private bool _isBatchProcessing = false;
+        private string[] _pendingPaths;
+        private int _currentPathIndex = 0;
+        public IndieBuff_MerkleNode _rootNode;
+
+        public IndieBuff_MerkleNode RootNode => _rootNode;
+        private Dictionary<string, IndieBuff_MerkleNode> _pathToNodeMap;
+        private Queue<string> _pendingDirectories;
 
         // Batch processing constants
         private const int PATH_BATCH_SIZE = 25;  // Reduced batch size for paths
         private const int ASSETS_PER_BATCH = 10;  // Reduced batch size for regular assets
         private const int GAMEOBJECTS_PER_BATCH = 5;  // Even smaller batch for GameObjects
         
-        private Queue<UnityEngine.Object> _assetsToProcess;
-        private bool _isBatchProcessing = false;
-
-        private string[] _pendingPaths;
-        private int _currentPathIndex = 0;
-
-        // Add to existing fields
-        public IndieBuff_MerkleNode _rootNode;
-        private Dictionary<string, IndieBuff_MerkleNode> _pathToNodeMap;
-        private Queue<string> _pendingDirectories;
-
         public IndieBuff_AssetProcessor()
         {
             _contextObjects = new List<UnityEngine.Object>();
-            assetData = new Dictionary<string, IndieBuff_Document>();
         }
 
         internal Task<Dictionary<string, object>> StartContextBuild(bool runInBackground = true)
         {
             _completionSource = new TaskCompletionSource<Dictionary<string, object>>();
             isProcessing = true;
-            contextData = new Dictionary<string, object>();
-            assetData = new Dictionary<string, IndieBuff_Document>();
             
             _assetsToProcess = new Queue<UnityEngine.Object>();
             objectsToProcess = new Queue<GameObject>();
@@ -230,7 +224,7 @@ namespace IndieBuff.Editor
 
             if (objectsToProcess.Count > 0)
             {
-                ProcessGameObjectBatch();
+                ProcessPrefabBatch();
                 return;
             }
 
@@ -252,7 +246,7 @@ namespace IndieBuff.Editor
             }
         }
 
-        private void ProcessGameObjectBatch()
+        private void ProcessPrefabBatch()
         {
             int gameObjectsProcessed = 0;
             while (objectsToProcess.Count > 0 && gameObjectsProcessed < GAMEOBJECTS_PER_BATCH)
@@ -260,7 +254,7 @@ namespace IndieBuff.Editor
                 var gameObject = objectsToProcess.Dequeue();
                 if (gameObject != null && !processedObjects.Contains(gameObject))
                 {
-                    ProcessGameObject(gameObject);
+                    ProcessPrefab(gameObject);
                 }
                 gameObjectsProcessed++;
             }
@@ -299,6 +293,9 @@ namespace IndieBuff.Editor
 
             try
             {
+                Debug.Log($"Completing processing. PathToNodeMap count: {_pathToNodeMap?.Count ?? 0}");
+                Debug.Log($"Root node children count: {_rootNode?.Children?.Count ?? 0}");
+                
                 // Unload all prefab contents
                 foreach (var prefabContent in loadedPrefabContents)
                 {
@@ -319,8 +316,9 @@ namespace IndieBuff.Editor
                     ["tree"] = SerializeMerkleTree(_rootNode)
                 };
                 
-                contextData = treeStructure;
-                _completionSource?.TrySetResult(contextData);
+                Debug.Log($"Tree structure created. Document count: {treeStructure.Count}");
+                
+                _completionSource?.TrySetResult(treeStructure);
             }
             catch (Exception e)
             {
@@ -332,11 +330,11 @@ namespace IndieBuff.Editor
                 processedObjects.Clear();
                 prefabContentsMap.Clear();
                 loadedPrefabContents.Clear();
-                _pathToNodeMap.Clear();
+                // Don't clear _pathToNodeMap here as it's needed for AssetData
             }
         }
 
-        public Dictionary<string, object> SerializeMerkleTree(IndieBuff_MerkleNode node)
+        private Dictionary<string, object> SerializeMerkleTree(IndieBuff_MerkleNode node)
         {
             var nodeData = new Dictionary<string, object>
             {
@@ -345,34 +343,29 @@ namespace IndieBuff.Editor
                 ["isDirectory"] = node.IsDirectory
             };
 
-            // Add metadata (IndieBuff_Document) if it exists
+            // Add document if it exists
             if (node.Metadata != null)
             {
-                // Look for any IndieBuff_Document in the metadata
-                var document = node.Metadata.Values
-                    .OfType<IndieBuff_Document>()
-                    .FirstOrDefault();
-                    
-                if (document != null)
-                {
-                    nodeData["document"] = document;
-                }
+                var documents = node.Metadata.Values
+                    .Where(v => v is IndieBuff_Document)
+                    .Cast<IndieBuff_Document>()
+                    .ToList();
                 
+                if (documents.Any())
+                {
+                    nodeData["document"] = documents.First();
+                }
             }
 
             // Add children recursively
             if (node.Children.Any())
             {
-                nodeData["children"] = node.Children.Select(child => SerializeMerkleTree(child)).ToList();
+                nodeData["children"] = node.Children
+                    .Select(child => SerializeMerkleTree(child))
+                    .ToList();
             }
 
             return nodeData;
-        }
-
-        private void AddToContext(string key, IndieBuff_Document value)
-        {
-            assetData[key] = value;
-            contextData[key] = value;
         }
 
         private void ProcessGenericAsset(UnityEngine.Object obj)
@@ -386,74 +379,22 @@ namespace IndieBuff.Editor
                 
                 if (_pathToNodeMap.TryGetValue(path, out var node))
                 {
-                    var assetData = new IndieBuff_AssetData
+                    // 1. Create document
+                    var document = new IndieBuff_AssetData
                     {
                         Name = obj.name,
                         AssetPath = path,
                         FileType = obj.GetType().Name,
+                        Properties = GetPropertiesForAsset(obj)
                     };
-                    Dictionary<string, object> properties = new Dictionary<string, object>();
 
-                    // Special handling for FBX files
-                    if (path.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var fbxNode = new IndieBuff_MerkleNode(path);
-                        fbxNode.SetMetadata(new Dictionary<string, object>
-                        {
-                            ["assetData"] = assetData,
-                            ["type"] = "FBX",
-                            ["name"] = obj.name
-                        });
-                        
-                        // Process FBX sub-assets
-                        var subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
-                        foreach (var subAsset in subAssets)
-                        {
-                            if (subAsset != null && subAsset != obj)
-                            {
-                                var subNode = new IndieBuff_MerkleNode($"{path}/{subAsset.name}");
-                                subNode.SetMetadata(new Dictionary<string, object>
-                                {
-                                    ["type"] = subAsset.GetType().Name,
-                                    ["name"] = subAsset.name
-                                });
-                                fbxNode.AddChild(subNode);
-                            }
-                        }
-                    }
-                    // Special handling for different asset types
-                    else if (obj is Material material)
-                    {
-                        properties = GetMaterialProperties(material);
-                    }
-                    else if (obj is Shader shader)
-                    {
-                        properties = GetShaderProperties(shader);
-                    }
-                    else if (obj is Texture2D texture)
-                    {
-                        properties = GetTextureProperties(texture);
-                    }
-                    else if (obj is AnimatorController animatorController)
-                    {
-                        properties = GetAnimatorControllerProperties(animatorController);
-                    }
-
-                    // Create node with properties
+                    // 2. Create node and establish Merkle tree relationship
                     var assetNode = new IndieBuff_MerkleNode(path);
-                    assetNode.SetMetadata(new Dictionary<string, object>
-                    {
-                        ["assetData"] = assetData,
-                        ["type"] = obj.GetType().Name,
-                        ["name"] = obj.name,
-                        ["properties"] = properties
-                    });
+                    node.AddChild(assetNode);  // This triggers hash update
 
-                    node.AddChild(assetNode);
-                    
-                    // Set the hash from the MerkleNode to the document
-                    assetData.Hash = assetNode.Hash;
-                    AddToContext(obj.name, assetData);
+                    // 3. Store document and sync hash
+                    assetNode.SetMetadata(new Dictionary<string, object> { ["document"] = document });
+                    // Hash is updated in SetMetadata
                 }
             }
             catch (Exception e)
@@ -462,16 +403,19 @@ namespace IndieBuff.Editor
             }
         }
 
-        private void ProcessGameObject(GameObject gameObject)
+        private Dictionary<string, object> GetPropertiesForAsset(UnityEngine.Object obj)
+        {
+            return IndieBuff_AssetPropertyHelper.GetPropertiesForAsset(obj);
+        }
+
+        private void ProcessPrefab(GameObject gameObject)
         {
             if (gameObject == null || processedObjects.Contains(gameObject)) return;
 
             try
             {
                 processedObjects.Add(gameObject);
-
-                bool isPrefabAsset = PrefabUtility.IsPartOfPrefabAsset(gameObject);
-                if (!isPrefabAsset) return;
+                if (!PrefabUtility.IsPartOfPrefabAsset(gameObject)) return;
 
                 GameObject objectToProcess = gameObject;
                 if (prefabContentsMap.ContainsKey(gameObject))
@@ -482,25 +426,26 @@ namespace IndieBuff.Editor
                 string path = AssetDatabase.GetAssetPath(gameObject);
                 if (_pathToNodeMap.TryGetValue(path, out var prefabNode))
                 {
+                    // Create the document
                     var prefabData = new IndieBuff_PrefabGameObjectData
                     {
-                        HierarchyPath = GetUniqueGameObjectKey(objectToProcess),
-                        ParentName = objectToProcess.transform.parent != null ? objectToProcess.transform.parent.gameObject.name : "null",
-                        Tag = objectToProcess.tag,
-                        Layer = LayerMask.LayerToName(objectToProcess.layer),
+                        HierarchyPath = GetUniqueGameObjectKey(gameObject),
+                        ParentName = gameObject.transform.parent?.gameObject.name ?? "null",
+                        Tag = gameObject.tag,
+                        Layer = LayerMask.LayerToName(gameObject.layer),
                         PrefabAssetPath = path,
                         PrefabAssetName = gameObject.name
                     };
 
-                    // Create a node for the GameObject itself
+                    // Create node and store document
                     var goNode = new IndieBuff_MerkleNode($"{path}/{gameObject.name}");
                     goNode.SetMetadata(new Dictionary<string, object>
                     {
-                        ["prefabData"] = prefabData,
-                        ["type"] = "GameObject",
-                        ["name"] = gameObject.name
+                        ["document"] = prefabData
                     });
+                    
                     prefabNode.AddChild(goNode);
+                    prefabData.Hash = goNode.Hash;
 
                     // Process components
                     var components = objectToProcess.GetComponents<Component>();
@@ -536,13 +481,12 @@ namespace IndieBuff.Editor
                         prefabData.ChildCount = prefabData.Children.Count;
                     }
 
-                    prefabData.Hash = prefabNode.Hash;
-                    AddToContext(prefabData.HierarchyPath, prefabData);
+                    prefabData.Hash = goNode.Hash;
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error processing GameObject {gameObject.name}: {e.Message}\n{e.StackTrace}");
+                Debug.LogError($"Error processing GameObject {gameObject.name}: {e.Message}");
             }
         }
 
@@ -586,14 +530,13 @@ namespace IndieBuff.Editor
                 var scriptNode = new IndieBuff_MerkleNode($"{path}/Components/{component.GetType().Name}");
                 scriptNode.SetMetadata(new Dictionary<string, object>
                 {
-                    ["scriptData"] = scriptData,
+                    ["document"] = scriptData,
                     ["type"] = "MonoBehaviour",
                     ["name"] = script.GetType().Name
                 });
 
                 parentNode.AddChild(scriptNode);
                 scriptData.Hash = scriptNode.Hash;
-                AddToContext($"{gameObject.name}_{component.GetType().Name}", scriptData);
             }
             else
             {
@@ -609,14 +552,13 @@ namespace IndieBuff.Editor
                 var componentNode = new IndieBuff_MerkleNode($"{path}/Components/{component.GetType().Name}");
                 componentNode.SetMetadata(new Dictionary<string, object>
                 {
-                    ["componentData"] = componentData,
+                    ["document"] = componentData,
                     ["type"] = component.GetType().Name,
                     ["name"] = component.GetType().Name
                 });
 
                 parentNode.AddChild(componentNode);
                 componentData.Hash = componentNode.Hash;
-                AddToContext($"{gameObject.name}_{component.GetType().Name}", componentData);
             }
         }
 
@@ -666,7 +608,7 @@ namespace IndieBuff.Editor
                 else if (component is Animator animator)
                 {
                     // Custom handling for Animator component
-                    componentData["properties"] = GetAnimatorProperties(animator);
+                    componentData["properties"] = IndieBuff_AssetPropertyHelper.GetPropertiesForAsset(animator);
                 }
                 else
                 {
@@ -718,693 +660,7 @@ namespace IndieBuff.Editor
 
         private Dictionary<string, object> GetSerializedProperties(object obj)
         {
-            var properties = new Dictionary<string, object>();
-            var serializedObject = new SerializedObject(obj as UnityEngine.Object);
-            var iterator = serializedObject.GetIterator();
-
-            while (iterator.NextVisible(true))
-            {
-                try
-                {
-                    ProcessSerializedPropertyInner(properties, iterator);
-                }
-                catch (Exception)
-                {
-                    // Skip problematic properties
-                }
-            }
-
-            return properties;
-        }
-
-        private void ProcessSerializedPropertyInner(Dictionary<string, object> properties, SerializedProperty current)
-        {
-
-            // THIS MIGHT BE NEEDED. prevents infinite loop i think but I removed it and its working. Commented out for now because was blocking some properties from being processed.
-            /*if (current.depth < m_CurrentDepth)
-            {
-                Debug.Log($"Skipping {current.name} due to depth check");
-                return;
-            }*/
-
-            if (current.propertyType == SerializedPropertyType.ManagedReference && m_VisitedNodes.Contains(current.managedReferenceId))
-            {
-                return;
-            }
-
-            if (current.name == "m_PrefabInstance" && IgnorePrefabInstance)
-            {
-                return;
-            }
-
-            var key = UseDisplayName ? current.displayName : current.name;
-            var type = current.propertyType.ToString();
-
-            if (current.propertyType == SerializedPropertyType.Generic && current.isArray)
-            {
-                type = $"Array({PrettifyString(current.arrayElementType)})";
-            }
-            if (current.propertyType == SerializedPropertyType.ObjectReference || current.propertyType == SerializedPropertyType.ExposedReference)
-            {
-                if (current.objectReferenceValue != null)
-                {
-                    type = current.objectReferenceValue.GetType().Name;
-                }
-                else
-                {
-                    type = PrettifyString(current.type);
-                }
-            }
-
-            if (OutputType)
-                key += $" - {type}";
-
-            // Override for GameObject's component list
-            if (type == "Array(ComponentPair)")
-                key = "Components";
-
-            m_CurrentDepth++;
-
-            switch (current.propertyType)
-            {
-                case SerializedPropertyType.Generic:
-                    {
-                        if (current.isArray)
-                        {
-                            var arrayValues = new Dictionary<string, object>();
-                            var length = current.arraySize;
-                            for (var i = 0; i < length; i++)
-                            {
-                                var arrayElement = current.GetArrayElementAtIndex(i);
-                                ProcessSerializedPropertyInner(arrayValues, arrayElement);
-                            }
-                            properties[key] = arrayValues;
-                        }
-                        else
-                        {
-                            if (current.hasChildren)
-                            {
-                                var childProp = current.Copy();
-                                childProp.Next(true);
-                                var childProperties = new Dictionary<string, object>();
-                                ProcessSerializedPropertyInner(childProperties, childProp);
-                                properties[key] = childProperties;
-                            }
-                            else
-                                properties[key] = "Generic no children";
-                        }
-                    }
-                    break;
-                case SerializedPropertyType.Integer:
-                    properties[key] = current.intValue;
-                    break;
-                case SerializedPropertyType.Boolean:
-                    properties[key] = current.boolValue;
-                    break;
-                case SerializedPropertyType.Float:
-                    properties[key] = SafeNumberWrite(current.floatValue);
-                    break;
-                case SerializedPropertyType.String:
-                    properties[key] = current.stringValue;
-                    break;
-                case SerializedPropertyType.Color:
-                    properties[key] = current.colorValue.ToString();
-                    break;
-                case SerializedPropertyType.ObjectReference:
-                    {
-                        var objectReference = current.objectReferenceValue;
-                        if (objectReference != null)
-                        {
-                            var instanceID = objectReference.GetInstanceID();
-                            if (!m_VisitedObjects.Contains(instanceID))
-                            {
-                                if (m_MaxObjectDepth > -1 && m_ObjectDepth > m_MaxObjectDepth)
-                                {
-                                    properties[key] = $"{objectReference.name}";
-                                }
-                                else
-                                {
-                                    m_Depths.Push(m_CurrentDepth);
-                                    var SO = new SerializedObject(objectReference);
-                                    var childProperties = new Dictionary<string, object>();
-                                    ProcessSerializedPropertyInner(childProperties, SO.GetIterator());
-                                    properties[key] = childProperties;
-                                    m_CurrentDepth = m_Depths.Pop();
-                                }
-                            }
-                            else
-                            {
-                                properties[key] = $"Already serialized - {objectReference.name}";
-                            }
-                        }
-                        else
-                        {
-                            properties[key] = "null";
-                        }
-                    }
-                    break;
-                case SerializedPropertyType.LayerMask:
-                    properties[key] = current.intValue;
-                    break;
-                case SerializedPropertyType.Enum:
-                    if (current.enumValueIndex >= 0 && current.enumValueIndex < current.enumDisplayNames.Length)
-                    {
-                        properties[key] = current.enumDisplayNames[current.enumValueIndex];
-                    }
-                    else
-                    {
-                        properties[key] = current.enumValueFlag;
-                    }
-                    break;
-                case SerializedPropertyType.Vector2:
-                    properties[key] = current.vector2Value.ToString();
-                    break;
-                case SerializedPropertyType.Vector3:
-                    properties[key] = current.vector3Value.ToString();
-                    break;
-                case SerializedPropertyType.Vector4:
-                    properties[key] = current.vector4Value.ToString();
-                    break;
-                case SerializedPropertyType.Rect:
-                    properties[key] = current.rectValue.ToString();
-                    break;
-                case SerializedPropertyType.ArraySize:
-                    properties[key] = current.intValue;
-                    break;
-                case SerializedPropertyType.Character:
-                    properties[key] = $"Character - {current.boxedValue}";
-                    break;
-                case SerializedPropertyType.AnimationCurve:
-                    properties[key] = $"Animation curve - {current.animationCurveValue}";
-                    break;
-                case SerializedPropertyType.Bounds:
-                    properties[key] = $"{current.boundsValue}";
-                    break;
-                case SerializedPropertyType.Gradient:
-                    properties[key] = $"Gradient - {current.gradientValue}";
-                    break;
-                case SerializedPropertyType.Quaternion:
-                    properties[key] = current.quaternionValue.ToString();
-                    break;
-                case SerializedPropertyType.ExposedReference:
-                    {
-                        var objectReference = current.objectReferenceValue;
-                        if (objectReference != null)
-                        {
-                            var instanceID = objectReference.GetInstanceID();
-                            if (!m_VisitedObjects.Contains(instanceID))
-                            {
-                                if (m_MaxObjectDepth > -1 && m_ObjectDepth > m_MaxObjectDepth)
-                                {
-                                    properties[key] = $"{objectReference.name}";
-                                }
-                                else
-                                {
-                                    m_Depths.Push(m_CurrentDepth);
-                                    var SO = new SerializedObject(objectReference);
-                                    var childProperties = new Dictionary<string, object>();
-                                    ProcessSerializedPropertyInner(childProperties, SO.GetIterator());
-                                    properties[key] = childProperties;
-                                    m_CurrentDepth = m_Depths.Pop();
-                                }
-                            }
-                            else
-                            {
-                                properties[key] = $"Already serialized  - {objectReference.name}";
-                            }
-                        }
-                        else
-                        {
-                            properties[key] = "null";
-                        }
-                    }
-                    break;
-                case SerializedPropertyType.FixedBufferSize:
-                    properties[key] = current.intValue;
-                    break;
-                case SerializedPropertyType.Vector2Int:
-                    properties[key] = current.vector2IntValue.ToString();
-                    break;
-                case SerializedPropertyType.Vector3Int:
-                    properties[key] = current.vector3IntValue.ToString();
-                    break;
-                case SerializedPropertyType.RectInt:
-                    properties[key] = current.rectIntValue.ToString();
-                    break;
-                case SerializedPropertyType.BoundsInt:
-                    properties[key] = current.boundsIntValue.ToString();
-                    break;
-                case SerializedPropertyType.ManagedReference:
-                    {
-                        var refId = current.managedReferenceId;
-                        var visited = false;
-
-                        if (!m_VisitedNodes.Contains(refId))
-                        {
-                            m_VisitedNodes.Add(current.managedReferenceId);
-                            if (current.hasChildren)
-                            {
-                                visited = true;
-                                var childProp = current.Copy();
-                                childProp.Next(true);
-                                var childProperties = new Dictionary<string, object>();
-                                ProcessSerializedPropertyInner(childProperties, childProp);
-                                properties[key] = childProperties;
-                            }
-                        }
-
-                        if (!visited)
-                        {
-                            var boxedValue = current.boxedValue;
-                            properties[key] = $"Managed reference ID: {boxedValue}";
-                        }
-
-                    }
-                    break;
-                case SerializedPropertyType.Hash128:
-                    properties[key] = current.hash128Value.ToString();
-                    break;
-                default:
-                    properties[key] = $"unsupported - {current.propertyType}";
-                    break;
-            }
-
-            m_CurrentDepth--;
-        }
-
-        private static string SafeNumberWrite(float value)
-        {
-            if (float.IsFinite(value))
-                return value.ToString();
-            else
-                return value.ToString();
-        }
-
-        private static string PrettifyString(string toPrettify)
-        {
-            if (toPrettify.StartsWith("PPtr<"))
-                return toPrettify.Substring(5, toPrettify.Length - 6);
-
-            return toPrettify;
-        }
-
-        private bool IsSerializableValue(object value)
-        {
-            if (value == null) return false;
-            var type = value.GetType();
-
-            return type.IsPrimitive ||
-                   type.IsEnum ||
-                   type == typeof(string) ||
-                   type == typeof(Vector2) ||
-                   type == typeof(Vector3) ||
-                   type == typeof(Vector4) ||
-                   type == typeof(Quaternion) ||
-                   type == typeof(Color) ||
-                   type == typeof(LayerMask) ||
-                   type == typeof(AnimationCurve) ||
-                   (type.IsArray && IsSerializableValue(type.GetElementType()));
-        }
-
-        
-        private Dictionary<string, object> GetAnimatorProperties(Animator animator)
-        {
-            var properties = new Dictionary<string, object>();
-
-
-            var animatorController = animator.runtimeAnimatorController as UnityEditor.Animations.AnimatorController;
-
-
-            // Extract parameters
-            var parameterList = animatorController.parameters.Select(parameter => new Dictionary<string, object>
-            {
-                ["name"] = parameter.name,
-                ["type"] = parameter.type.ToString(),
-                ["defaultFloat"] = parameter.defaultFloat,
-                ["defaultInt"] = parameter.defaultInt,
-                ["defaultBool"] = parameter.defaultBool
-            }).ToList();
-
-            properties["parameters"] = parameterList;
-
-            // Extract states and transitions
-            var stateMachines = animatorController.layers.Select(layer => layer.stateMachine).ToList();
-            var statesList = new List<Dictionary<string, object>>();
-            var exitTransitions = new List<Dictionary<string, object>>();
-
-            foreach (var stateMachine in stateMachines)
-            {
-                // Handle entry node
-                var entryTransitions = stateMachine.entryTransitions
-                    .Where(t => t.destinationState != null)
-                    .Select(t => new Dictionary<string, object>
-                    {
-                        ["name"] = t.destinationState.name
-                    }).ToList();
-
-                statesList.Add(new Dictionary<string, object>
-                {
-                    ["name"] = "Entry",
-                    ["type"] = "EntryNode",
-                    ["transitions"] = entryTransitions
-                });
-
-                // Process all regular states and collect exit transitions
-                foreach (var state in stateMachine.states)
-                {
-                    var stateTransitions = new List<Dictionary<string, object>>();
-
-                    foreach (var transition in state.state.transitions)
-                    {
-                        // Check if it's an exit transition
-                        if (transition.destinationState == null &&
-                            transition.destinationStateMachine == null &&
-                            transition.isExit)
-                        {
-                            // Add to state's transitions without sourceState
-                            stateTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["name"] = "Exit",
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-
-                            // Add to exit transitions list with sourceState
-                            exitTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["sourceState"] = state.state.name,
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-                        }
-                        // Regular transition to another state
-                        else if (transition.destinationState != null)
-                        {
-                            stateTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["name"] = transition.destinationState.name,
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-                        }
-                    }
-
-                    statesList.Add(new Dictionary<string, object>
-                    {
-                        ["name"] = state.state.name,
-                        ["speed"] = state.state.speed,
-                        ["tag"] = state.state.tag,
-                        ["transitions"] = stateTransitions
-                    });
-                }
-
-                // Handle exit node with collected transitions
-                statesList.Add(new Dictionary<string, object>
-                {
-                    ["name"] = "Exit",
-                    ["type"] = "ExitNode",
-                    ["incomingTransitions"] = exitTransitions,
-                    ["transitions"] = new List<Dictionary<string, object>>()
-                });
-
-                // Add any state transitions only if they exist
-                var anyStateTransitions = stateMachine.anyStateTransitions
-                    .Where(t => t.destinationState != null)
-                    .Select(t => new Dictionary<string, object>
-                    {
-                        ["name"] = t.destinationState.name,
-                        ["duration"] = t.duration,
-                        ["offset"] = t.offset,
-                        ["hasExitTime"] = t.hasExitTime,
-                        ["exitTime"] = t.exitTime
-                    }).ToList();
-
-                if (anyStateTransitions.Any())
-                {
-                    properties["transitions"] = anyStateTransitions;
-                }
-            }
-
-            properties["states"] = statesList;
-
-            return properties;
-        }
-
-        private Dictionary<string, object> GetAnimatorControllerProperties(UnityEditor.Animations.AnimatorController animatorController)
-        {
-            var properties = new Dictionary<string, object>();
-
-            // Extract parameters
-            var parameterList = animatorController.parameters.Select(parameter => new Dictionary<string, object>
-            {
-                ["name"] = parameter.name,
-                ["type"] = parameter.type.ToString(),
-                ["defaultFloat"] = parameter.defaultFloat,
-                ["defaultInt"] = parameter.defaultInt,
-                ["defaultBool"] = parameter.defaultBool
-            }).ToList();
-
-            properties["parameters"] = parameterList;
-
-            // Extract states and transitions
-            var stateMachines = animatorController.layers.Select(layer => layer.stateMachine).ToList();
-            var statesList = new List<Dictionary<string, object>>();
-            var exitTransitions = new List<Dictionary<string, object>>();
-
-            foreach (var stateMachine in stateMachines)
-            {
-                // Handle entry node
-                var entryTransitions = stateMachine.entryTransitions
-                    .Where(t => t.destinationState != null)
-                    .Select(t => new Dictionary<string, object>
-                    {
-                        ["name"] = t.destinationState.name
-                    }).ToList();
-
-                statesList.Add(new Dictionary<string, object>
-                {
-                    ["name"] = "Entry",
-                    ["type"] = "EntryNode",
-                    ["transitions"] = entryTransitions
-                });
-
-                // Process all regular states and collect exit transitions
-                foreach (var state in stateMachine.states)
-                {
-                    var stateTransitions = new List<Dictionary<string, object>>();
-
-                    foreach (var transition in state.state.transitions)
-                    {
-                        // Check if it's an exit transition
-                        if (transition.destinationState == null &&
-                            transition.destinationStateMachine == null &&
-                            transition.isExit)
-                        {
-                            // Add to state's transitions without sourceState
-                            stateTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["name"] = "Exit",
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-
-                            // Add to exit transitions list with sourceState
-                            exitTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["sourceState"] = state.state.name,
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-                        }
-                        // Regular transition to another state
-                        else if (transition.destinationState != null)
-                        {
-                            stateTransitions.Add(new Dictionary<string, object>
-                            {
-                                ["name"] = transition.destinationState.name,
-                                ["duration"] = transition.duration,
-                                ["offset"] = transition.offset,
-                                ["hasExitTime"] = transition.hasExitTime,
-                                ["exitTime"] = transition.exitTime
-                            });
-                        }
-                    }
-
-                    statesList.Add(new Dictionary<string, object>
-                    {
-                        ["name"] = state.state.name,
-                        ["speed"] = state.state.speed,
-                        ["tag"] = state.state.tag,
-                        ["transitions"] = stateTransitions
-                    });
-                }
-
-                // Handle exit node with collected transitions
-                statesList.Add(new Dictionary<string, object>
-                {
-                    ["name"] = "Exit",
-                    ["type"] = "ExitNode",
-                    ["incomingTransitions"] = exitTransitions,
-                    ["transitions"] = new List<Dictionary<string, object>>()
-                });
-
-                // Add any state transitions only if they exist
-                var anyStateTransitions = stateMachine.anyStateTransitions
-                    .Where(t => t.destinationState != null)
-                    .Select(t => new Dictionary<string, object>
-                    {
-                        ["name"] = t.destinationState.name,
-                        ["duration"] = t.duration,
-                        ["offset"] = t.offset,
-                        ["hasExitTime"] = t.hasExitTime,
-                        ["exitTime"] = t.exitTime
-                    }).ToList();
-
-                if (anyStateTransitions.Any())
-                {
-                    properties["transitions"] = anyStateTransitions;
-                }
-            }
-
-            properties["states"] = statesList;
-
-            return properties;
-        }
-
-        private Dictionary<string, object> GetMaterialProperties(Material material)
-        {
-            var properties = new Dictionary<string, object>();
-            
-            try
-            {
-                // Check if material has color property before accessing it
-                if (material.HasProperty("_Color"))
-                {
-                    Color mainColor = material.color;
-                    properties["color"] = $"({mainColor.r:F3}, {mainColor.g:F3}, {mainColor.b:F3}, {mainColor.a:F3})";
-                }
-                
-                // Add shader name
-                properties["shader"] = material.shader != null ? material.shader.name : "null";
-                
-                // Add whether the material is transparent
-                properties["isTransparent"] = material.GetTag("RenderType", false) == "Transparent";
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"Error getting material properties for {material.name}: {e.Message}");
-            }
-            
-            return properties;
-        }
-    
-        private Dictionary<string, object> GetShaderProperties(Shader shader)
-        {
-            var properties = new Dictionary<string, object>();
-            
-            int propertyCount = shader.GetPropertyCount();
-            for(int i = 0; i < propertyCount; i++)
-            {
-                string propertyName = shader.GetPropertyName(i);
-                switch (propertyName)
-                {
-                    case "_Color":
-                        properties["Color"] = shader.GetPropertyDefaultVectorValue(i).ToString();
-                        break;
-                    case "_MainTex":
-                        properties["MainTexture"] = shader.GetPropertyTextureDefaultName(i);
-                        break;
-                    case "_Glossiness":
-                        properties["Glossiness"] = shader.GetPropertyDefaultFloatValue(i);
-                        break;
-                    case "_Metallic":
-                        properties["Metallic"] = shader.GetPropertyDefaultFloatValue(i);
-                        break;
-                }
-            }
-            return properties;
-        }
-
-        private Dictionary<string, object> GetTextureProperties(Texture2D texture)
-        {
-            var properties = new Dictionary<string, object>();
-            properties["m_Width"] = texture.width;
-            properties["m_Height"] = texture.height;
-            return properties;
-        }
-
-        public void PrintMerkleTree()
-        {
-            if (_rootNode == null)
-            {
-                Debug.Log("Merkle tree is not initialized");
-                return;
-            }
-
-            StringBuilder treeString = new StringBuilder();
-            PrintNode(_rootNode, "", true, treeString);
-            
-            // Let user choose save location
-            string filePath = EditorUtility.SaveFilePanel(
-                "Save Merkle Tree",
-                "",
-                "merkle_tree.txt",
-                "txt"
-            );
-            
-            if (!string.IsNullOrEmpty(filePath))
-            {
-                try
-                {
-                    File.WriteAllText(filePath, treeString.ToString());
-                    Debug.Log($"Merkle tree saved to: {filePath}");
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"Error saving merkle tree: {e.Message}");
-                }
-            }
-        }
-
-        private void PrintNode(IndieBuff_MerkleNode node, string indent, bool isLast, StringBuilder sb)
-        {
-            if (node == null || string.IsNullOrEmpty(node.Path))
-            {
-                return;
-            }
-
-            // Print current node
-            sb.Append(indent);
-            sb.Append(isLast ? "└── " : "├── ");
-            
-            string hashDisplay = !string.IsNullOrEmpty(node.Hash) ? 
-                //$" [{node.Hash.Substring(0, Math.Min(8, node.Hash.Length))}...]" : 
-                $" [{node.Hash}]" : 
-                " [no hash]";
-            
-            sb.AppendLine($"{node.Path}{hashDisplay}");
-
-            // Prepare indent for children
-            indent += isLast ? "    " : "│   ";
-
-            // Print children
-            if (node.Children != null)
-            {
-                for (int i = 0; i < node.Children.Count; i++)
-                {
-                    PrintNode(node.Children[i], indent, i == node.Children.Count - 1, sb);
-                }
-            }
+            return serializedPropertyHelper.GetSerializedProperties(obj as UnityEngine.Object);
         }
     }
 }

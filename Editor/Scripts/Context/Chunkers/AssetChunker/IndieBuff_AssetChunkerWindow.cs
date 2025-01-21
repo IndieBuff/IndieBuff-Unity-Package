@@ -12,6 +12,7 @@ namespace IndieBuff.Editor
     {
         private string outputPath = "asset_scan.json";
 
+
         [MenuItem("Window/IndieBuff/Asset Chunker")]
         public static void ShowWindow()
         {
@@ -25,8 +26,8 @@ namespace IndieBuff.Editor
             try
             {
                 await IndieBuff_AssetProcessor.Instance.StartContextBuild(runInBackground: true);
-                // Results are now available in IndieBuff_AssetProcessor.Instance.AssetData
-                Repaint(); // Refresh the window to show results
+                // Cache the results after scan completes
+                Repaint();
             }
             catch (Exception e)
             {
@@ -55,58 +56,78 @@ namespace IndieBuff.Editor
                 EditorGUILayout.HelpBox("Scanning project assets...", MessageType.Info);
             }
 
-            if (IndieBuff_AssetProcessor.Instance.AssetData != null && IndieBuff_AssetProcessor.Instance.AssetData.Count > 0)
+            if (!IndieBuff_AssetProcessor.Instance.IsScanning)
             {
-                EditorGUILayout.Space(10);
-                EditorGUILayout.LabelField("Scan Results", EditorStyles.boldLabel);
-                
-                // Display total assets
-                EditorGUILayout.LabelField($"Total Assets: {IndieBuff_AssetProcessor.Instance.AssetData.Count}");
-                
-                // Group and display by type
-                var typeGroups = IndieBuff_AssetProcessor.Instance.AssetData
-                    .GroupBy(kvp => kvp.Value.GetType().Name)
-                    .ToDictionary(g => g.Key, g => g.Count());
-
-                EditorGUILayout.Space(5);
-                EditorGUILayout.LabelField("Asset Types:", EditorStyles.boldLabel);
-                foreach (var group in typeGroups)
+                // Get documents directly from the Merkle tree
+                var documents = GetDocumentsFromMerkleTree();
+                if (documents.Count > 0)
                 {
-                    EditorGUILayout.LabelField($"- {group.Key}: {group.Value}");
+                    EditorGUILayout.Space(10);
+                    EditorGUILayout.LabelField("Scan Results", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField($"Total Documents: {documents.Count}");
+
+                    if (GUILayout.Button("Save Results"))
+                    {
+                        SaveResults();
+                    }
                 }
-
-                EditorGUILayout.Space(10);
-                if (GUILayout.Button("Save Results to File"))
+                else
                 {
-                    SaveResultsToFile();
-                }
-
-                if (GUILayout.Button("Print Merkle Tree"))
-                {
-                    IndieBuff_AssetProcessor.Instance.PrintMerkleTree();
+                    EditorGUILayout.HelpBox("No scan results available. Click 'Scan Assets' to begin.", MessageType.Info);
                 }
             }
         }
 
-        private void SaveResultsToFile()
+        private List<IndieBuff_Document> GetDocumentsFromMerkleTree()
+        {
+            var documents = new List<IndieBuff_Document>();
+            var rootNode = IndieBuff_AssetProcessor.Instance.RootNode;
+            if (rootNode != null)
+            {
+                CollectDocumentsFromNode(rootNode, documents);
+            }
+            return documents;
+        }
+
+        private void CollectDocumentsFromNode(IndieBuff_MerkleNode node, List<IndieBuff_Document> documents)
+        {
+            // Check this node's metadata for documents
+            if (node.Metadata != null)
+            {
+                foreach (var value in node.Metadata.Values)
+                {
+                    if (value is IndieBuff_Document doc)
+                    {
+                        documents.Add(doc);
+                    }
+                }
+            }
+
+            // Recursively check children
+            foreach (var child in node.Children)
+            {
+                CollectDocumentsFromNode(child, documents);
+            }
+        }
+
+        private void SaveResults()
         {
             try
             {
-                var jsonSettings = new JsonSerializerSettings
+                var treeData = IndieBuff_AssetProcessor.Instance.GetTreeData();
+                var settings = new JsonSerializerSettings
                 {
-                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                    Formatting = Formatting.Indented
+                    Formatting = Formatting.Indented,
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 };
-
-                string json = JsonConvert.SerializeObject(IndieBuff_AssetProcessor.Instance.ContextData, jsonSettings);
+                
+                string json = JsonConvert.SerializeObject(treeData, settings);
                 File.WriteAllText(outputPath, json);
-
-                Debug.Log($"Merkle tree saved to: {outputPath}");
                 AssetDatabase.Refresh();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
-                Debug.LogError($"Error saving merkle tree: {e.Message}");
+                Debug.LogError($"Error saving results: {e.Message}");
             }
         }
     }
