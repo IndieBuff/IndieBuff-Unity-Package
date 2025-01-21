@@ -21,63 +21,22 @@ namespace IndieBuff.Editor
             IsDirectory = isDirectory;
             Metadata = new Dictionary<string, object>();
             Children = new List<IndieBuff_MerkleNode>();
-            UpdateHash();
         }
 
         public void AddChild(IndieBuff_MerkleNode child)
         {
             Children.Add(child);
             child.Parent = this;
-            UpdateHash();
         }
 
         public void SetMetadata(Dictionary<string, object> metadata)
         {
             Metadata = metadata;
-            UpdateHash();
-
-            // Update document hash if present
-            if (metadata != null && 
-                metadata.ContainsKey("document") && 
-                metadata["document"] is IndieBuff_Document doc)
-            {
-                doc.Hash = Hash;  // Sync the document hash with the merkle node hash
-            }
         }
 
-        private void UpdateHash()
+        internal void SetHash(string hash)
         {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                StringBuilder builder = new StringBuilder();
-                
-                // Add path
-                builder.Append(Path);
-                builder.Append("|");
-
-                // Add metadata - now using ToString() which handles recursion
-                foreach (var kvp in Metadata)
-                {
-                    //Debug.Log("kvp.Key: " + kvp.Key);
-                    //Debug.Log("kvp.Value: " + kvp.Value);
-                    builder.Append(kvp.Value?.ToString() ?? "null");
-                    builder.Append("|");
-                }
-
-                // Add children hashes
-                foreach (var child in Children)
-                {
-                    builder.Append(child.Hash);
-                    builder.Append("|");
-                }
-
-                byte[] bytes = Encoding.UTF8.GetBytes(builder.ToString());
-                byte[] hash = sha256.ComputeHash(bytes);
-                Hash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-
-                // Propagate hash change to parent
-                Parent?.UpdateHash();
-            }
+            Hash = hash;
         }
     }
 } 

@@ -33,7 +33,7 @@ namespace IndieBuff.Editor
             Debug.Log("Starting tree serialization...");
             return new Dictionary<string, object>
             {
-                ["tree"] = SerializeMerkleTree(_rootNode)
+                ["tree"] = SerializeMerkleTree(_merkleTree.Root)
             };
         }
 
@@ -50,9 +50,8 @@ namespace IndieBuff.Editor
         private bool _isBatchProcessing = false;
         private string[] _pendingPaths;
         private int _currentPathIndex = 0;
-        public IndieBuff_MerkleNode _rootNode;
-
-        public IndieBuff_MerkleNode RootNode => _rootNode;
+        private IndieBuff_MerkleTree _merkleTree;
+        public IndieBuff_MerkleNode RootNode => _merkleTree?.Root;
         private Dictionary<string, IndieBuff_MerkleNode> _pathToNodeMap;
         private Queue<string> _pendingDirectories;
 
@@ -65,6 +64,7 @@ namespace IndieBuff.Editor
         {
             _contextObjects = new List<UnityEngine.Object>();
             serializedPropertyHelper = new IndieBuff_SerializedPropertyHelper();
+            _merkleTree = new IndieBuff_MerkleTree();
         }
 
         internal Task<Dictionary<string, object>> StartContextBuild(bool runInBackground = true)
@@ -78,10 +78,12 @@ namespace IndieBuff.Editor
             prefabContentsMap.Clear();
             loadedPrefabContents.Clear();
 
-            // Initialize merkle tree
-            _rootNode = new IndieBuff_MerkleNode("Assets", true);
+            // Initialize new merkle tree
+            var rootNode = new IndieBuff_MerkleNode("Assets", true);
+            _merkleTree = new IndieBuff_MerkleTree();
+            _merkleTree.SetRoot(rootNode);
+            
             _pathToNodeMap = new Dictionary<string, IndieBuff_MerkleNode>();
-            _pathToNodeMap.Add("Assets", _rootNode);
             _pendingDirectories = new Queue<string>();
 
             // Start with loading assets
@@ -102,14 +104,13 @@ namespace IndieBuff.Editor
                 .ToArray();
 
             // Initialize root node with document
-            _rootNode = new IndieBuff_MerkleNode("Assets");
             var rootDocument = new IndieBuff_DirectoryData
             {
                 DirectoryPath = "Assets",
                 DirectoryName = "Assets",
                 ParentPath = null
             };
-            _rootNode.SetMetadata(new Dictionary<string, object> { ["document"] = rootDocument });
+            _merkleTree.Root.SetMetadata(new Dictionary<string, object> { ["document"] = rootDocument });
             
             // Queue all unique directories
             HashSet<string> directories = new HashSet<string>();
@@ -122,9 +123,6 @@ namespace IndieBuff.Editor
                     _pendingDirectories.Enqueue(directory);
                 }
             }
-            
-            _pathToNodeMap = new Dictionary<string, IndieBuff_MerkleNode>();
-            _pathToNodeMap.Add("Assets", _rootNode);
             
             _currentPathIndex = 0;
             _contextObjects = new List<UnityEngine.Object>();
@@ -141,7 +139,9 @@ namespace IndieBuff.Editor
             while (_pendingDirectories.Count > 0 && processedCount < DIRECTORIES_PER_BATCH)
             {
                 string dirPath = _pendingDirectories.Dequeue();
-                if (!_pathToNodeMap.ContainsKey(dirPath))
+                var node = _merkleTree.GetNode(dirPath);
+                
+                if (node == null) // Only create if it doesn't exist
                 {
                     // Create directory document
                     var dirDocument = new IndieBuff_DirectoryData
@@ -152,18 +152,30 @@ namespace IndieBuff.Editor
                     };
 
                     // Create node with document
-                    var dirNode = new IndieBuff_MerkleNode(dirPath);
+                    var dirNode = new IndieBuff_MerkleNode(dirPath, true);
                     dirNode.SetMetadata(new Dictionary<string, object> { ["document"] = dirDocument });
                     
-                    // Add to parent if exists
+                    // Add to parent through merkle tree
                     string parentPath = Path.GetDirectoryName(dirPath);
-                    if (_pathToNodeMap.TryGetValue(parentPath, out var parentNode))
+                    if (string.IsNullOrEmpty(parentPath))
                     {
-                        parentNode.AddChild(dirNode);
+                        parentPath = "Assets"; // Default to root if no parent
                     }
                     
-                    _pathToNodeMap.Add(dirPath, dirNode);
+                    try
+                    {
+                        _merkleTree.AddNode(parentPath, dirNode);
+                    }
+                    catch (ArgumentException e)
+                    {
+                        Debug.LogError($"Failed to add directory node {dirPath}: {e.Message}");
+                        // Create any missing parent directories
+                        EnsureParentDirectoryExists(parentPath);
+                        // Try adding the node again
+                        _merkleTree.AddNode(parentPath, dirNode);
+                    }
                 }
+                
                 processedCount++;
             }
 
@@ -172,6 +184,34 @@ namespace IndieBuff.Editor
             {
                 EditorApplication.update -= ProcessDirectoryBatch;
                 EditorApplication.update += ProcessPathBatch;
+            }
+        }
+
+        // New helper method to ensure parent directories exist
+        private void EnsureParentDirectoryExists(string dirPath)
+        {
+            if (dirPath == "Assets" || string.IsNullOrEmpty(dirPath)) return;
+            
+            if (_merkleTree.GetNode(dirPath) == null)
+            {
+                string parentPath = Path.GetDirectoryName(dirPath);
+                // Recursively ensure parent exists first
+                EnsureParentDirectoryExists(parentPath);
+                
+                // Create directory document
+                var dirDocument = new IndieBuff_DirectoryData
+                {
+                    DirectoryPath = dirPath,
+                    DirectoryName = Path.GetFileName(dirPath),
+                    ParentPath = parentPath
+                };
+
+                // Create node with document
+                var dirNode = new IndieBuff_MerkleNode(dirPath, true);
+                dirNode.SetMetadata(new Dictionary<string, object> { ["document"] = dirDocument });
+                
+                // Add to parent
+                _merkleTree.AddNode(parentPath, dirNode);
             }
         }
 
@@ -184,7 +224,7 @@ namespace IndieBuff.Editor
                 string path = _pendingPaths[i];
                 var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
                 
-                if (obj != null && !_pathToNodeMap.ContainsKey(path))
+                if (obj != null && _merkleTree.GetNode(path) == null)
                 {
                     // Queue the asset for processing without creating a node yet
                     if (obj is GameObject gameObject)
@@ -372,7 +412,7 @@ namespace IndieBuff.Editor
                 processedObjects.Add(obj);
                 string path = AssetDatabase.GetAssetPath(obj);
                 
-                if (!_pathToNodeMap.ContainsKey(path))
+                if (_merkleTree.GetNode(path) == null)
                 {
                     // Create document for the asset
                     var assetDocument = new IndieBuff_AssetData
@@ -387,13 +427,25 @@ namespace IndieBuff.Editor
                     var assetNode = new IndieBuff_MerkleNode(path);
                     assetNode.SetMetadata(new Dictionary<string, object> { ["document"] = assetDocument });
                     
+                    // Add to parent directory through merkle tree
                     string parentPath = Path.GetDirectoryName(path);
-                    if (_pathToNodeMap.TryGetValue(parentPath, out var parentNode))
+                    if (string.IsNullOrEmpty(parentPath))
                     {
-                        parentNode.AddChild(assetNode);
+                        parentPath = "Assets";
                     }
                     
-                    _pathToNodeMap.Add(path, assetNode);
+                    try
+                    {
+                        _merkleTree.AddNode(parentPath, assetNode);
+                    }
+                    catch (ArgumentException e)
+                    {
+                        Debug.LogError($"Failed to add asset node {path}: {e.Message}");
+                        // Ensure parent directory exists
+                        EnsureParentDirectoryExists(parentPath);
+                        // Try adding the node again
+                        _merkleTree.AddNode(parentPath, assetNode);
+                    }
                 }
             }
             catch (Exception e)
@@ -420,8 +472,8 @@ namespace IndieBuff.Editor
                 string path = AssetDatabase.GetAssetPath(gameObject);
                 
                 // First ensure we have the prefab root node
-                IndieBuff_MerkleNode prefabNode;
-                if (!_pathToNodeMap.TryGetValue(path, out prefabNode))
+                IndieBuff_MerkleNode prefabNode = _merkleTree.GetNode(path);
+                if (prefabNode == null)
                 {
                     // Create basic prefab asset document
                     var prefabAssetDoc = new IndieBuff_AssetData
@@ -435,11 +487,12 @@ namespace IndieBuff.Editor
                     prefabNode.SetMetadata(new Dictionary<string, object> { ["document"] = prefabAssetDoc });
                     
                     string directoryPath = Path.GetDirectoryName(path);
-                    if (_pathToNodeMap.TryGetValue(directoryPath, out var dirNode))
+                    if (string.IsNullOrEmpty(directoryPath))
                     {
-                        dirNode.AddChild(prefabNode);
+                        directoryPath = "Assets";
                     }
-                    _pathToNodeMap.Add(path, prefabNode);
+                    
+                    _merkleTree.AddNode(directoryPath, prefabNode);
                 }
 
                 // Create GameObject document
@@ -459,8 +512,7 @@ namespace IndieBuff.Editor
                 string goPath = $"{path}/{GetUniqueGameObjectKey(gameObject)}";
                 var goNode = new IndieBuff_MerkleNode(goPath);
                 goNode.SetMetadata(new Dictionary<string, object> { ["document"] = gameObjectDoc });
-                prefabNode.AddChild(goNode);
-                _pathToNodeMap.Add(goPath, goNode);
+                _merkleTree.AddNode(path, goNode);
 
                 // Process components
                 var components = objectToProcess.GetComponents<Component>();
@@ -495,6 +547,9 @@ namespace IndieBuff.Editor
                     }
                     gameObjectDoc.ChildCount = gameObjectDoc.Children.Count;
                 }
+
+                // Update the node's metadata after all children and components are processed
+                goNode.SetMetadata(new Dictionary<string, object> { ["document"] = gameObjectDoc });
             }
             catch (Exception e)
             {
@@ -515,8 +570,9 @@ namespace IndieBuff.Editor
             string path = AssetDatabase.GetAssetPath(gameObject);
             string componentPath = $"{path}/Components/{component.GetType().Name}";
             
-            if (!_pathToNodeMap.ContainsKey(componentPath))
+            if (_merkleTree.GetNode(componentPath) == null)
             {
+                IndieBuff_Document componentDoc;
                 if (component is MonoBehaviour script)
                 {
                     string scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromMonoBehaviour(script));
@@ -532,8 +588,7 @@ namespace IndieBuff.Editor
                             } as object
                         );
 
-                    // Create document with all necessary data
-                    var scriptData = new IndieBuff_ScriptPrefabComponentData
+                    componentDoc = new IndieBuff_ScriptPrefabComponentData
                     {
                         Type = component.GetType().Name,
                         PrefabAssetPath = path,
@@ -543,17 +598,10 @@ namespace IndieBuff.Editor
                         Siblings = siblingKeys,
                         Properties = dependencies
                     };
-
-                    // Create node with document
-                    var scriptNode = new IndieBuff_MerkleNode(componentPath);
-                    scriptNode.SetMetadata(new Dictionary<string, object> { ["document"] = scriptData });
-                    parentNode.AddChild(scriptNode);
-                    _pathToNodeMap.Add(componentPath, scriptNode);
                 }
                 else
                 {
-                    // Create document with all necessary data
-                    var componentData = new IndieBuff_PrefabComponentData
+                    componentDoc = new IndieBuff_PrefabComponentData
                     {
                         Type = component.GetType().Name,
                         PrefabAssetPath = path,
@@ -561,13 +609,11 @@ namespace IndieBuff.Editor
                         Properties = GetComponentsData(component),
                         Siblings = siblingKeys
                     };
-
-                    // Create node with document
-                    var componentNode = new IndieBuff_MerkleNode(componentPath);
-                    componentNode.SetMetadata(new Dictionary<string, object> { ["document"] = componentData });
-                    parentNode.AddChild(componentNode);
-                    _pathToNodeMap.Add(componentPath, componentNode);
                 }
+
+                var componentNode = new IndieBuff_MerkleNode(componentPath);
+                componentNode.SetMetadata(new Dictionary<string, object> { ["document"] = componentDoc });
+                _merkleTree.AddNode(parentNode.Path, componentNode);
             }
         }
 
@@ -675,9 +721,9 @@ namespace IndieBuff.Editor
         private List<IndieBuff_Document> GetDocumentsFromMerkleTree()
         {
             var documents = new List<IndieBuff_Document>();
-            if (_rootNode != null)
+            if (_merkleTree.Root != null)
             {
-                CollectDocumentsFromNode(_rootNode, documents);
+                CollectDocumentsFromNode(_merkleTree.Root, documents);
             }
             return documents;
         }
