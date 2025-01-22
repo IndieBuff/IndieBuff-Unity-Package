@@ -7,13 +7,12 @@ namespace IndieBuff.Editor
     public class MainLayout : EditorWindow
     {
         private VisualTreeAsset chatComponentAsset;
-
         private VisualTreeAsset loginComponentAsset;
-
         private VisualTreeAsset aiResponseBoxAsset;
 
         private IndieBuff_ChatComponent chatComponent;
         private IndieBuff_LoginComponent loginComponent;
+        private IndieBuff_WindowDragDropOverlay windowDropOverlay;
 
         [MenuItem("Tools/IndieBuff")]
         public static void ShowWindow()
@@ -29,17 +28,16 @@ namespace IndieBuff.Editor
             loginComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_LoginPage.uxml");
             aiResponseBoxAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_AIResponse.uxml");
 
+            windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
 
             ShowLoginComponent();
             InitializeContexts();
-
         }
 
         private void InitializeContexts()
         {
             IndieBuff_AssetContextUpdater.Initialize();
             IndieBuff_SceneContextUpdater.Initialize();
-
         }
 
         private void ShowLoginComponent()
@@ -52,13 +50,16 @@ namespace IndieBuff.Editor
             var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(loginStylePath);
 
             loginUI.styleSheets.Add(styleSheet);
-
             rootVisualElement.Add(loginUI);
             loginUI.style.flexGrow = 1;
 
+            if (windowDropOverlay != null)
+            {
+                windowDropOverlay.Dispose();
+            }
+            windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
+
             loginComponent = new IndieBuff_LoginComponent(loginUI);
-
-
             loginComponent.OnLoginSuccess += ShowChatComponent;
         }
 
@@ -67,6 +68,7 @@ namespace IndieBuff.Editor
             DisposeCurrentComponent();
             await IndieBuff_UserInfo.Instance.InitializeUserInfo();
             await IndieBuff_ConvoHandler.Instance.Initialize();
+
             rootVisualElement.Clear();
             VisualElement chatUI = chatComponentAsset.Instantiate();
 
@@ -74,10 +76,15 @@ namespace IndieBuff.Editor
             var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(chatStylePath);
 
             chatUI.styleSheets.Add(styleSheet);
-
             chatUI.style.minWidth = 400;
             rootVisualElement.Add(chatUI);
             chatUI.style.flexGrow = 1;
+
+            if (windowDropOverlay != null)
+            {
+                windowDropOverlay.Dispose();
+            }
+            windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
 
             IndieBuff_UserSelectedContext.Instance.RestoreStateIfNeeded();
 
@@ -99,6 +106,12 @@ namespace IndieBuff.Editor
                 loginComponent.OnLoginSuccess -= ShowChatComponent;
                 loginComponent.Cleanup();
                 loginComponent = null;
+            }
+
+            if (windowDropOverlay != null)
+            {
+                windowDropOverlay.Dispose();
+                windowDropOverlay = null;
             }
         }
 
