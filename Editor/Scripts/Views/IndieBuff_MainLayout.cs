@@ -26,7 +26,6 @@ namespace IndieBuff.Editor
         {
             chatComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_ChatComponent.uxml");
             loginComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_LoginPage.uxml");
-            aiResponseBoxAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_AIResponse.uxml");
 
             windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
 
@@ -88,7 +87,7 @@ namespace IndieBuff.Editor
 
             IndieBuff_UserSelectedContext.Instance.RestoreStateIfNeeded();
 
-            chatComponent = new IndieBuff_ChatComponent(chatUI, aiResponseBoxAsset);
+            chatComponent = new IndieBuff_ChatComponent(chatUI);
             chatComponent.OnLogoutSuccess += ShowLoginComponent;
         }
 

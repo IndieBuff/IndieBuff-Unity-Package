@@ -92,7 +92,7 @@ namespace IndieBuff.Editor
 
             _isInitialized = true;
         }
-        
+
         // Load the most recent conversation if no conversation is selected
         private async Task LoadMostRecentConversation()
         {
@@ -155,7 +155,7 @@ namespace IndieBuff.Editor
             await LoadConversations();
         }
 
-        private async Task<int> CreateNewConversation(string title, string aiModel = "Base Model")
+        private async Task<int> CreateNewConversation(string title, string aiModel = "claude-3-5-sonnet")
         {
             try
             {

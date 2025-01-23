@@ -64,6 +64,16 @@ namespace IndieBuff.Editor
             return fullMessage.ToString();
         }
 
+        public bool HasContentInBuffer()
+        {
+            return lineBuffer.Length > 0;
+        }
+
+        public void HandleLastLine()
+        {
+            ProcessLine(lineBuffer.ToString());
+        }
+
         public abstract void ProcessLine(string line, bool fullMessage = false);
 
         public virtual void HandleCodeBlockToggle()

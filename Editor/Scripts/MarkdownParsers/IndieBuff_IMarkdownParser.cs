@@ -13,6 +13,8 @@ namespace IndieBuff.Editor
         void HandleInlineCodeBlockToggle();
         void AddCopyButtonToCurrentMessage();
         string TransformCodeBlock(string line);
+        bool HasContentInBuffer();
+        void HandleLastLine();
 
     }
 }

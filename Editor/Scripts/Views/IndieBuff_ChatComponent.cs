@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Indiebuff.Editor;
 using IndieBUff.Editor;
 using Newtonsoft.Json;
 using UnityEditor;
@@ -39,9 +38,11 @@ namespace IndieBuff.Editor
 
         // ai model selection
         private VisualElement popupContainer;
-        private Button aiModelSelectButton;
-        private IndieBuff_ModelSelectComponent modelSelectComponent;
-        private Label aiModelSelectLabel;
+
+
+        // credit display
+
+        private Button creditDisplayButton;
 
         // chat mode selection
         private Button chatModeSelectButton;
@@ -76,16 +77,16 @@ namespace IndieBuff.Editor
         private ResponseHandlerFactory handlerFactory;
         private IResponseHandler currentResponseHandler;
 
-        public IndieBuff_ChatComponent(VisualElement root, VisualTreeAsset aiResponseAsset)
+        public IndieBuff_ChatComponent(VisualElement root)
         {
             this.root = root;
             responseArea = root.Q<ScrollView>("ReponseArea");
             chatHistoryPanel = root.Q<VisualElement>("ChatHistoryPanel");
             chatSettingsBar = root.Q<VisualElement>("ChatSettings");
             chatName = root.Q<Label>("ChatName");
-            aiModelSelectButton = root.Q<Button>("AIModelSelectButton");
+            creditDisplayButton = root.Q<Button>("CreditButton");
             profileSettingsButton = root.Q<Button>("ProfileButton");
-            aiModelSelectLabel = aiModelSelectButton.Q<Label>("AIModelSelectLabel");
+
             chatModeSelectButton = root.Q<Button>("ChatModeSelectButton");
             chatModeSelectLabel = chatModeSelectButton.Q<Label>("ChatModeSelectLabel");
             userContextRoot = root.Q<VisualElement>("UserContextRoot");
@@ -97,12 +98,12 @@ namespace IndieBuff.Editor
             handlerFactory = new ResponseHandlerFactory();
 
             SetupPopupContainer();
-            SetupModelSelection();
+            //SetupModelSelection();
             SetupChatModeSelection();
             SetupProfileSettings();
             SetupAddContext();
 
-            AIResponseBoxAsset = aiResponseAsset;
+            AIResponseBoxAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_AIResponse.uxml");
 
             chatHistoryComponent = new IndieBuff_ChatHistoryComponent(chatHistoryPanel, OnChatHistoryClicked);
             chatSettingsComponent = new IndieBuff_ChatSettingsComponent(chatSettingsBar);
@@ -116,15 +117,9 @@ namespace IndieBuff.Editor
 
             InitializeConversation();
 
-            aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
             chatModeSelectLabel.text = IndieBuff_ChatModeCommands.GetChatModeCommand(IndieBuff_UserInfo.Instance.currentMode);
 
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded += onMessagesLoaded;
-
-            IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
-            {
-                aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
-            };
 
             IndieBuff_UserInfo.Instance.onChatModeChanged += () =>
             {
@@ -136,10 +131,23 @@ namespace IndieBuff.Editor
                 loadingBar.StopLoading();
             };
 
-
             IndieBuff_ConvoHandler.Instance.onConvoTitleChanged += () =>
             {
                 chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
+            };
+
+            creditDisplayButton.clicked += () =>
+            {
+                Application.OpenURL(IndieBuff_EndpointData.GetFrontendBaseUrl() + "/pricing");
+            };
+
+            creditDisplayButton.text = (IndieBuff_UserInfo.Instance.credits + IndieBuff_UserInfo.Instance.topUps).ToString() + " Credits";
+            creditDisplayButton.tooltip = "Credits: " + IndieBuff_UserInfo.Instance.credits + "\nTop Ups: " + IndieBuff_UserInfo.Instance.topUps;
+
+            IndieBuff_UserInfo.Instance.onCreditsUpdated += () =>
+            {
+                creditDisplayButton.text = (IndieBuff_UserInfo.Instance.credits + IndieBuff_UserInfo.Instance.topUps).ToString() + " Credits";
+                creditDisplayButton.tooltip = "Credits: " + IndieBuff_UserInfo.Instance.credits + "\nTop Ups: " + IndieBuff_UserInfo.Instance.topUps;
             };
         }
 
@@ -167,14 +175,14 @@ namespace IndieBuff.Editor
 
         }
 
-        private void SetupModelSelection()
-        {
-            modelSelectComponent = new IndieBuff_ModelSelectComponent();
-            aiModelSelectButton.clicked += () =>
-            {
-                ShowPopup(modelSelectComponent.GetRoot(), aiModelSelectButton);
-            };
-        }
+        // private void SetupModelSelection()
+        // {
+        //     modelSelectComponent = new IndieBuff_ModelSelectComponent();
+        //     aiModelSelectButton.clicked += () =>
+        //     {
+        //         ShowPopup(modelSelectComponent.GetRoot(), aiModelSelectButton);
+        //     };
+        // }
 
         private void SetupProfileSettings()
         {
@@ -189,10 +197,10 @@ namespace IndieBuff.Editor
         {
             addContextButton = root.Q<Button>("AddContextButton");
             clearContextButton = root.Q<Button>("ClearContextButton");
-            
+
             // Initial state check
             UpdateClearButtonVisibility();
-            
+
             // Subscribe to context updates
             IndieBuff_UserSelectedContext.Instance.onUserSelectedContextUpdated += UpdateClearButtonVisibility;
 
@@ -317,13 +325,27 @@ namespace IndieBuff.Editor
             await Task.Delay(50);
             responseArea.ScrollTo(responseContainer);
 
+            if (IndieBuff_UserInfo.Instance.currentMode == ChatMode.Default)
+            {
+                await HandleDefaultResponse(userMessage, responseContainer);
+            }
+            else
+            {
+                currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer, IndieBuff_UserInfo.ShouldUseDiffFormat(IndieBuff_UserInfo.Instance.selectedModel));
 
+                cts = new CancellationTokenSource();
 
-            currentResponseHandler = handlerFactory.CreateHandler(IndieBuff_UserInfo.Instance.currentMode, responseContainer, IndieBuff_UserInfo.ShouldUseDiffFormat(IndieBuff_UserInfo.Instance.selectedModel));
+                await currentResponseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
+            }
+        }
+
+        private async Task HandleDefaultResponse(string userMessage, VisualElement responseContainer)
+        {
+            ChatParser parser = new ChatParser(responseContainer);
+            DefaultResponseHandler responseHandler = new DefaultResponseHandler(parser, IndieBuff_UserInfo.ShouldUseDiffFormat(IndieBuff_UserInfo.Instance.selectedModel), responseArea);
 
             cts = new CancellationTokenSource();
-
-            await currentResponseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
+            await responseHandler.HandleResponse(userMessage, responseContainer, cts.Token);
         }
 
         private async void onMessagesLoaded()

@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using IndieBuff.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Indiebuff.Editor
+namespace IndieBuff.Editor
 {
     public class PrototypeParser : BaseMarkdownParser
     {

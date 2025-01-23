@@ -10,11 +10,12 @@ namespace IndieBuff.Editor
     {
         private readonly VisualElement root;
         private readonly VisualElement overlayContainer;
+        private readonly Label dropLabel;
 
         public IndieBuff_WindowDragDropOverlay(VisualElement root)
         {
             this.root = root;
-            
+
             var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_WindowDropComponent.uxml");
             if (visualTree == null)
             {
@@ -22,27 +23,24 @@ namespace IndieBuff.Editor
                 return;
             }
 
-            overlayContainer = visualTree.Instantiate().Q("WindowDropZone");
-            
-            // Set to None so it doesn't interfere with drag events
+            var element = visualTree.Instantiate();
+            overlayContainer = element.Q("WindowDropZone");
+            dropLabel = element.Q<Label>("WindowDropLabel");
+
             overlayContainer.pickingMode = PickingMode.Ignore;
             overlayContainer.style.position = Position.Absolute;
-            
-            // Use unitySliceIndex instead of zIndex
-            overlayContainer.style.unitySliceTop = 99999;
-            
-            // Initialize with invisible background
+            overlayContainer.style.left = 0;
+            overlayContainer.style.right = 0;
+            overlayContainer.style.top = 0;
+            overlayContainer.style.bottom = 0;
             overlayContainer.style.backgroundColor = new Color(0, 0, 0, 0);
-            
-            root.Add(overlayContainer);
-            
-            // Register drag and drop callbacks on root instead of overlay
+
+            root.Add(element);
             SetupDragAndDrop();
         }
 
         private void SetupDragAndDrop()
         {
-            // Register events on root to catch all drag operations
             root.RegisterCallback<DragEnterEvent>(OnDragEnter);
             root.RegisterCallback<DragLeaveEvent>(OnDragLeave);
             root.RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
@@ -51,24 +49,18 @@ namespace IndieBuff.Editor
 
         private void OnDragEnter(DragEnterEvent evt)
         {
-            Debug.Log("Drag Enter");
-            overlayContainer.AddToClassList("active");
-            
             if (IsDraggedObjectValid())
             {
-                // Darken background on valid drag
-                overlayContainer.style.backgroundColor = new Color(0, 0, 0, 0.75f);
+                overlayContainer.AddToClassList("active");
+                dropLabel.AddToClassList("active");
             }
-           
             evt.StopPropagation();
         }
 
         private void OnDragLeave(DragLeaveEvent evt)
         {
-            Debug.Log("Drag Leave");
-            // Make background invisible when leaving window
             overlayContainer.RemoveFromClassList("active");
-            overlayContainer.style.backgroundColor = new Color(0, 0, 0, 0);
+            dropLabel.RemoveFromClassList("active");
             evt.StopPropagation();
         }
 
@@ -91,9 +83,8 @@ namespace IndieBuff.Editor
                 }
             }
             
-            // Make background invisible after successful drop
             overlayContainer.RemoveFromClassList("active");
-            overlayContainer.style.backgroundColor = new Color(0, 0, 0, 0);
+            dropLabel.RemoveFromClassList("active");
             DragAndDrop.AcceptDrag();
             evt.StopPropagation();
         }

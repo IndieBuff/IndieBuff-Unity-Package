@@ -10,6 +10,7 @@ namespace IndieBuff.Editor
         Chat,
         Script,
         Prototype,
+        Default,
     }
 
     public static class IndieBuff_ChatModeCommands
@@ -19,6 +20,7 @@ namespace IndieBuff.Editor
             { "/chat", ChatMode.Chat },
             { "/script", ChatMode.Script },
             { "/prototype", ChatMode.Prototype },
+            { "/default", ChatMode.Default },
         };
 
         public static bool TryGetChatMode(string command, out ChatMode mode)
@@ -43,6 +45,7 @@ namespace IndieBuff.Editor
                 ChatMode.Chat => "Ask IndieBuff any Unity question",
                 ChatMode.Script => "Have IndieBuff write code for you",
                 ChatMode.Prototype => "Tell IndieBuff what to make",
+                ChatMode.Default => "Get started with IndieBuff",
                 _ => throw new ArgumentException($"Unsupported chat mode: {mode}")
             };
         }

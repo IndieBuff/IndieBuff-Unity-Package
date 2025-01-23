@@ -1,3 +1,17 @@
+## [2.2.1] - 2025-01-23
+
+### Added
+
+- All users have access to all engine commands now
+- All users now use Claude Sonnet 3.5 for all requests
+- Reamining credits display
+
+## [2.2.0] - 2025-01-20
+
+### Feature
+
+- Added /default slash command to simplify creation process
+
 ## [2.1.1] - 2025-01-11
 
 ### Fixed

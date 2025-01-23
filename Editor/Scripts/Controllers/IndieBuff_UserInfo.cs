@@ -19,13 +19,16 @@ namespace IndieBuff.Editor
         const string CurrentChatModeKey = "IndieBuffUserSession_CurrentChatMode";
         public Action onSelectedModelChanged;
         public string lastUsedModel = "";
-        private string _selectedModel = "Base Model";
+        private string _selectedModel = "claude-3-5-sonnet";
         public bool isStreamingMessage = false;
         public Action responseLoadingComplete;
 
+        public int credits = 0;
+        public int topUps = 0;
+
         public string selectedModel
         {
-            get => SessionState.GetString(CurrentModelKey, "Base Model");
+            get => SessionState.GetString(CurrentModelKey, "claude-3-5-sonnet");
             set
             {
                 if (_selectedModel != value)
@@ -37,9 +40,11 @@ namespace IndieBuff.Editor
             }
         }
 
-        private ChatMode _currentMode = ChatMode.Chat;
-        public ChatMode lastUsedMode = ChatMode.Chat;
+        private ChatMode _currentMode = ChatMode.Default;
+        public ChatMode lastUsedMode = ChatMode.Default;
         public Action onChatModeChanged;
+
+        public Action onCreditsUpdated;
 
         public ChatMode currentMode
         {
@@ -57,14 +62,14 @@ namespace IndieBuff.Editor
         public async Task InitializeUserInfo()
         {
             await GetIndieBuffUser();
-            await GetAvailableModels();
+            await GetCredits();
             GetStoredMode();
 
         }
 
         public void GetStoredMode()
         {
-            _currentMode = (ChatMode)SessionState.GetInt(CurrentChatModeKey, (int)ChatMode.Chat);
+            _currentMode = (ChatMode)SessionState.GetInt(CurrentChatModeKey, (int)ChatMode.Default);
             onChatModeChanged?.Invoke();
         }
 
@@ -89,20 +94,24 @@ namespace IndieBuff.Editor
             }
         }
 
-        public async Task GetAvailableModels()
+        public async Task GetCredits()
         {
-            var response = await IndieBuff_ApiClient.Instance.GetAvailableModelsAsync();
+            var response = await IndieBuff_ApiClient.Instance.GetCreditsAsync();
+
             if (response.IsSuccessStatusCode)
             {
                 var data = await response.Content.ReadAsStringAsync();
-                availableModels = JsonConvert.DeserializeObject<List<string>>(data);
+                var credits = JsonConvert.DeserializeObject<IndieBuff_Credits>(data);
+                this.credits = credits.credits;
+                this.topUps = credits.topUpCredits;
+                onCreditsUpdated?.Invoke();
             }
         }
 
         public void NewConversation()
         {
             lastUsedModel = "";
-            lastUsedMode = ChatMode.Chat;
+            lastUsedMode = ChatMode.Default;
         }
 
         public static bool ShouldUseDiffFormat(string aiModel)

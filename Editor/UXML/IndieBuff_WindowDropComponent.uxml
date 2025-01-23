@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/IndieBuff/Editor/USS/IndieBuff_WindowDropComponent.uss?fileID=7433441132597879392&amp;guid=eb2d54faf9d641d41befc3605fcb696e&amp;type=3#IndieBuff_WindowDropComponent" />
-    <ui:VisualElement name="WindowDropZone" class="window-drop-zone-styling" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0;">
-        <ui:VisualElement name="DropIndicator" class="drop-indicator">
+    <ui:VisualElement name="WindowDropZone" class="window-drop-zone-styling">
+        <ui:VisualElement name="DropLabelContainer" class="drop-label-container">
             <ui:Label text="Drag &amp; Drop Relevant Context&#10;(Scripts, Objects, Etc.)" 
                      name="WindowDropLabel" 
                      class="window-drag-drop-label" />
