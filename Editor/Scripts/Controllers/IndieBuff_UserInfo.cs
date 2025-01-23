@@ -23,6 +23,9 @@ namespace IndieBuff.Editor
         public bool isStreamingMessage = false;
         public Action responseLoadingComplete;
 
+        public int credits = 0;
+        public int topUps = 0;
+
         public string selectedModel
         {
             get => SessionState.GetString(CurrentModelKey, "claude-3-5-sonnet");
@@ -57,6 +60,7 @@ namespace IndieBuff.Editor
         public async Task InitializeUserInfo()
         {
             await GetIndieBuffUser();
+            await GetCredits();
             GetStoredMode();
 
         }
@@ -85,6 +89,19 @@ namespace IndieBuff.Editor
                 var data = await response.Content.ReadAsStringAsync();
                 currentUser = JsonConvert.DeserializeObject<IndieBuff_User>(data);
                 currentIndieBuffUser = currentUser;
+            }
+        }
+
+        public async Task GetCredits()
+        {
+            var response = await IndieBuff_ApiClient.Instance.GetCreditsAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadAsStringAsync();
+                var credits = JsonConvert.DeserializeObject<IndieBuff_Credits>(data);
+                this.credits = credits.credits;
+                this.topUps = credits.topUpCredits;
             }
         }
 
