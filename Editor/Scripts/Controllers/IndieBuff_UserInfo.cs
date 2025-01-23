@@ -19,13 +19,13 @@ namespace IndieBuff.Editor
         const string CurrentChatModeKey = "IndieBuffUserSession_CurrentChatMode";
         public Action onSelectedModelChanged;
         public string lastUsedModel = "";
-        private string _selectedModel = "Base Model";
+        private string _selectedModel = "claude-3-5-sonnet";
         public bool isStreamingMessage = false;
         public Action responseLoadingComplete;
 
         public string selectedModel
         {
-            get => SessionState.GetString(CurrentModelKey, "Base Model");
+            get => SessionState.GetString(CurrentModelKey, "claude-3-5-sonnet");
             set
             {
                 if (_selectedModel != value)

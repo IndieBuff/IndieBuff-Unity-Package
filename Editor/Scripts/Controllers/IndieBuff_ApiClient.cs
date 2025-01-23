@@ -74,7 +74,7 @@ namespace IndieBuff.Editor
 
         public Task<HttpResponseMessage> LogoutAsync(string refreshToken)
         {
-            IndieBuff_UserInfo.Instance.selectedModel = "Base Model";
+            IndieBuff_UserInfo.Instance.selectedModel = "claude-3-5-sonnet";
             var request = new HttpRequestMessage(HttpMethod.Post, "plugin-auth/logout");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", refreshToken);
             return client.SendAsync(request);
@@ -90,7 +90,7 @@ namespace IndieBuff.Editor
 
             await TokenManager.Instance.RefreshTokensAsync();
             string contextString = await IndieBuff_ContextDriver.Instance.BuildAllContext(prompt);
-            var requestData = new ChatRequest { prompt = prompt, aiModel = IndieBuff_UserInfo.Instance.selectedModel, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity", lastModel = IndieBuff_UserInfo.Instance.lastUsedModel };
+            var requestData = new ChatRequest { prompt = prompt, chatMode = IndieBuff_UserInfo.Instance.currentMode.ToString(), context = contextString, gameEngine = "unity" };
             List<MessageHistoryObject> messageHistory = IndieBuff_ConvoHandler.Instance.currentMessages.Select(message => new MessageHistoryObject
             {
                 role = message.Role,
@@ -147,8 +147,6 @@ namespace IndieBuff.Editor
             public List<MessageHistoryObject> history = new List<MessageHistoryObject>();
             public string gameEngine;
             public string chatMode;
-            public string aiModel;
-            public string lastModel;
         }
 
         [Serializable]
