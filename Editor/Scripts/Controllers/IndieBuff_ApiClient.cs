@@ -139,11 +139,6 @@ namespace IndieBuff.Editor
             return SendRequestAsync(() => client.GetAsync("plugin-chat/user-info"));
         }
 
-        public Task<HttpResponseMessage> GetAvailableModelsAsync()
-        {
-            return SendRequestAsync(() => client.GetAsync("plugin-chat/available-models"));
-        }
-
         [Serializable]
         public class ChatRequest
         {

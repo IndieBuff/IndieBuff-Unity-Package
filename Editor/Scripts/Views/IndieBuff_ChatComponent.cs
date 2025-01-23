@@ -39,7 +39,6 @@ namespace IndieBuff.Editor
         // ai model selection
         private VisualElement popupContainer;
         private Button aiModelSelectButton;
-        private IndieBuff_ModelSelectComponent modelSelectComponent;
         private Label aiModelSelectLabel;
 
         // chat mode selection
@@ -83,6 +82,7 @@ namespace IndieBuff.Editor
             chatSettingsBar = root.Q<VisualElement>("ChatSettings");
             chatName = root.Q<Label>("ChatName");
             aiModelSelectButton = root.Q<Button>("AIModelSelectButton");
+            aiModelSelectButton.style.display = DisplayStyle.None;
             profileSettingsButton = root.Q<Button>("ProfileButton");
             aiModelSelectLabel = aiModelSelectButton.Q<Label>("AIModelSelectLabel");
             chatModeSelectButton = root.Q<Button>("ChatModeSelectButton");
@@ -96,7 +96,7 @@ namespace IndieBuff.Editor
             handlerFactory = new ResponseHandlerFactory();
 
             SetupPopupContainer();
-            SetupModelSelection();
+            //SetupModelSelection();
             SetupChatModeSelection();
             SetupProfileSettings();
             SetupAddContext();
@@ -166,14 +166,14 @@ namespace IndieBuff.Editor
 
         }
 
-        private void SetupModelSelection()
-        {
-            modelSelectComponent = new IndieBuff_ModelSelectComponent();
-            aiModelSelectButton.clicked += () =>
-            {
-                ShowPopup(modelSelectComponent.GetRoot(), aiModelSelectButton);
-            };
-        }
+        // private void SetupModelSelection()
+        // {
+        //     modelSelectComponent = new IndieBuff_ModelSelectComponent();
+        //     aiModelSelectButton.clicked += () =>
+        //     {
+        //         ShowPopup(modelSelectComponent.GetRoot(), aiModelSelectButton);
+        //     };
+        // }
 
         private void SetupProfileSettings()
         {

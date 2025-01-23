@@ -57,7 +57,6 @@ namespace IndieBuff.Editor
         public async Task InitializeUserInfo()
         {
             await GetIndieBuffUser();
-            await GetAvailableModels();
             GetStoredMode();
 
         }
@@ -86,16 +85,6 @@ namespace IndieBuff.Editor
                 var data = await response.Content.ReadAsStringAsync();
                 currentUser = JsonConvert.DeserializeObject<IndieBuff_User>(data);
                 currentIndieBuffUser = currentUser;
-            }
-        }
-
-        public async Task GetAvailableModels()
-        {
-            var response = await IndieBuff_ApiClient.Instance.GetAvailableModelsAsync();
-            if (response.IsSuccessStatusCode)
-            {
-                var data = await response.Content.ReadAsStringAsync();
-                availableModels = JsonConvert.DeserializeObject<List<string>>(data);
             }
         }
 
