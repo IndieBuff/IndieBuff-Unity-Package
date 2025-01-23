@@ -131,7 +131,6 @@ namespace IndieBuff.Editor
                 loadingBar.StopLoading();
             };
 
-
             IndieBuff_ConvoHandler.Instance.onConvoTitleChanged += () =>
             {
                 chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
@@ -140,6 +139,15 @@ namespace IndieBuff.Editor
             creditDisplayButton.clicked += () =>
             {
                 Application.OpenURL(IndieBuff_EndpointData.GetFrontendBaseUrl() + "/pricing");
+            };
+
+            creditDisplayButton.text = (IndieBuff_UserInfo.Instance.credits + IndieBuff_UserInfo.Instance.topUps).ToString() + " Credits";
+            creditDisplayButton.tooltip = "Credits: " + IndieBuff_UserInfo.Instance.credits + "\nTop Ups: " + IndieBuff_UserInfo.Instance.topUps;
+
+            IndieBuff_UserInfo.Instance.onCreditsUpdated += () =>
+            {
+                creditDisplayButton.text = (IndieBuff_UserInfo.Instance.credits + IndieBuff_UserInfo.Instance.topUps).ToString() + " Credits";
+                creditDisplayButton.tooltip = "Credits: " + IndieBuff_UserInfo.Instance.credits + "\nTop Ups: " + IndieBuff_UserInfo.Instance.topUps;
             };
         }
 

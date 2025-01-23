@@ -126,11 +126,18 @@ namespace IndieBuff.Editor
                         }
                     }
                 }
+                _ = IndieBuff_UserInfo.Instance.GetCredits();
             }
             else
             {
-                Debug.Log(response.Content.ReadAsStringAsync().Result);
-                throw new Exception("Error: Response was unsuccessful");
+                if (response.Content.ReadAsStringAsync().Result.Contains("Insufficient credits"))
+                {
+                    throw new Exception("Error: Insufficient credits");
+                }
+                else
+                {
+                    throw new Exception("Error: Response was unsuccessful");
+                }
             }
         }
 

@@ -44,6 +44,8 @@ namespace IndieBuff.Editor
         public ChatMode lastUsedMode = ChatMode.Default;
         public Action onChatModeChanged;
 
+        public Action onCreditsUpdated;
+
         public ChatMode currentMode
         {
             get => _currentMode;
@@ -102,6 +104,7 @@ namespace IndieBuff.Editor
                 var credits = JsonConvert.DeserializeObject<IndieBuff_Credits>(data);
                 this.credits = credits.credits;
                 this.topUps = credits.topUpCredits;
+                onCreditsUpdated?.Invoke();
             }
         }
 

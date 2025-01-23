@@ -44,8 +44,14 @@ namespace IndieBuff.Editor
             }
             catch (Exception e)
             {
-                Debug.LogError(e.Message);
-                HandleError(responseContainer);
+                if (e.Message == "Error: Insufficient credits")
+                {
+                    HandleInsufficientCredits(responseContainer);
+                }
+                else
+                {
+                    HandleError(responseContainer);
+                }
             }
         }
 
@@ -65,6 +71,26 @@ namespace IndieBuff.Editor
 
             responseContainer.style.visibility = Visibility.Visible;
             messageLabel.value = "An error has occured. Please try again.";
+            IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
+        }
+        public void HandleInsufficientCredits(VisualElement responseContainer)
+        {
+            var messageContainer = responseContainer.Q<VisualElement>("MessageContainer");
+            var messageLabel = messageContainer.Q<TextField>();
+
+            responseContainer.style.visibility = Visibility.Visible;
+            messageLabel.value = "Not enough credits! Please upgrade or top up your account.";
+            var upgradeButton = responseContainer.Q<Button>("ExecuteButton");
+            upgradeButton.style.display = DisplayStyle.Flex;
+            upgradeButton.SetEnabled(true);
+
+            upgradeButton.text = "Add Credits";
+            upgradeButton.clicked += () =>
+            {
+                Application.OpenURL(IndieBuff_EndpointData.GetFrontendBaseUrl() + "/pricing");
+            };
+
+
             IndieBuff_UserInfo.Instance.responseLoadingComplete?.Invoke();
         }
 
