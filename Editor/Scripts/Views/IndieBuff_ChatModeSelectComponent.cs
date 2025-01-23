@@ -80,19 +80,6 @@ namespace IndieBuff.Editor
                 VisualElement chatModeInfo = new VisualElement();
                 chatModeInfo.AddToClassList("ai-model-info-container");
 
-                bool isLockedMode = isPersonalPlan && mode != "/chat";
-
-                if (isLockedMode)
-                {
-                    VisualElement lockIcon = new VisualElement();
-                    lockIcon.AddToClassList("ai-model-lock-icon");
-                    chatModeInfo.Add(lockIcon);
-                    lockIcon.style.display = DisplayStyle.Flex;
-                    chatModeSelectionButton.SetEnabled(false);
-                    chatModeSelectionButton.tooltip = "Upgrade to unlock chat modes!";
-                }
-
-
                 Label chatModeName = new Label();
                 chatModeName.AddToClassList("ai-model-name");
                 chatModeName.text = mode;
@@ -107,14 +94,13 @@ namespace IndieBuff.Editor
 
                 modeToIconMapping[mode] = chatModeSelectedIcon;
 
-                if (!isLockedMode)
+
+                chatModeSelectionButton.clicked += () =>
                 {
-                    chatModeSelectionButton.clicked += () =>
-                    {
-                        UpdateSelection(mode);
-                        IndieBuff_UserInfo.Instance.currentMode = IndieBuff_ChatModeCommands.CommandMappings[mode];
-                    };
-                }
+                    UpdateSelection(mode);
+                    IndieBuff_UserInfo.Instance.currentMode = IndieBuff_ChatModeCommands.CommandMappings[mode];
+                };
+
 
 
                 modeSelectContainer.Add(chatModeSelectionButton);

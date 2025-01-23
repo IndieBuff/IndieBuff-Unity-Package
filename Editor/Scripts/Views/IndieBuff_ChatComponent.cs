@@ -38,8 +38,11 @@ namespace IndieBuff.Editor
 
         // ai model selection
         private VisualElement popupContainer;
-        private Button aiModelSelectButton;
-        private Label aiModelSelectLabel;
+
+
+        // credit display
+
+        private Button creditDisplayButton;
 
         // chat mode selection
         private Button chatModeSelectButton;
@@ -81,10 +84,9 @@ namespace IndieBuff.Editor
             chatHistoryPanel = root.Q<VisualElement>("ChatHistoryPanel");
             chatSettingsBar = root.Q<VisualElement>("ChatSettings");
             chatName = root.Q<Label>("ChatName");
-            aiModelSelectButton = root.Q<Button>("AIModelSelectButton");
-            aiModelSelectButton.style.display = DisplayStyle.None;
+            creditDisplayButton = root.Q<Button>("CreditButton");
             profileSettingsButton = root.Q<Button>("ProfileButton");
-            aiModelSelectLabel = aiModelSelectButton.Q<Label>("AIModelSelectLabel");
+
             chatModeSelectButton = root.Q<Button>("ChatModeSelectButton");
             chatModeSelectLabel = chatModeSelectButton.Q<Label>("ChatModeSelectLabel");
             userContextRoot = root.Q<VisualElement>("UserContextRoot");
@@ -115,15 +117,9 @@ namespace IndieBuff.Editor
 
             InitializeConversation();
 
-            aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
             chatModeSelectLabel.text = IndieBuff_ChatModeCommands.GetChatModeCommand(IndieBuff_UserInfo.Instance.currentMode);
 
             IndieBuff_ConvoHandler.Instance.onMessagesLoaded += onMessagesLoaded;
-
-            IndieBuff_UserInfo.Instance.onSelectedModelChanged += () =>
-            {
-                aiModelSelectLabel.text = IndieBuff_UserInfo.Instance.selectedModel;
-            };
 
             IndieBuff_UserInfo.Instance.onChatModeChanged += () =>
             {
@@ -139,6 +135,11 @@ namespace IndieBuff.Editor
             IndieBuff_ConvoHandler.Instance.onConvoTitleChanged += () =>
             {
                 chatName.text = IndieBuff_ConvoHandler.Instance.currentConvoTitle;
+            };
+
+            creditDisplayButton.clicked += () =>
+            {
+                Application.OpenURL(IndieBuff_EndpointData.GetFrontendBaseUrl() + "/pricing");
             };
         }
 

@@ -90,37 +90,6 @@ namespace IndieBuff.Editor
                     UpdateSelection(model, aiModelSelectedIcon);
                 }
             }
-
-            if (currentPlan == "personal")
-            {
-                Button aiModelSelectionButton = new Button();
-                aiModelSelectionButton.AddToClassList("ai-model-selection-button");
-
-                VisualElement aiModelInfo = new VisualElement();
-                aiModelInfo.AddToClassList("ai-model-info-container");
-
-                VisualElement aiModelLockIcon = new VisualElement();
-                aiModelLockIcon.AddToClassList("ai-model-lock-icon");
-
-                Label aiModelName = new Label();
-                aiModelName.AddToClassList("ai-model-name");
-                aiModelName.text = "Advanced Models";
-
-                aiModelSelectionButton.Add(aiModelInfo);
-                aiModelInfo.Add(aiModelLockIcon);
-                aiModelInfo.Add(aiModelName);
-
-                VisualElement aiModelSelectedIcon = new VisualElement();
-                aiModelSelectedIcon.AddToClassList("ai-model-selected-icon");
-                aiModelSelectionButton.Add(aiModelSelectedIcon);
-                aiModelSelectedIcon.style.visibility = Visibility.Hidden;
-
-                aiModelLockIcon.style.display = DisplayStyle.Flex;
-                aiModelSelectionButton.SetEnabled(false);
-                aiModelSelectionButton.tooltip = "Upgrade to unlock all models!";
-
-                modelSelectContainer.Add(aiModelSelectionButton);
-            }
         }
 
         private void UpdateSelection(string model, VisualElement selectedIcon)
