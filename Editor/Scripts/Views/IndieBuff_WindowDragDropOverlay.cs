@@ -24,19 +24,19 @@ namespace IndieBuff.Editor
             }
 
             var element = visualTree.Instantiate();
-            overlayContainer = element.Q("WindowDropZone");
+            overlayContainer = element.Q("DropOverlay");
             dropLabel = element.Q<Label>("WindowDropLabel");
 
-            overlayContainer.pickingMode = PickingMode.Position;
-            overlayContainer.style.position = Position.Absolute;
-            overlayContainer.style.left = 0;
-            overlayContainer.style.right = 0;
-            overlayContainer.style.top = 0;
-            overlayContainer.style.bottom = 0;
-            overlayContainer.style.flexGrow = 1;
-            
+            // Remove any existing overlay first
+            var existingOverlay = root.Q("DropOverlay");
+            if (existingOverlay != null)
+            {
+                root.Remove(existingOverlay);
+            }
 
+            // Add the overlay as the last child to ensure it's on top
             root.Add(element);
+            overlayContainer.BringToFront();  // Explicitly bring to front
             SetupDragAndDrop();
         }
 
@@ -52,19 +52,16 @@ namespace IndieBuff.Editor
         {
             if (IsDraggedObjectValid())
             {
-                Debug.Log("Adding 'active' class to overlay container");
+                Debug.Log("Showing overlay");
                 overlayContainer.AddToClassList("active");
                 dropLabel.AddToClassList("active");
-                overlayContainer.style.display = DisplayStyle.Flex;
-                overlayContainer.BringToFront();
-                overlayContainer.MarkDirtyRepaint();
             }
             evt.StopPropagation();
         }
 
         private void OnDragLeave(DragLeaveEvent evt)
         {
-            Debug.Log("Removing 'active' class to overlay container");
+            Debug.Log("Hiding overlay");
             overlayContainer.RemoveFromClassList("active");
             dropLabel.RemoveFromClassList("active");
             evt.StopPropagation();
