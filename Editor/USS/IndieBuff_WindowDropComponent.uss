@@ -7,25 +7,28 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0);
-    transition-property: all;
+    opacity: 1; /* Keep at 1 by default */
+    transition-property: background-color, visibility;
     transition-duration: 0.2s;
     transition-timing-function: ease;
-    opacity: 0;
-    visibility: hidden;
+    display:flex;
+    z-index:9999;
+    align-items:center;
+    justify-content:center;
 }
 
 .window-drop-zone-styling.active {
-    opacity: 1;
     visibility: visible;
     background-color: rgba(0, 0, 0, 0.75);
 }
 
 .drop-label-container {
-    position: absolute;
-    bottom: 20px;
+    position: relative;
+    bottom: 395px;
     width: 100%;
     display: flex;
     justify-content: center;
+    align-items: center;
 }
 
 .window-drag-drop-label {

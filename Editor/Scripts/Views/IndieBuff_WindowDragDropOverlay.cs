@@ -27,13 +27,14 @@ namespace IndieBuff.Editor
             overlayContainer = element.Q("WindowDropZone");
             dropLabel = element.Q<Label>("WindowDropLabel");
 
-            overlayContainer.pickingMode = PickingMode.Ignore;
+            overlayContainer.pickingMode = PickingMode.Position;
             overlayContainer.style.position = Position.Absolute;
             overlayContainer.style.left = 0;
             overlayContainer.style.right = 0;
             overlayContainer.style.top = 0;
             overlayContainer.style.bottom = 0;
-            overlayContainer.style.backgroundColor = new Color(0, 0, 0, 0);
+            overlayContainer.style.flexGrow = 1;
+            
 
             root.Add(element);
             SetupDragAndDrop();
@@ -51,14 +52,19 @@ namespace IndieBuff.Editor
         {
             if (IsDraggedObjectValid())
             {
+                Debug.Log("Adding 'active' class to overlay container");
                 overlayContainer.AddToClassList("active");
                 dropLabel.AddToClassList("active");
+                overlayContainer.style.display = DisplayStyle.Flex;
+                overlayContainer.BringToFront();
+                overlayContainer.MarkDirtyRepaint();
             }
             evt.StopPropagation();
         }
 
         private void OnDragLeave(DragLeaveEvent evt)
         {
+            Debug.Log("Removing 'active' class to overlay container");
             overlayContainer.RemoveFromClassList("active");
             dropLabel.RemoveFromClassList("active");
             evt.StopPropagation();
@@ -82,7 +88,8 @@ namespace IndieBuff.Editor
                     IndieBuff_UserSelectedContext.Instance.AddContextObject(objectReference);
                 }
             }
-            
+
+            Debug.Log("Removing 'active' class to overlay container");
             overlayContainer.RemoveFromClassList("active");
             dropLabel.RemoveFromClassList("active");
             DragAndDrop.AcceptDrag();
