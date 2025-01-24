@@ -9,7 +9,9 @@ namespace IndieBuff.Editor
     public class IndieBuff_WindowDragDropOverlay : IDisposable
     {
         private readonly VisualElement root;
+        private readonly VisualElement dropRoot;
         private readonly VisualElement overlayContainer;
+        private readonly VisualElement overlayBackground;
         private readonly Label dropLabel;
 
         public IndieBuff_WindowDragDropOverlay(VisualElement root)
@@ -23,18 +25,30 @@ namespace IndieBuff.Editor
                 return;
             }
 
-            var element = visualTree.Instantiate();
-            overlayContainer = element.Q("DropOverlay");
-            dropLabel = element.Q<Label>("WindowDropLabel");
+            dropRoot = visualTree.Instantiate();
+
+            string dropStylePath = $"{IndieBuffConstants.baseAssetPath}/Editor/USS/IndieBuff_WindowDropComponent.uss";
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(dropStylePath);
+
+            dropRoot.styleSheets.Add(styleSheet);
+
+            dropRoot.style.width = new StyleLength(Length.Percent(100));
+            dropRoot.style.height = new StyleLength(Length.Percent(100));
+            dropRoot.style.position = Position.Absolute;
+            dropRoot.style.display = DisplayStyle.None;
+
+            overlayContainer = dropRoot.Q("DNDContainer");
+            dropLabel = dropRoot.Q<Label>("DNDLabel");
+            overlayBackground = dropRoot.Q("DNDBackground");
 
             // Remove any existing overlay first
-            var existingOverlay = root.Q("DropOverlay");
+            var existingOverlay = root.Q("DNDContainer");
             if (existingOverlay != null)
             {
                 root.Remove(existingOverlay);
             }
 
-            root.Add(element);
+            root.Add(dropRoot);
             overlayContainer.BringToFront();
             SetupDragAndDrop();
         }
@@ -51,17 +65,15 @@ namespace IndieBuff.Editor
         {
             if (IsDraggedObjectValid())
             {
+                dropRoot.style.display = DisplayStyle.Flex;
 
-                overlayContainer.AddToClassList("active");
-                dropLabel.AddToClassList("active");
             }
             evt.StopPropagation();
         }
 
         private void OnDragLeave(DragLeaveEvent evt)
         {
-            overlayContainer.RemoveFromClassList("active");
-            dropLabel.RemoveFromClassList("active");
+            dropRoot.style.display = DisplayStyle.None;
             evt.StopPropagation();
         }
 
@@ -84,8 +96,7 @@ namespace IndieBuff.Editor
                 }
             }
 
-            overlayContainer.RemoveFromClassList("active");
-            dropLabel.RemoveFromClassList("active");
+            dropRoot.style.display = DisplayStyle.None;
             DragAndDrop.AcceptDrag();
             evt.StopPropagation();
         }

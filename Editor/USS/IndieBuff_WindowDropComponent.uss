@@ -1,51 +1,8 @@
-.drop-overlay-styling {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background-color: transparent;
-}
-
-.drop-overlay-styling.active {
-    display: flex;
-    background-color: rgba(0, 0, 0, 0.8);  /* Dark overlay when active */
-    position: absolute;  /* Maintain absolute positioning in active state */
-    left: 0;
-    visibility: visible;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    picked:auto;
-}
-
-.drop-label-container {
-    position: relative;
-    padding: 46px;
-    border-radius: 15px;     
-    background-color: rgba(111, 66, 239, 0.2);
-    min-width: 200px;
-    bottom: 490px; 
-    align-self: center;
-}
-
-.window-drag-drop-label {
+.drop-label {
     -unity-text-align: middle-center;
     color: rgb(255, 255, 255);
     font-size: 16px;
     -unity-font-style: bold;
     white-space: normal;
-    opacity: 0;
-    
-    visibility: hidden;
-}
-
-.window-drag-drop-label.active {
-    opacity: 1;
-    visibility: visible;
+    background-color: rgba(111, 66, 239, 0.2);
 }
