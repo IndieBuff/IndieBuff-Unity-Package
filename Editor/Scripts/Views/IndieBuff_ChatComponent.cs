@@ -213,7 +213,20 @@ namespace IndieBuff.Editor
 
             addContextButton.clicked += () =>
             {
-                ShowPopup(addContextComponent.GetRoot(), addContextButton, true);
+                UnityEngine.Object[] selectedObjects = Selection.objects;
+                foreach (UnityEngine.Object obj in selectedObjects)
+                {
+                    if (obj is not DefaultAsset)
+                    {
+                        IndieBuff_UserSelectedContext.Instance.AddContextObject(obj);
+                    }
+                }
+
+                var selectedLogs = IndieBuff_ConsoleLogHandler.Instance.GetSelectedConsoleLogs();
+                foreach (var logMessage in selectedLogs)
+                {
+                    IndieBuff_UserSelectedContext.Instance.AddConsoleLog(logMessage);
+                }
             };
 
             clearContextButton.clicked += () =>
