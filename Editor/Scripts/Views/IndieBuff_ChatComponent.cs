@@ -151,8 +151,8 @@ namespace IndieBuff.Editor
 
             IndieBuff_UserInfo.Instance.onCreditsUpdated += () =>
             {
-                creditDisplayButton.text = (IndieBuff_UserInfo.Instance.credits + IndieBuff_UserInfo.Instance.topUps).ToString() + " Credits";
-                creditDisplayButton.tooltip = "Credits: " + IndieBuff_UserInfo.Instance.credits + "\nTop Ups: " + IndieBuff_UserInfo.Instance.topUps;
+                creditDisplayButton.text = IndieBuff_UserInfo.Instance.currentIndieBuffUser.currentPlan == "studio" ? "Unlimited Credits" : (IndieBuff_UserInfo.Instance.credits + IndieBuff_UserInfo.Instance.topUps).ToString() + " Credits";
+                creditDisplayButton.tooltip = IndieBuff_UserInfo.Instance.currentIndieBuffUser.currentPlan == "studio" ? "Unlimited Credits" : "Credits: " + IndieBuff_UserInfo.Instance.credits + "\nTop Ups: " + IndieBuff_UserInfo.Instance.topUps;
             };
         }
 
