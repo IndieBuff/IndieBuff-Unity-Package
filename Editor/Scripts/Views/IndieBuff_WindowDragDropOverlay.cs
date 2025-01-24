@@ -50,7 +50,7 @@ namespace IndieBuff.Editor
 
         private void OnDragEnter(DragEnterEvent evt)
         {
-            if (IsDraggedObjectValid())
+            if (IsDraggedObjectValid() && IndieBuff_UserInfo.Instance.IsLoggedIn)
             {
                 
                 overlayContainer.AddToClassList("active");
@@ -84,7 +84,7 @@ namespace IndieBuff.Editor
                     IndieBuff_UserSelectedContext.Instance.AddContextObject(objectReference);
                 }
             }
-            
+
             overlayContainer.RemoveFromClassList("active");
             dropLabel.RemoveFromClassList("active");
             DragAndDrop.AcceptDrag();

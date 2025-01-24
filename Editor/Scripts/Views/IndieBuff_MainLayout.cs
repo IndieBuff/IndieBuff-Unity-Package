@@ -27,8 +27,7 @@ namespace IndieBuff.Editor
             chatComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_ChatComponent.uxml");
             loginComponentAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{IndieBuffConstants.baseAssetPath}/Editor/UXML/IndieBuff_LoginPage.uxml");
 
-            windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
-
+            // Don't create overlay until user is logged in
             ShowLoginComponent();
             InitializeContexts();
         }
@@ -52,11 +51,12 @@ namespace IndieBuff.Editor
             rootVisualElement.Add(loginUI);
             loginUI.style.flexGrow = 1;
 
+            // Don't create overlay for login screen
             if (windowDropOverlay != null)
             {
                 windowDropOverlay.Dispose();
+                windowDropOverlay = null;  // Ensure it's null during login
             }
-            windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
 
             loginComponent = new IndieBuff_LoginComponent(loginUI);
             loginComponent.OnLoginSuccess += ShowChatComponent;
@@ -79,11 +79,11 @@ namespace IndieBuff.Editor
             rootVisualElement.Add(chatUI);
             chatUI.style.flexGrow = 1;
 
-            if (windowDropOverlay != null)
+            // Only create overlay when user is logged in
+            if (IndieBuff_UserInfo.Instance.IsLoggedIn)
             {
-                windowDropOverlay.Dispose();
+                windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
             }
-            windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
 
             IndieBuff_UserSelectedContext.Instance.RestoreStateIfNeeded();
 

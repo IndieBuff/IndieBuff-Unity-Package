@@ -22,6 +22,7 @@ namespace IndieBuff.Editor
         private string _selectedModel = "claude-3-5-sonnet";
         public bool isStreamingMessage = false;
         public Action responseLoadingComplete;
+        public bool IsLoggedIn => currentUser != null;
 
         public int credits = 0;
         public int topUps = 0;
