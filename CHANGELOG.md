@@ -11,6 +11,11 @@
 ### Feature
 
 - Added /default slash command to simplify creation process
+- Added drag and drop context anywhere on chat window
+
+### Added
+
+- Select context button only adds selected items instead of popping up drag window now
 
 ## [2.1.1] - 2025-01-11
 
