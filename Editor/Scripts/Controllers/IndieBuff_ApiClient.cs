@@ -141,6 +141,32 @@ namespace IndieBuff.Editor
             }
         }
 
+        public async Task<string> GenerateModelAsync(string prompt, CancellationToken cancellationToken = default)
+        {
+            await TokenManager.Instance.RefreshTokensAsync();
+            var jsonPayload = JsonUtility.ToJson(new { prompt = prompt });
+            var jsonStringContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "plugin-chat/generate")
+            {
+                Content = jsonStringContent
+            };
+
+            var response = await SendRequestAsync(() => client.SendAsync(requestMessage, cancellationToken));
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                _ = IndieBuff_UserInfo.Instance.GetCredits();
+                return responseContent;
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return null;
+            }
+        }
+
         public Task<HttpResponseMessage> GetIndieBuffUserAsync()
         {
             return SendRequestAsync(() => client.GetAsync("plugin-chat/user-info"));
