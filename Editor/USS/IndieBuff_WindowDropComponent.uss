@@ -9,21 +9,29 @@
     display: none;
     align-items: center;
     justify-content: center;
-    background-color: rgba(51, 51, 51, 0);
+    background-color: transparent;
 }
 
 .drop-overlay-styling.active {
     display: flex;
-    background-color: rgba(51, 51, 51, 0.8);
+    background-color: rgba(0, 0, 0, 0.8);  /* Dark overlay when active */
+    position: absolute;  /* Maintain absolute positioning in active state */
+    left: 0;
+    visibility: visible;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    picked:auto;
 }
 
 .drop-label-container {
     position: relative;
-    padding: 40px;
+    padding: 46px;
     border-radius: 15px;     
     background-color: rgba(111, 66, 239, 0.2);
     min-width: 200px;
-    bottom: 490px;
+    bottom: 490px; 
+    align-self: center;
 }
 
 .window-drag-drop-label {

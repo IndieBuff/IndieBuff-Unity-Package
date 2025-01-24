@@ -52,7 +52,7 @@ namespace IndieBuff.Editor
         {
             if (IsDraggedObjectValid())
             {
-                Debug.Log("Showing overlay");
+                
                 overlayContainer.AddToClassList("active");
                 dropLabel.AddToClassList("active");
             }
@@ -61,7 +61,6 @@ namespace IndieBuff.Editor
 
         private void OnDragLeave(DragLeaveEvent evt)
         {
-            Debug.Log("Hiding overlay");
             overlayContainer.RemoveFromClassList("active");
             dropLabel.RemoveFromClassList("active");
             evt.StopPropagation();
@@ -85,8 +84,7 @@ namespace IndieBuff.Editor
                     IndieBuff_UserSelectedContext.Instance.AddContextObject(objectReference);
                 }
             }
-
-            Debug.Log("Removing 'active' class to overlay container");
+            
             overlayContainer.RemoveFromClassList("active");
             dropLabel.RemoveFromClassList("active");
             DragAndDrop.AcceptDrag();
