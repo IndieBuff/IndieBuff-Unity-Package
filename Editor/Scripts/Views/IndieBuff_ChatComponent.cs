@@ -74,6 +74,9 @@ namespace IndieBuff.Editor
         // cancel
         private CancellationTokenSource cts;
 
+        // window drop
+        private IndieBuff_WindowDragDropOverlay windowDragDropOverlay;
+
         private ResponseHandlerFactory handlerFactory;
         private IResponseHandler currentResponseHandler;
 
@@ -110,6 +113,7 @@ namespace IndieBuff.Editor
             chatWidgetComponent = new IndieBuff_ChatWidgetComponent(root, SendMessageAsync);
             selectedContextViewer = new IndieBuff_SelectedContextViewer(userContextRoot);
             loadingBar = new IndieBuff_LoadingBar(loadingComponent);
+            windowDragDropOverlay = new IndieBuff_WindowDragDropOverlay(root);
 
 
             SetupGeometryCallbacks();

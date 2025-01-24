@@ -34,9 +34,8 @@ namespace IndieBuff.Editor
                 root.Remove(existingOverlay);
             }
 
-            // Add the overlay as the last child to ensure it's on top
             root.Add(element);
-            overlayContainer.BringToFront();  // Explicitly bring to front
+            overlayContainer.BringToFront();
             SetupDragAndDrop();
         }
 
@@ -50,9 +49,9 @@ namespace IndieBuff.Editor
 
         private void OnDragEnter(DragEnterEvent evt)
         {
-            if (IsDraggedObjectValid() && IndieBuff_UserInfo.Instance.IsLoggedIn)
+            if (IsDraggedObjectValid())
             {
-                
+
                 overlayContainer.AddToClassList("active");
                 dropLabel.AddToClassList("active");
             }
@@ -68,7 +67,7 @@ namespace IndieBuff.Editor
 
         private void OnDragUpdated(DragUpdatedEvent evt)
         {
-            DragAndDrop.visualMode = IsDraggedObjectValid() ? 
+            DragAndDrop.visualMode = IsDraggedObjectValid() ?
                 DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
             evt.StopPropagation();
         }
@@ -93,7 +92,7 @@ namespace IndieBuff.Editor
 
         private bool IsDraggedObjectValid()
         {
-            return DragAndDrop.objectReferences.Length > 0 && 
+            return DragAndDrop.objectReferences.Length > 0 &&
                    DragAndDrop.objectReferences.Any(obj => obj is not DefaultAsset);
         }
 

@@ -12,7 +12,6 @@ namespace IndieBuff.Editor
 
         private IndieBuff_ChatComponent chatComponent;
         private IndieBuff_LoginComponent loginComponent;
-        private IndieBuff_WindowDragDropOverlay windowDropOverlay;
 
         [MenuItem("Tools/IndieBuff")]
         public static void ShowWindow()
@@ -51,13 +50,6 @@ namespace IndieBuff.Editor
             rootVisualElement.Add(loginUI);
             loginUI.style.flexGrow = 1;
 
-            // Don't create overlay for login screen
-            if (windowDropOverlay != null)
-            {
-                windowDropOverlay.Dispose();
-                windowDropOverlay = null;  // Ensure it's null during login
-            }
-
             loginComponent = new IndieBuff_LoginComponent(loginUI);
             loginComponent.OnLoginSuccess += ShowChatComponent;
         }
@@ -79,11 +71,6 @@ namespace IndieBuff.Editor
             rootVisualElement.Add(chatUI);
             chatUI.style.flexGrow = 1;
 
-            // Only create overlay when user is logged in
-            if (IndieBuff_UserInfo.Instance.IsLoggedIn)
-            {
-                windowDropOverlay = new IndieBuff_WindowDragDropOverlay(rootVisualElement);
-            }
 
             IndieBuff_UserSelectedContext.Instance.RestoreStateIfNeeded();
 
@@ -105,12 +92,6 @@ namespace IndieBuff.Editor
                 loginComponent.OnLoginSuccess -= ShowChatComponent;
                 loginComponent.Cleanup();
                 loginComponent = null;
-            }
-
-            if (windowDropOverlay != null)
-            {
-                windowDropOverlay.Dispose();
-                windowDropOverlay = null;
             }
         }
 
