@@ -52,8 +52,14 @@ namespace IndieBuff.Editor
             }
             catch (Exception e)
             {
-                Debug.LogError(e.Message);
-                HandleError(responseContainer);
+                if (e.Message == "Error: Insufficient credits")
+                {
+                    HandleInsufficientCredits(responseContainer);
+                }
+                else
+                {
+                    HandleError(responseContainer);
+                }
             }
 
 
